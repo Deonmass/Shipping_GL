@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply font-sans text-gray-800 bg-white;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-primary-950;
+  }
+
+  .bg-primary-900 h1,
+  .bg-primary-900 h2,
+  .bg-primary-900 h3,
+  .bg-primary-900 h4,
+  .bg-primary-900 h5,
+  .bg-primary-900 h6,
+  .bg-primary-900 p {
+    @apply text-white;
+  }
+}
+
+@layer components {
+  .container-custom {
+    @apply max-w-7xl mx-auto px-6 sm:px-8 lg:px-12;
+  }
+
+  .scroll-snap-y-mandatory {
+    scroll-snap-type: y mandatory;
+  }
+
+  .scroll-snap-align-start {
+    scroll-snap-align: start;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium transition-colors duration-200;
+  }
+
+  .btn-sm {
+    @apply px-4 py-2 text-sm;
+  }
+
+  .btn-lg {
+    @apply px-8 py-4 text-lg;
+  }
+
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-2 focus:ring-offset-2 focus:ring-primary-500;
+  }
+
+  .btn-outline {
+    @apply border-2 border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-offset-2 focus:ring-gray-500;
+  }
+
+  .input {
+    @apply block w-full border border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 rounded-none min-w-[250px] h-[46px];
+  }
+
+  .input-error {
+    @apply border-red-500 focus:border-red-500 focus:ring-red-500;
+  }
+
+  .section {
+    @apply py-12 md:py-16;
+  }
+
+  .section-title {
+    @apply text-3xl md:text-4xl font-bold text-gray-900 mb-4;
+  }
+
+  .section-subtitle {
+    @apply text-xl text-gray-600 max-w-2xl;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+}
+
+/* Fireworks Animation */
+.firework {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.5rem;
+  aspect-ratio: 1;
+  background: #ff0;
+  border-radius: 50%;
+  animation: firework-animation 2s forwards cubic-bezier(0.5, 0.5, 0.5, 1);
+}
+
+.firework::before,
+.firework::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.5rem;
+  aspect-ratio: 1;
+  background: #ff0;
+  border-radius: 50%;
+}
+
+@keyframes firework-animation {
+  0% {
+    transform: translate(-50%, -50%);
+    width: 0.5rem;
+    opacity: 1;
+  }
+  50% {
+    width: 0.5rem;
+    opacity: 1;
+  }
+  100% {
+    width: 50rem;
+    opacity: 0;
+  }
+}
+
+.firework:nth-child(even) {
+  background: #f06;
+}
+
+.firework:nth-child(even)::before,
+.firework:nth-child(even)::after {
+  background: #f06;
+}
+
+.firework:nth-child(3n) {
+  background: #0ff;
+}
+
+.firework:nth-child(3n)::before,
+.firework:nth-child(3n)::after {
+  background: #0ff;
+}
+
+.firework:nth-child(4n) {
+  background: #0f0;
+}
+
+.firework:nth-child(4n)::before,
+.firework:nth-child(4n)::after {
+  background: #0f0;
+}

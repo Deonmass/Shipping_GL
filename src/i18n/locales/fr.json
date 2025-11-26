@@ -1,0 +1,549 @@
+{
+  "navigation": {
+    "home": "Accueil",
+    "services": "Services",
+    "partners": "Partenaires",
+    "news": "Actualités",
+    "quotation": "Cotation",
+    "tracking": "Tracking",
+    "about": "À propos",
+    "login": "Connexion",
+    "register": "Inscription",
+    "language": "Langue"
+  },
+  "home": {
+    "hero": {
+      "title": "Solutions Logistiques Complètes & Fiables",
+      "subtitle": "Votre partenaire de confiance pour tous vos besoins en transport, dédouanement et logistique",
+      "cta": "Demander un devis"
+    },
+    "services": {
+      "title": "Nos Services",
+      "subtitle": "Des solutions logistiques intégrées pour répondre à tous vos besoins",
+      "airFreight": {
+        "title": "Fret Aérien",
+        "description": "Solutions de transport aérien rapides et fiables pour vos marchandises urgentes à travers le monde."
+      },
+      "seaFreight": {
+        "title": "Fret Maritime",
+        "description": "Transport maritime économique et sécurisé pour vos cargaisons volumineuses ou conteneurisées."
+      },
+      "transport": {
+        "title": "Transport Terrestre",
+        "description": "Services de transport routier fiables et ponctuels pour vos livraisons locales et régionales."
+      },
+      "warehousing": {
+        "title": "Entreposage",
+        "description": "Solutions d'entreposage sécurisées avec gestion d'inventaire et distribution efficace."
+      },
+      "moving": {
+        "title": "Déménagement",
+        "description": "Services de déménagement personnalisés pour particuliers et entreprises, locaux et internationaux."
+      },
+      "customs": {
+        "title": "Services Douaniers",
+        "description": "Expertise en dédouanement pour faciliter vos importations et exportations en toute conformité."
+      }
+    },
+    "about": {
+      "title": "SHIPPING GL",
+      "subtitle": "Votre Partenaire Logistique de Confiance",
+      "description": "Depuis notre création, SHIPPING GL s'engage à fournir des services logistiques de premier ordre avec intégrité, fiabilité et excellence. Notre équipe d'experts dévoués travaille sans relâche pour assurer que vos marchandises arrivent à destination en toute sécurité et dans les délais.",
+      "cta": "En savoir plus"
+    },
+    "testimonials": {
+      "title": "Ce que nos clients disent",
+      "subtitle": "Des partenaires satisfaits à travers l'Afrique et le monde",
+      "testimonial1": {
+        "text": "SHIPPING GL a transformé notre chaîne d'approvisionnement avec leur service exceptionnel et leur expertise en douane. Nous sommes impressionnés par leur efficacité et professionnalisme.",
+        "author": "Jean Mukendi",
+        "position": "Directeur des Opérations, MineTech DRC"
+      },
+      "testimonial2": {
+        "text": "Nous faisons confiance à SHIPPING GL pour tous nos besoins en fret maritime. Leur équipe est réactive, attentionnée et toujours prête à résoudre les défis logistiques complexes.",
+        "author": "Marie Diallo",
+        "position": "Responsable Logistique, Afri-Commerce"
+      },
+      "testimonial3": {
+        "text": "L'expertise de SHIPPING GL en matière de dédouanement nous a permis d'économiser du temps et des ressources considérables. Leur connaissance des réglementations locales est inestimable.",
+        "author": "David Nkosi",
+        "position": "PDG, Transaf Solutions"
+      }
+    },
+    "cta": {
+      "title": "Prêt à optimiser votre logistique?",
+      "subtitle": "Contactez-nous dès aujourd'hui pour des solutions sur mesure adaptées à vos besoins spécifiques",
+      "button": "Contactez-nous maintenant"
+    }
+  },
+  "services": {
+    "title": "Nos Services",
+    "subtitle": "Des solutions logistiques complètes pour tous vos besoins",
+    "airFreight": {
+      "title": "Fret Aérien",
+      "description": "Notre service de fret aérien offre des délais de livraison rapides et fiables pour vos marchandises urgentes. Avec notre réseau mondial de partenaires, nous garantissons une manipulation sécurisée et un transport efficace de vos cargaisons aériennes.",
+      "features": [
+        "Expéditions express internationales",
+        "Suivi en temps réel",
+        "Gestion des documents douaniers",
+        "Manutention sécurisée des marchandises fragiles",
+        "Solutions pour cargaisons de toutes tailles"
+      ]
+    },
+    "seaFreight": {
+      "title": "Fret Maritime",
+      "description": "Notre service de fret maritime offre des solutions économiques pour le transport de marchandises volumineuses. Que vous ayez besoin d'un conteneur complet (FCL) ou d'un groupage (LCL), notre expertise garantit la sécurité et l'efficacité de vos expéditions maritimes.",
+      "features": [
+        "Services FCL et LCL",
+        "Dédouanement import/export",
+        "Assurance maritime",
+        "Suivi de conteneurs",
+        "Coordination port-à-port et porte-à-porte"
+      ]
+    },
+    "transport": {
+      "title": "Transport Terrestre",
+      "description": "Nos services de transport terrestre assurent la livraison fiable et ponctuelle de vos marchandises localement et à travers les frontières. Notre flotte moderne et nos chauffeurs expérimentés garantissent la sécurité de vos biens tout au long du trajet.",
+      "features": [
+        "Transport local et transfrontalier",
+        "Livraisons sur rendez-vous",
+        "Transport de marchandises spéciales",
+        "Suivi GPS des véhicules",
+        "Solutions multimodales intégrées"
+      ]
+    },
+    "warehousing": {
+      "title": "Entreposage",
+      "description": "Nos installations d'entreposage sécurisées offrent des solutions flexibles pour stocker vos marchandises. Avec des systèmes de gestion d'inventaire avancés et des équipes qualifiées, nous assurons la protection et la gestion efficace de vos stocks.",
+      "features": [
+        "Entreposage à court et long terme",
+        "Gestion d'inventaire informatisée",
+        "Services de distribution",
+        "Préparation de commandes",
+        "Installations sécurisées et surveillées"
+      ]
+    },
+    "moving": {
+      "title": "Déménagement",
+      "description": "Nos services de déménagement personnalisés prennent en charge tous les aspects de votre relocation, qu'elle soit locale ou internationale. Notre équipe professionnelle assure l'emballage, le transport et le déballage de vos biens avec le plus grand soin.",
+      "features": [
+        "Déménagements locaux et internationaux",
+        "Emballage et déballage professionnels",
+        "Services d'entreposage temporaire",
+        "Manutention d'objets de valeur",
+        "Assurance complète"
+      ]
+    },
+    "customs": {
+      "title": "Services Douaniers",
+      "description": "Notre expertise en dédouanement vous permet de naviguer facilement à travers les complexités des réglementations douanières. Nos agents en douane qualifiés garantissent la conformité et l'efficacité de vos processus d'importation et d'exportation.",
+      "features": [
+        "Dédouanement import et export",
+        "Conseils en matière de classification tarifaire",
+        "Conseils sur les réglementations commerciales",
+        "Représentation auprès des autorités douanières",
+        "Documentation complète et conforme"
+      ]
+    }
+  },
+  "quotation": {
+    "title": "Demande de Cotation",
+    "subtitle": "Obtenez un devis personnalisé pour vos besoins logistiques",
+    "form": {
+      "personalInfo": "Informations personnelles",
+      "serviceInfo": "Détails du service",
+      "name": "Nom complet",
+      "company": "Entreprise",
+      "email": "Adresse e-mail",
+      "phone": "Numéro de téléphone",
+      "serviceType": "Type de service",
+      "origin": "Origine",
+      "destination": "Destination",
+      "cargoType": "Type de marchandise",
+      "cargoWeight": "Poids (kg)",
+      "cargoVolume": "Volume (m³)",
+      "specialRequirements": "Exigences spéciales",
+      "submit": "Soumettre la demande",
+      "success": "Votre demande a été envoyée avec succès. Nous vous contacterons sous peu.",
+      "error": "Une erreur s'est produite. Veuillez réessayer."
+    }
+  },
+  "tracking": {
+    "title": "Suivi de Cargaison",
+    "subtitle": "Suivez l'état et la localisation de votre expédition en temps réel",
+    "form": {
+      "trackingNumber": "Numéro de suivi",
+      "search": "Rechercher",
+      "placeholder": "Entrez votre numéro de suivi",
+      "noResults": "Aucun résultat trouvé pour ce numéro de suivi",
+      "error": "Une erreur s'est produite. Veuillez réessayer."
+    },
+    "result": {
+      "status": "Statut",
+      "currentLocation": "Emplacement actuel",
+      "origin": "Origine",
+      "destination": "Destination",
+      "departureDate": "Date de départ",
+      "estimatedArrival": "Arrivée estimée",
+      "lastUpdate": "Dernière mise à jour",
+      "history": "Historique des mouvements"
+    }
+  },
+  "about": {
+    "title": "À Propos de SHIPPING GL",
+    "subtitle": "Votre partenaire logistique de confiance en Afrique et dans le monde",
+    "mission": {
+      "title": "Notre Mission",
+      "description": "Chez SHIPPING GL, notre mission est de fournir des solutions logistiques intégrées de classe mondiale qui simplifient les opérations commerciales de nos clients. Nous nous engageons à offrir un service fiable, efficace et personnalisé qui répond parfaitement aux besoins spécifiques de chaque client."
+    },
+    "vision": {
+      "title": "Notre Vision",
+      "description": "Notre vision est de devenir le partenaire logistique de référence en Afrique, reconnu pour l'excellence de nos services, notre intégrité et notre innovation constante dans le domaine de la logistique et du commerce international."
+    },
+    "values": {
+      "title": "Nos Valeurs",
+      "subtitle": "Les principes qui guident notre action quotidienne",
+      "integrity": {
+        "title": "Intégrité",
+        "description": "Nous adhérons aux normes éthiques les plus élevées dans toutes nos interactions professionnelles.",
+        "details": "L'intégrité est au cœur de tout ce que nous faisons. Nous maintenons la transparence dans nos communications, respectons nos engagements et agissons avec honnêteté dans toutes nos relations d'affaires. Cette valeur fondamentale guide nos décisions quotidiennes et renforce la confiance que nos partenaires placent en nous."
+      },
+      "excellence": {
+        "title": "Excellence",
+        "description": "Nous nous efforçons constamment d'améliorer nos services et de dépasser les attentes de nos clients.",
+        "details": "Notre quête d'excellence nous pousse à innover constamment et à améliorer nos processus. Nous investissons dans la formation de nos équipes, l'amélioration de nos infrastructures et l'adoption des meilleures pratiques internationales pour offrir un service de qualité supérieure."
+      },
+      "reliability": {
+        "title": "Fiabilité",
+        "description": "Nous tenons nos promesses et assumons la responsabilité de nos actions.",
+        "details": "La fiabilité est notre signature. Nous respectons nos délais, honorons nos engagements et assumons pleinement nos responsabilités. Nos clients peuvent compter sur nous pour livrer leurs marchandises en toute sécurité et dans les temps impartis."
+      },
+      "innovation": {
+        "title": "Innovation",
+        "description": "Nous recherchons continuellement de nouvelles façons d'améliorer nos processus et services.",
+        "details": "L'innovation nous permet de rester à la pointe de l'industrie logistique. Nous adoptons les nouvelles technologies, développons des solutions créatives et anticipons les besoins futurs de nos clients pour leur offrir des services toujours plus performants."
+      },
+      "customerFocus": {
+        "title": "Orientation client",
+        "description": "Nous plaçons les besoins de nos clients au centre de toutes nos décisions.",
+        "details": "Nos clients sont au centre de notre stratégie. Nous écoutons leurs besoins, adaptons nos services à leurs exigences spécifiques et maintenons une communication ouverte pour garantir leur satisfaction totale."
+      }
+    },
+    "mission": {
+      "details": "Notre mission s'étend au-delà de la simple prestation de services logistiques. Nous nous engageons à être un catalyseur du développement économique en Afrique en facilitant les échanges commerciaux, en créant des emplois locaux et en contribuant au renforcement des infrastructures logistiques du continent. Nous croyons fermement que la logistique est un pilier essentiel du développement économique et nous nous efforçons d'être à l'avant-garde de cette transformation."
+    },
+    "vision": {
+      "title": "Notre mission",
+      "paragraph1": "La vision de SHIPPING GL est de faire la différence dans la façon dont les marchandises sont transportées, stockées et livrées dans notre région, en se concentrant sur l'amélioration de l'efficacité, la réduction des coûts et l'amélioration de la satisfaction de nos clients.",
+      "paragraph2": "Nous nous efforçons de devenir un acteur de premier plan dans le secteur de la logistique, qui relie la région des Grands Lacs au monde entier et vice versa, et qui est connu pour sa fiabilité, sa transparence et son engagement en faveur du développement durable.",
+      "paragraph3": "En fin de compte, créer une chaîne d'approvisionnement mondiale transparente et interconnectée qui permette à d'autres entreprises mondiales de transport de fret d'entrer en contact avec leurs clients des Grands Lacs de la manière la plus efficace et la plus rentable possible.",
+      "details": "Notre vision s'articule autour de trois piliers fondamentaux : l'excellence opérationnelle, l'innovation technologique et l'impact social positif. Nous aspirons à créer un écosystème logistique intégré qui connecte l'Afrique au monde, facilite les échanges intra-africains et contribue à la prospérité économique du continent. Nous voulons être reconnus non seulement pour nos performances, mais aussi pour notre contribution au développement durable de l'Afrique."
+    },
+    "mission": {
+      "title": "Notre mission",
+      "paragraph1": "En nous concentrant sur nos opérations, nous aidons nos partenaires à planifier efficacement leurs objectifs et à les atteindre. Nous jouons un rôle crucial en veillant à ce que les expéditions se déroulent rapidement et sans heurts dans une région vaste et difficile.",
+      "paragraph2": "Ceci au bénéfice des entreprises de la région en améliorant l'efficacité et en réduisant les délais.",
+      "details": "Notre mission s'étend au-delà de la simple prestation de services logistiques. Nous nous engageons à être un catalyseur du développement économique en Afrique en facilitant les échanges commerciaux, en créant des emplois locaux et en contribuant au renforcement des infrastructures logistiques du continent. Nous croyons fermement que la logistique est un pilier essentiel du développement économique et nous nous efforçons d'être à l'avant-garde de cette transformation."
+    },
+    "statement": {
+      "title": "Notre déclaration",
+      "paragraph1": "SHIPPING GL veut agir de manière durable, dans le respect des règles et réglementations, des différences culturelles et de l'environnement."
+    },
+    "team": {
+      "title": "Notre Équipe",
+      "description": "SHIPPING GL est fier de son équipe diversifiée de professionnels expérimentés dans le domaine de la logistique, du transport et des douanes. Notre personnel qualifié possède une connaissance approfondie des marchés locaux et internationaux, garantissant des solutions adaptées aux défis spécifiques de chaque région.",
+      "memberDetails": "Détails du membre"
+    },
+    "contact": {
+      "title": "Services à Contacter",
+      "subtitle": "Contactez directement le service approprié pour vos besoins spécifiques",
+      "sendEmail": "Envoyer un email",
+      "quotations": {
+        "title": "Demandes de Cotation",
+        "description": "Pour toutes vos demandes de devis et cotations personnalisées"
+      },
+      "accounting": {
+        "title": "Factures et Finance",
+        "description": "Pour vos questions de facturation, paiements et comptabilité"
+      },
+      "general": {
+        "title": "Informations Générales",
+        "description": "Pour toute information générale et renseignements"
+      },
+      "emailForm": {
+        "title": "Envoyer un Email",
+        "to": "À",
+        "yourEmail": "Votre adresse email",
+        "cc": "CC (optionnel)",
+        "message": "Votre message",
+        "send": "Envoyer",
+        "cancel": "Annuler"
+      }
+    },
+    "offices": {
+      "title": "Nos Bureaux",
+      "subtitle": "Notre présence stratégique en Afrique",
+      "headquarters": "Siège social"
+    },
+    "readMore": "Lire la suite",
+    "history": {
+      "title": "Notre Histoire",
+      "description": "Fondée avec la vision de révolutionner le secteur logistique en Afrique, SHIPPING GL a grandi pour devenir un acteur clé dans la facilitation du commerce international. Au fil des années, nous avons développé une expertise inégalée dans la navigation des complexités du commerce africain et mondial, établissant des partenariats stratégiques qui renforcent notre capacité à servir nos clients avec excellence."
+    }
+  },
+  "news": {
+    "title": "Actualités SHIPPING GL",
+    "subtitle": "Restez informé de nos dernières actualités, événements et développements dans le domaine de la logistique en Afrique",
+    "filters": {
+      "categories": "Catégories",
+      "period": "Période",
+      "all": "Toutes les actualités",
+      "week": "Cette semaine",
+      "month": "Ce mois",
+      "year": "Cette année",
+      "allCategories": "Toutes les catégories",
+      "category": "Catégorie",
+      "event": "Événement",
+      "sortBy": "Trier par",
+      "mostLiked": "Plus de likes",
+      "mostCommented": "Plus de commentaires",
+      "mostShared": "Plus de partages",
+      "startDate": "Date de début",
+      "endDate": "Date de fin",
+      "apply": "Appliquer",
+      "clear": "Effacer"
+    },
+    "categories": {
+      "all": "Toutes les actualités",
+      "operations": "Opérations",
+      "conferences": "Conférences",
+      "events": "Événements",
+      "meetings": "Rencontres",
+      "official": "Communiqués officiels",
+      "awards": "Récompenses",
+      "partnerships": "Partenariats"
+    },
+    "periods": {
+      "all": "Toute période",
+      "week": "Cette semaine",
+      "month": "Ce mois",
+      "year": "Cette année"
+    },
+    "messages": {
+      "likeRemoved": "Like retiré",
+      "liked": "Article liké !",
+      "loginRequired": "Veuillez vous connecter pour commenter",
+      "commentRequired": "Veuillez saisir un commentaire",
+      "commentAdded": "Commentaire ajouté avec succès !",
+      "messageRequired": "Veuillez saisir votre message",
+      "messageSent": "Message envoyé avec succès !",
+      "emailRequired": "Veuillez saisir votre adresse email",
+      "emailInvalid": "Veuillez saisir une adresse email valide",
+      "newsletterSuccess": "Inscription à la newsletter réussie !",
+      "contentRequired": "Veuillez saisir du contenu",
+      "postCreated": "Publication créée avec succès !"
+    },
+    "post": {
+      "like": "J'aime",
+      "comment": "Commenter",
+      "share": "Partager",
+      "readMore": "Lire la suite",
+      "publishedBy": "Publié par",
+      "seeMore": "Voir plus",
+      "comments": "commentaires"
+    },
+    "composer": {
+      "placeholder": "Quoi de neuf ?",
+      "whatOnMind": "Quoi de neuf, partagez vos réflexions...",
+      "create": "Créer une publication",
+      "publish": "Publier",
+      "photo": "Photo/Vidéo",
+      "event": "Événement",
+      "article": "Article"
+    },
+    "upcomingEvents": {
+      "title": "Événements à venir",
+      "seeAll": "Voir tout"
+    },
+    "noResults": "Aucune actualité trouvée",
+    "search": {
+      "title": "Recherche",
+      "placeholder": "Rechercher..."
+    },
+    "contact": {
+      "title": "Nous contacter",
+      "placeholder": "Votre message...",
+      "send": "Envoyer",
+      "quickContact": "Contact Rapide",
+      "description": "Besoin d'aide ? Contactez-nous directement"
+    },
+    "newsletter": {
+      "title": "Newsletter",
+      "description": "Recevez nos dernières actualités par email",
+      "placeholder": "Votre email...",
+      "emailPlaceholder": "votre.email@exemple.com",
+      "subscribe": "S'abonner"
+    },
+    "events": {
+      "title": "Événements à venir"
+    },
+    "commentForm": {
+      "title": "Ajouter un commentaire",
+      "placeholder": "Écrivez votre commentaire...",
+      "publish": "Publier",
+      "cancel": "Annuler",
+      "loginRequired": "Veuillez vous connecter pour commenter"
+    }
+  },
+  "partners": {
+    "title": "Nos Partenaires",
+    "hero": {
+      "title": "Nos Partenaires Fidèles",
+      "subtitle": "Nous sommes fiers de collaborer avec ces organisations prestigieuses qui nous font confiance pour leurs besoins logistiques."
+    },
+    "categories": {
+      "international": "Organisations Internationales",
+      "humanitarian": "Organisations Humanitaires",
+      "development": "Agences de Développement",
+      "transport": "Transport et Logistique",
+      "health": "Organisations de Santé",
+      "others": "Autres Partenaires",
+      "physical": "Partenaires Physiques"
+    },
+    "withContract": "Avec un contrat",
+    "headquarters": "Siège",
+    "contact": "Contact",
+    "unicef": {
+      "description": "Notre collaboration avec l'UNICEF permet d'assurer la livraison rapide et sécurisée de fournitures essentielles pour les enfants dans les zones les plus reculées."
+    },
+    "undp": {
+      "description": "En collaboration avec le PNUD, nous contribuons au développement durable à travers des solutions logistiques innovantes."
+    },
+    "unfpa": {
+      "description": "Partenariat pour la distribution de fournitures médicales et de santé reproductive."
+    },
+    "monusco": {
+      "description": "Partenariat pour les opérations de maintien de la paix en RDC."
+    },
+    "msf": {
+      "description": "Partenariat pour l'acheminement de l'aide médicale d'urgence."
+    },
+    "msfBelgium": {
+      "description": "Collaboration pour l'aide médicale humanitaire."
+    },
+    "mercyCorps": {
+      "description": "Partenariat pour l'aide humanitaire et le développement."
+    },
+    "saveTheChildren": {
+      "description": "Collaboration pour l'aide aux enfants vulnérables."
+    },
+    "usaid": {
+      "description": "Partenariat pour le développement international."
+    },
+    "cordaid": {
+      "description": "Collaboration pour le développement et l'aide humanitaire."
+    },
+    "enabel": {
+      "description": "Agence belge de développement."
+    },
+    "cmaCgm": {
+      "description": "Leader mondial du transport maritime."
+    },
+    "maersk": {
+      "description": "Solutions de transport maritime intégrées."
+    },
+    "geodis": {
+      "description": "Solutions logistiques globales."
+    },
+    "imaWorldHealth": {
+      "description": "Partenariat pour la santé mondiale."
+    },
+    "mebsGlobal": {
+      "description": "Services médicaux d'urgence."
+    },
+    "liquidTelecom": {
+      "description": "Solutions de connectivité pour la logistique."
+    },
+    "tractafric": {
+      "description": "Solutions de transport et équipements."
+    },
+    "villageReach": {
+      "description": "Innovation dans la chaîne d'approvisionnement de la santé."
+    },
+    "jeanMukendi": {
+      "description": "Expert en logistique avec plus de 15 ans d'expérience dans le transport international."
+    },
+    "marieDiallo": {
+      "description": "Spécialiste en dédouanement et conformité réglementaire."
+    },
+    "davidNkosi": {
+      "description": "Consultant en transport maritime et logistique portuaire."
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Connexion",
+      "subtitle": "Accédez à votre compte pour gérer vos expéditions",
+      "email": "Adresse e-mail",
+      "password": "Mot de passe",
+      "rememberMe": "Se souvenir de moi",
+      "forgotPassword": "Mot de passe oublié?",
+      "submit": "Se connecter",
+      "noAccount": "Vous n'avez pas de compte?",
+      "register": "S'inscrire",
+      "error": "Identifiants incorrects. Veuillez réessayer."
+    },
+    "register": {
+  "services": {
+    "learnMore": "En savoir plus"
+  },
+      "title": "Inscription",
+      "subtitle": "Créez un compte pour accéder à nos services complets",
+      "fullName": "Nom complet",
+      "email": "Adresse e-mail",
+      "phone": "Numéro de téléphone",
+      "company": "Entreprise (optionnel)",
+      "password": "Mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "terms": "J'accepte les conditions d'utilisation",
+      "submit": "S'inscrire",
+      "haveAccount": "Vous avez déjà un compte?",
+      "login": "Se connecter",
+      "error": "Une erreur s'est produite. Veuillez réessayer."
+    }
+  },
+  "footer": {
+    "company": "Entreprise",
+    "about": "À propos",
+    "services": "Services",
+    "contact": "Contact",
+    "careers": "Carrières",
+    "legal": "Mentions légales",
+    "services": {
+      "title": "Services",
+      "airFreight": "Fret Aérien",
+      "seaFreight": "Fret Maritime",
+      "transport": "Transport",
+      "warehousing": "Entreposage",
+      "moving": "Déménagement",
+      "customs": "Services Douaniers"
+    },
+    "resources": {
+      "title": "Ressources",
+      "tracking": "Suivi de cargaison",
+      "quotation": "Demande de cotation",
+      "faq": "FAQ",
+      "blog": "Blog",
+      "news": "Actualités"
+    },
+    "contact": {
+      "title": "Contact",
+      "address": "123 Avenue Commerce, Kinshasa, RDC",
+      "phone": "+243 123 456 789",
+      "email": "info@shipping-gl.com",
+      "hours": "Lun-Ven: 8h-18h"
+    },
+    "copyright": "© 2025 SHIPPING GL. Tous droits réservés.",
+    "socialMedia": "Réseaux sociaux"
+  }
+}

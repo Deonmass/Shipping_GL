@@ -1,0 +1,467 @@
+{
+  "navigation": {
+    "home": "首页",
+    "services": "服务",
+    "partners": "合作伙伴",
+    "news": "新闻",
+    "quotation": "报价",
+    "tracking": "跟踪",
+    "about": "关于我们",
+    "login": "登录",
+    "register": "注册",
+    "language": "语言"
+  },
+  "home": {
+    "hero": {
+      "title": "完整可靠的物流解决方案",
+      "subtitle": "您在运输、海关清关和物流需求方面值得信赖的合作伙伴",
+      "cta": "获取报价"
+    },
+    "services": {
+      "title": "我们的服务",
+      "subtitle": "综合物流解决方案，满足您的所有需求",
+      "airFreight": {
+        "title": "空运",
+        "description": "为您的紧急货物提供快速可靠的空运解决方案，覆盖全球。"
+      },
+      "seaFreight": {
+        "title": "海运",
+        "description": "为您的大宗或集装箱货物提供经济安全的海运服务。"
+      },
+      "transport": {
+        "title": "陆路运输",
+        "description": "为您的本地和区域配送提供可靠准时的公路运输服务。"
+      },
+      "warehousing": {
+        "title": "仓储",
+        "description": "安全的仓储解决方案，提供库存管理和高效配送。"
+      },
+      "moving": {
+        "title": "搬迁服务",
+        "description": "为个人和企业提供本地和国际定制搬迁服务。"
+      },
+      "customs": {
+        "title": "海关服务",
+        "description": "海关清关专业知识，帮助您合规便捷地进行进出口业务。"
+      }
+    },
+    "about": {
+      "title": "SHIPPING GL",
+      "subtitle": "您值得信赖的物流合作伙伴",
+      "description": "自成立以来，SHIPPING GL致力于以诚信、可靠和卓越的态度提供一流的物流服务。我们的专业团队不懈努力，确保您的货物安全准时到达目的地。",
+      "cta": "了解更多"
+    },
+    "testimonials": {
+      "title": "客户反馈",
+      "subtitle": "来自非洲和全球的满意合作伙伴",
+      "testimonial1": {
+        "text": "SHIPPING GL凭借其卓越的服务和海关专业知识，彻底改变了我们的供应链。我们对他们的效率和专业精神印象深刻。",
+        "author": "Jean Mukendi",
+        "position": "运营总监, MineTech DRC"
+      },
+      "testimonial2": {
+        "text": "我们信任SHIPPING GL处理我们所有的海运需求。他们的团队反应迅速、关注细节，并随时准备解决复杂的物流挑战。",
+        "author": "Marie Diallo",
+        "position": "物流经理, Afri-Commerce"
+      },
+      "testimonial3": {
+        "text": "SHIPPING GL的海关清关专业知识为我们节省了大量时间和资源。他们对当地法规的了解是无价的。",
+        "author": "David Nkosi",
+        "position": "首席执行官, Transaf Solutions"
+      }
+    },
+    "cta": {
+      "title": "准备优化您的物流吗？",
+      "subtitle": "立即联系我们，获取适合您特定需求的量身定制解决方案",
+      "button": "立即联系我们"
+    }
+  },
+  "services": {
+    "title": "我们的服务",
+    "subtitle": "满足您所有需求的全面物流解决方案",
+    "airFreight": {
+      "title": "空运",
+      "description": "我们的空运服务为您的紧急货物提供快速可靠的交付时间。通过我们的全球合作伙伴网络，我们确保您的空运货物得到安全处理和高效运输。",
+      "features": [
+        "国际快递服务",
+        "实时跟踪",
+        "海关文件管理",
+        "易碎品安全处理",
+        "适用于各种规模货物的解决方案"
+      ]
+    },
+    "seaFreight": {
+      "title": "海运",
+      "description": "我们的海运服务为运输大宗货物提供经济解决方案。无论您需要整箱(FCL)还是拼箱(LCL)，我们的专业知识都能确保您的海运货物安全高效。",
+      "features": [
+        "FCL和LCL服务",
+        "进出口清关",
+        "海运保险",
+        "集装箱跟踪",
+        "港到港和门到门协调"
+      ]
+    },
+    "transport": {
+      "title": "陆路运输",
+      "description": "我们的陆路运输服务确保在本地和跨境范围内可靠准时地交付您的货物。我们现代化的车队和经验丰富的司机确保您的财产在整个旅程中的安全。",
+      "features": [
+        "本地和跨境运输",
+        "定时交付",
+        "特殊货物运输",
+        "GPS车辆跟踪",
+        "综合多式联运解决方案"
+      ]
+    },
+    "warehousing": {
+      "title": "仓储",
+      "description": "我们安全的仓储设施为存储您的货物提供灵活的解决方案。通过先进的库存管理系统和合格的团队，我们确保您的库存得到保护和高效管理。",
+      "features": [
+        "短期和长期存储",
+        "电子化库存管理",
+        "配送服务",
+        "订单准备",
+        "安全监控设施"
+      ]
+    },
+    "moving": {
+      "title": "搬迁服务",
+      "description": "我们的定制搬迁服务处理您搬迁的所有方面，无论是本地还是国际。我们的专业团队确保以最大的谨慎包装、运输和拆包您的财物。",
+      "features": [
+        "本地和国际搬迁",
+        "专业打包和拆包",
+        "临时存储服务",
+        "贵重物品处理",
+        "全面保险"
+      ]
+    },
+    "customs": {
+      "title": "海关服务",
+      "description": "我们的海关清关专业知识使您能够轻松应对海关法规的复杂性。我们合格的海关代理确保您的进出口流程合规高效。",
+      "features": [
+        "进出口海关清关",
+        "关税分类建议",
+        "贸易法规指导",
+        "海关当局代表",
+        "完整合规的文件"
+      ]
+    }
+  },
+  "quotation": {
+    "title": "获取报价",
+    "subtitle": "获取针对您物流需求的个性化报价",
+    "form": {
+      "personalInfo": "个人信息",
+      "serviceInfo": "服务详情",
+      "name": "全名",
+      "company": "公司",
+      "email": "电子邮件地址",
+      "phone": "电话号码",
+      "serviceType": "服务类型",
+      "origin": "起点",
+      "destination": "目的地",
+      "cargoType": "货物类型",
+      "cargoWeight": "重量 (kg)",
+      "cargoVolume": "体积 (m³)",
+      "specialRequirements": "特殊要求",
+      "submit": "提交请求",
+      "success": "您的请求已成功发送。我们将尽快与您联系。",
+      "error": "发生错误。请重试。"
+    }
+  },
+  "tracking": {
+    "title": "货物追踪",
+    "subtitle": "实时追踪您货物的状态和位置",
+    "form": {
+      "trackingNumber": "追踪号码",
+      "search": "搜索",
+      "placeholder": "输入您的追踪号码",
+      "noResults": "未找到此追踪号码的结果",
+      "error": "发生错误。请重试。"
+    },
+    "result": {
+      "status": "状态",
+      "currentLocation": "当前位置",
+      "origin": "起点",
+      "destination": "目的地",
+      "departureDate": "出发日期",
+      "estimatedArrival": "预计到达",
+      "lastUpdate": "最后更新",
+      "history": "移动历史"
+    }
+  },
+  "about": {
+    "title": "关于 SHIPPING GL",
+    "subtitle": "您在非洲和全球值得信赖的物流合作伙伴",
+    "mission": {
+      "title": "我们的使命",
+      "description": "在SHIPPING GL，我们的使命是提供世界级的综合物流解决方案，简化客户的业务运营。我们致力于提供可靠、高效和个性化的服务，完美满足每个客户的特定需求。"
+    },
+    "vision": {
+      "title": "我们的愿景",
+      "paragraph1": "SHIPPING GL的愿景是通过专注于提高效率、降低成本和提高客户满意度，在我们地区的货物运输、储存和交付方式上产生影响。",
+      "paragraph2": "我们努力成为物流领域的领先者，将大湖地区与世界连接起来，并以其可靠性、透明度和对可持续发展的承诺而闻名。",
+      "paragraph3": "最终，创建一个透明且互联的全球供应链，使其他全球货运公司能够以最高效和最具成本效益的方式与其大湖地区的客户联系。",
+      "description": "我们的愿景是成为非洲领先的物流合作伙伴，以我们的服务卓越、诚信和在物流及国际贸易领域的持续创新而闻名。"
+    },
+    "mission": {
+      "title": "我们的使命",
+      "paragraph1": "通过专注于我们的运营，我们帮助合作伙伴有效地规划和实现他们的目标。我们在确保货物在广阔而具有挑战性的地区快速顺利运输方面发挥着关键作用。",
+      "paragraph2": "这通过提高效率和缩短交货时间使该地区的企业受益。",
+      "description": "在SHIPPING GL，我们的使命是提供世界级的综合物流解决方案，简化客户的业务运营。我们致力于提供可靠、高效和个性化的服务，完美满足每个客户的特定需求。"
+    },
+    "statement": {
+      "title": "我们的声明",
+      "paragraph1": "SHIPPING GL希望以可持续的方式行事，尊重规则和法规、文化差异和环境。"
+    },
+    "values": {
+      "title": "我们的价值观",
+      "subtitle": "指导我们日常行动的原则",
+      "integrity": {
+        "title": "诚信",
+        "description": "我们在所有商业互动中坚持最高的道德标准。"
+      },
+      "excellence": {
+        "title": "卓越",
+        "description": "我们不断努力改进我们的服务并超越客户期望。"
+      },
+      "reliability": {
+        "title": "可靠性",
+        "description": "我们信守承诺并对我们的行动负责。"
+      },
+      "innovation": {
+        "title": "创新",
+        "description": "我们不断寻求改进我们流程和服务的新方法。"
+      },
+      "customerFocus": {
+        "title": "客户至上",
+        "description": "我们将客户需求置于所有决策的中心。"
+      }
+    },
+    "team": {
+      "title": "我们的团队",
+      "description": "SHIPPING GL为其在物流、运输和海关领域经验丰富的多元化专业团队感到自豪。我们的合格人员对本地和国际市场有深入了解，确保为每个地区的特定挑战提供适当的解决方案。"
+    },
+    "history": {
+      "title": "我们的历史",
+      "description": "SHIPPING GL创立之初就怀揣着革新非洲物流行业的愿景，现已成长为促进国际贸易的关键参与者。多年来，我们在应对非洲和全球贸易复杂性方面发展了无与伦比的专业知识，建立了增强我们卓越服务客户能力的战略合作伙伴关系。"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "登录",
+      "subtitle": "访问您的账户管理您的货物",
+      "email": "电子邮件地址",
+      "password": "密码",
+      "rememberMe": "记住我",
+      "forgotPassword": "忘记密码？",
+      "submit": "登录",
+      "noAccount": "没有账户？",
+      "register": "注册",
+      "error": "凭证不正确。请重试。"
+    },
+    "register": {
+      "title": "注册",
+      "subtitle": "创建账户访问我们的完整服务",
+      "fullName": "全名",
+      "email": "电子邮件地址",
+      "phone": "电话号码",
+      "company": "公司（可选）",
+      "password": "密码",
+      "confirmPassword": "确认密码",
+      "terms": "我同意使用条款",
+      "submit": "注册",
+      "haveAccount": "已有账户？",
+      "login": "登录",
+      "error": "发生错误。请重试。"
+    }
+  },
+  "partners": {
+    "title": "我们的合作伙伴",
+    "hero": {
+      "title": "我们忠实的合作伙伴",
+      "subtitle": "我们很自豪能与这些信任我们物流需求的知名组织合作。"
+    },
+    "categories": {
+      "all": "所有新闻",
+      "operations": "运营",
+      "conferences": "会议",
+      "events": "活动",
+      "meetings": "会面",
+      "official": "官方声明",
+      "awards": "奖项",
+      "partnerships": "合作伙伴关系"
+    },
+    "periods": {
+      "all": "所有时期",
+      "week": "本周",
+      "month": "本月",
+      "year": "今年"
+    },
+    "messages": {
+      "likeRemoved": "取消点赞",
+      "liked": "文章已点赞！",
+      "loginRequired": "请登录后评论",
+      "commentRequired": "请输入评论",
+      "commentAdded": "评论添加成功！",
+      "messageRequired": "请输入您的消息",
+      "messageSent": "消息发送成功！",
+      "emailRequired": "请输入您的邮箱地址",
+      "emailInvalid": "请输入有效的邮箱地址",
+      "newsletterSuccess": "订阅新闻通讯成功！"
+    },
+    "post": {
+      "like": "点赞",
+      "comment": "评论",
+      "share": "分享",
+      "readMore": "阅读更多",
+      "publishedBy": "发布者"
+    },
+    "search": {
+      "title": "搜索",
+      "placeholder": "搜索..."
+    },
+    "contact": {
+      "title": "联系我们",
+      "placeholder": "您的消息...",
+      "send": "发送"
+    },
+    "newsletter": {
+      "title": "新闻通讯",
+      "description": "通过邮件接收我们的最新消息",
+      "placeholder": "您的邮箱...",
+      "subscribe": "订阅"
+    },
+    "events": {
+      "title": "即将举行的活动"
+    },
+    "commentForm": {
+      "title": "添加评论",
+      "placeholder": "写下您的评论...",
+      "publish": "发布",
+      "cancel": "取消",
+      "loginRequired": "请登录后评论"
+    }
+  },
+  "partners": {
+    "title": "我们的合作伙伴",
+    "hero": {
+      "title": "我们忠实的合作伙伴",
+      "subtitle": "我们很自豪能与这些信任我们物流需求的知名组织合作。"
+    },
+    "categories": {
+      "international": "国际组织",
+      "humanitarian": "人道主义组织",
+      "development": "发展机构",
+      "transport": "运输和物流",
+      "health": "卫生组织",
+      "others": "其他合作伙伴",
+      "physical": "个人合作伙伴"
+    },
+    "withContract": "有合同",
+    "headquarters": "总部",
+    "contact": "联系方式",
+    "unicef": {
+      "description": "我们与联合国儿童基金会的合作确保向最偏远地区的儿童快速安全地运送必需品。"
+    },
+    "undp": {
+      "description": "与联合国开发计划署合作，我们通过创新的物流解决方案为可持续发展做出贡献。"
+    },
+    "unfpa": {
+      "description": "医疗和生殖健康用品分销合作伙伴关系。"
+    },
+    "monusco": {
+      "description": "刚果民主共和国维和行动合作伙伴关系。"
+    },
+    "msf": {
+      "description": "紧急医疗援助运送合作伙伴关系。"
+    },
+    "msfBelgium": {
+      "description": "人道主义医疗援助合作。"
+    },
+    "mercyCorps": {
+      "description": "人道主义援助和发展合作伙伴关系。"
+    },
+    "saveTheChildren": {
+      "description": "援助弱势儿童的合作。"
+    },
+    "usaid": {
+      "description": "国际发展合作伙伴关系。"
+    },
+    "cordaid": {
+      "description": "发展和人道主义援助合作。"
+    },
+    "enabel": {
+      "description": "比利时发展机构。"
+    },
+    "cmaCgm": {
+      "description": "海运全球领导者。"
+    },
+    "maersk": {
+      "description": "综合海运解决方案。"
+    },
+    "geodis": {
+      "description": "全球物流解决方案。"
+    },
+    "imaWorldHealth": {
+      "description": "全球健康合作伙伴关系。"
+    },
+    "mebsGlobal": {
+      "description": "紧急医疗服务。"
+    },
+    "liquidTelecom": {
+      "description": "物流连接解决方案。"
+    },
+    "tractafric": {
+      "description": "运输和设备解决方案。"
+    },
+    "villageReach": {
+      "description": "健康供应链创新。"
+    },
+    "jeanMukendi": {
+      "description": "拥有15年以上国际运输经验的物流专家。"
+    },
+    "marieDiallo": {
+      "description": "海关清关和法规合规专家。"
+    },
+    "davidNkosi": {
+      "description": "海运和港口物流顾问。"
+    }
+  },
+  "services": {
+    "learnMore": "了解更多"
+  },
+  "footer": {
+    "company": "公司",
+    "about": "关于",
+    "services": "服务",
+    "contact": "联系",
+    "careers": "职业",
+    "legal": "法律",
+    "services": {
+      "title": "服务",
+      "airFreight": "空运",
+      "seaFreight": "海运",
+      "transport": "陆路运输",
+      "warehousing": "仓储",
+      "moving": "搬迁服务",
+      "customs": "海关服务"
+    },
+    "resources": {
+      "title": "资源",
+      "tracking": "货物追踪",
+      "quotation": "获取报价",
+      "faq": "常见问题",
+      "blog": "博客",
+      "news": "新闻"
+    },
+    "contact": {
+      "title": "联系",
+      "address": "刚果民主共和国金沙萨商业大道123号",
+      "phone": "+243 123 456 789",
+      "email": "info@shipping-gl.com",
+      "hours": "周一至周五: 上午8点至下午6点"
+    },
+    "copyright": "© 2025 SHIPPING GL. 保留所有权利。",
+    "socialMedia": "社交媒体"
+  }
+}
