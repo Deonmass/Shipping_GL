@@ -687,7 +687,9 @@ const PostsPage: React.FC = () => {
                         isDark ? 'text-gray-300' : 'text-gray-600'
                       }`}
                     >
-                      {format(new Date(post.created_at), 'dd/MM/yyyy', { locale: fr })}
+                      {post.event_date 
+                        ? format(new Date(post.event_date), 'dd/MM/yyyy', { locale: fr })
+                        : 'Non définie'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <button

@@ -28,19 +28,24 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 }) => {
   return (
     <motion.div
-      whileHover={{ scale: onClick ? 1.02 : 1 }}
+      whileHover={{ scale: onClick ? 1.02 : 1, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}
       onClick={onClick}
-      className={`bg-gray-800 rounded-lg p-6 border border-gray-700 ${
-        onClick ? 'cursor-pointer hover:border-primary-500' : ''
-      } transition-colors ${className ?? ''}`}
+      className={`rounded-xl p-6 bg-gradient-to-br shadow-md ${
+        title.includes('Total') ? 'from-blue-500 to-blue-600' :
+        title.includes('Nouveaux') ? 'from-indigo-500 to-purple-600' :
+        title.includes('Consultés') ? 'from-amber-400 to-orange-500' :
+        'from-emerald-500 to-teal-600'
+      } text-white ${
+        onClick ? 'cursor-pointer' : ''
+      } transition-all duration-300 ${className ?? ''}`}
     >
       <div className="flex items-center justify-between mb-4">
-        <Icon className={`w-8 h-8 ${iconClassName ?? 'text-primary-500'}`} />
+        <div className={`p-2 rounded-lg bg-white/10 backdrop-blur-sm`}>
+          <Icon className={`w-6 h-6 text-white`} />
+        </div>
         {trend && (
           <span
-            className={`text-sm font-medium ${
-              trend.value >= 0 ? 'text-green-500' : 'text-red-500'
-            }`}
+            className={`text-sm font-medium text-white/90`}
           >
             {trend.value >= 0 ? '+' : ''}
             {trend.value}
@@ -48,8 +53,8 @@ export const StatsCard: React.FC<StatsCardProps> = ({
           </span>
         )}
       </div>
-      <h3 className="text-3xl font-bold text-white mb-2">{value}</h3>
-      <p className={`${titleClassName ?? 'text-gray-400'} text-sm`}>{title}</p>
+      <p className="text-2xl font-bold text-white drop-shadow-sm">{value}</p>
+      <h3 className={`text-sm font-medium text-white/90 ${titleClassName ?? ''}`}>{title}</h3>
     </motion.div>
   );
 };

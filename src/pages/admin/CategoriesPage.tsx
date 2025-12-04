@@ -13,7 +13,7 @@ interface Category {
   name: string;
   slug: string;
   description?: string;
-  type: 'news' | 'partner';
+  type: 'news' | 'partner' | 'job';
   created_at: string;
 }
 
@@ -32,9 +32,9 @@ const CategoriesPage: React.FC = () => {
     data: any[];
     dataKeys?: { key: string; name: string; color: string }[];
   } | null>(null);
-  const [stats, setStats] = useState({ total: 0, news: 0, partner: 0 });
+  const [stats, setStats] = useState({ total: 0, news: 0, partner: 0, job: 0 });
   const [showFormModal, setShowFormModal] = useState(false);
-  const [formData, setFormData] = useState<{ name: string; slug: string; type: 'news' | 'partner'; description: string }>({
+  const [formData, setFormData] = useState<{ name: string; slug: string; type: 'news' | 'partner' | 'job'; description: string }>({
     name: '',
     slug: '',
     type: 'news',
@@ -48,27 +48,33 @@ const CategoriesPage: React.FC = () => {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const { data: newsCategories, error: newsError } = await supabase
-        .from('news_categories')
-        .select('*');
+      const [
+        { data: newsCategories, error: newsError },
+        { data: partnerCategories, error: partnerError },
+        { data: jobCategories, error: jobError }
+      ] = await Promise.all([
+        supabase.from('news_categories').select('*'),
+        supabase.from('partner_categories').select('*'),
+        supabase.from('job_categories').select('*')
+      ]);
 
-      const { data: partnerCategories, error: partnerError } = await supabase
-        .from('partner_categories')
-        .select('*');
-
-      if (newsError) throw newsError;
+      if (newsError || partnerError || jobError) {
+        throw newsError || partnerError || jobError;
+      }
       if (partnerError) throw partnerError;
 
-      const allCategories: Category[] = [
+      const allCategories = [
         ...(newsCategories || []).map(cat => ({ ...cat, type: 'news' as const })),
-        ...(partnerCategories || []).map(cat => ({ ...cat, type: 'partner' as const }))
+        ...(partnerCategories || []).map(cat => ({ ...cat, type: 'partner' as const })),
+        ...(jobCategories || []).map(cat => ({ ...cat, type: 'job' as const }))
       ];
 
       setCategories(allCategories);
       setStats({
         total: allCategories.length,
-        news: allCategories.filter(c => c.type === 'news').length,
-        partner: allCategories.filter(c => c.type === 'partner').length
+        news: newsCategories?.length || 0,
+        partner: partnerCategories?.length || 0,
+        job: jobCategories?.length || 0
       });
     } catch (error: any) {
       console.error('Error fetching categories:', error);
@@ -89,42 +95,72 @@ const CategoriesPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.slug.trim()) {
-      toast.error("Nom et slug sont requis");
-      return;
-    }
     try {
-      const table = formData.type === 'news' ? 'news_categories' : 'partner_categories';
-      const { error } = await supabase
-        .from(table)
-        .insert([{ name: formData.name, slug: formData.slug, description: formData.description }]);
-      if (error) throw error;
-      toast.success('Catégorie ajoutée');
+      setLoading(true);
+      const tableName = 
+        formData.type === 'news' ? 'news_categories' :
+        formData.type === 'partner' ? 'partner_categories' :
+        'job_categories';
+      
+      if (selectedCategory) {
+        // Mise à jour
+        const { error } = await supabase
+          .from(tableName)
+          .update({ 
+            name: formData.name,
+            slug: formData.slug,
+            description: formData.description || null
+          })
+          .eq('id', selectedCategory.id);
+
+        if (error) throw error;
+        toast.success('Catégorie mise à jour avec succès');
+      } else {
+        // Création
+        const { error } = await supabase
+          .from(tableName)
+          .insert([{ 
+            name: formData.name,
+            slug: formData.slug,
+            description: formData.description || null
+          }]);
+
+        if (error) throw error;
+        toast.success('Catégorie créée avec succès');
+      }
       setShowFormModal(false);
       fetchCategories();
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || 'Erreur lors de l\'ajout');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDelete = async (id: string, type: 'news' | 'partner') => {
+  const handleDelete = async (id: string, type: 'news' | 'partner' | 'job') => {
     try {
-      const tableName = type === 'news' ? 'news_categories' : 'partner_categories';
+      setLoading(true);
+      const tableName = 
+        type === 'news' ? 'news_categories' :
+        type === 'partner' ? 'partner_categories' :
+        'job_categories';
+      
       const { error } = await supabase
         .from(tableName)
         .delete()
         .eq('id', id);
 
       if (error) throw error;
-
       toast.success('Catégorie supprimée avec succès');
       fetchCategories();
-    } catch (error: any) {
-      console.error('Error deleting category:', error);
-      toast.error(error.message || 'Erreur lors de la suppression');
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la catégorie:', error);
+      toast.error('Erreur lors de la suppression de la catégorie');
+    } finally {
+      setLoading(false);
+      setShowDeleteConfirm(null);
     }
-    setShowDeleteConfirm(null);
   };
 
   const filteredCategories = categories.filter(category => {
@@ -155,9 +191,11 @@ const CategoriesPage: React.FC = () => {
   const typeDistribution = React.useMemo(() => {
     const news = categories.filter(c => c.type === 'news').length;
     const partner = categories.filter(c => c.type === 'partner').length;
+    const job = categories.filter(c => c.type === 'job').length;
     return [
       { name: 'Actualités', value: news },
-      { name: 'Partenaires', value: partner }
+      { name: 'Partenaires', value: partner },
+      { name: 'Postes', value: job }
     ];
   }, [categories]);
 
@@ -225,6 +263,14 @@ const CategoriesPage: React.FC = () => {
             iconClassName="text-white"
             titleClassName="text-white"
           />
+          <StatsCard
+            title="Postes"
+            value={stats.job}
+            icon={Tag}
+            className="bg-gradient-to-br from-purple-600 to-purple-700"
+            iconClassName="text-white"
+            titleClassName="text-white"
+          />
         </div>
         <div className="flex justify-between items-center gap-4">
           <div className="flex gap-4">
@@ -258,6 +304,7 @@ const CategoriesPage: React.FC = () => {
               <option value="all">Tous les types</option>
               <option value="news">Actualités</option>
               <option value="partner">Partenaires</option>
+              <option value="job">Postes</option>
             </select>
           </div>
           {/* Add button moved to header */}
@@ -327,12 +374,14 @@ const CategoriesPage: React.FC = () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    category.type === 'news'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-green-100 text-green-800'
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    category.type === 'news' 
+                      ? 'bg-blue-100 text-blue-800' 
+                      : category.type === 'partner'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-purple-100 text-purple-800'
                   }`}>
-                    {category.type === 'news' ? 'Actualités' : 'Partenaires'}
+                    {category.type === 'news' ? 'Actualités' : category.type === 'partner' ? 'Partenaires' : 'Poste'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -470,7 +519,7 @@ const CategoriesPage: React.FC = () => {
                     Type
                   </label>
                   <p className={isDark ? 'text-white' : 'text-gray-900'}>
-                    {selectedCategory.type === 'news' ? 'Actualités' : 'Partenaires'}
+                    {selectedCategory.type === 'news' ? 'Actualités' : selectedCategory.type === 'partner' ? 'Partenaires' : 'Poste'}
                   </p>
                 </div>
                 {selectedCategory.description && (
@@ -571,15 +620,13 @@ const CategoriesPage: React.FC = () => {
                   </label>
                   <select
                     value={formData.type}
-                    onChange={(e) => handleFormChange('type', e.target.value as 'news' | 'partner')}
-                    className={`w-full rounded-lg px-4 py-2 focus:ring-primary-500 focus:border-primary-500 border ${
-                      isDark
-                        ? 'bg-gray-700 border-gray-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-900'
-                    }`}
+                    onChange={(e) => setFormData({...formData, type: e.target.value as 'news' | 'partner' | 'job'})}
+                    className="w-full p-2 border rounded-md"
+                    required
                   >
                     <option value="news">Actualités</option>
                     <option value="partner">Partenaires</option>
+                    <option value="job">Poste recherché</option>
                   </select>
                 </div>
                 <div>

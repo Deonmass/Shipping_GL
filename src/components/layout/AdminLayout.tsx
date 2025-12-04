@@ -10,6 +10,7 @@ import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import './AdminMenu.css';
 
 const ADMIN_UI_VERSION = '2025-11-21-menu-layout-v1';
 
@@ -256,6 +257,7 @@ const AdminLayout: React.FC = () => {
     { key: 'partners', path: '/admin/partners', icon: Handshake, label: 'Partenaires', keywords: ['partenaire', 'partner'] },
     { key: 'posts', path: '/admin/posts', icon: FileText, label: 'Posts', keywords: ['articles', 'news'] },
     { key: 'services', path: '/admin/services', icon: Wrench, label: 'Services', keywords: ['services', 'service'] },
+    { key: 'menu_visibility', path: '/admin/menu-visibility', icon: Menu, label: 'Visibilité du menu', keywords: ['menu', 'visibilité', 'navigation'] },
     { key: 'quote_requests', path: '/admin/quote-requests', icon: Mail, label: 'Demandes de devis', keywords: ['devis', 'quote', 'demande de devis'] },
     { key: 'comments', path: '/admin/comments', icon: MessageSquare, label: 'Commentaires', keywords: ['commentaires'] },
     { key: 'likes', path: '/admin/likes', icon: Heart, label: 'Likes', keywords: ['likes'] },
@@ -387,10 +389,8 @@ const AdminLayout: React.FC = () => {
                     sidebarExpanded ? 'justify-start' : 'justify-center'
                   } p-2 rounded-lg ${
                     location.pathname === '/admin/dashboard'
-                      ? 'text-white bg-red-600'
-                      : theme === 'dark'
-                        ? 'text-gray-400 hover:text-white hover:bg-gray-700'
-                        : 'text-gray-700 hover:text-gray-900 hover:bg-slate-100'
+                      ? 'admin-menu-active'
+                      : `admin-menu-item ${theme}`
                   }`}
                 >
                   <BarChart3
@@ -411,9 +411,7 @@ const AdminLayout: React.FC = () => {
                   className={`w-full flex items-center ${
                     sidebarExpanded ? 'justify-between' : 'justify-center'
                   } p-2 rounded-lg ${
-                    theme === 'dark'
-                      ? 'text-gray-400 hover:text-white hover:bg-gray-700'
-                      : 'text-gray-700 hover:text-gray-900 hover:bg-slate-100'
+                    `admin-menu-item ${theme}`
                   }`}
                 >
                   <div className="flex items-center">
@@ -440,14 +438,12 @@ const AdminLayout: React.FC = () => {
                               sidebarExpanded ? 'justify-start pl-6' : 'justify-center'
                             } p-2 rounded-lg text-sm ${
                               location.pathname === item.path
-                                ? 'text-white bg-red-600'
+                                ? 'admin-menu-active'
                                 : sidebarExpanded
-                                  ? theme === 'dark'
-                                    ? 'text-gray-400 hover:text-white hover:bg-gray-700'
-                                    : 'text-gray-700 hover:text-gray-900 hover:bg-slate-100'
+                                  ? `admin-submenu-item ${theme}`
                                   : theme === 'dark'
                                     ? 'text-primary-400 hover:text-white hover:bg-gray-700'
-                                    : 'text-primary-600 hover:text-primary-700 hover:bg-slate-100'
+                                    : 'text-primary-600 hover:text-primary-700 hover:bg-slate-200'
                             }`}
                           >
                             <item.icon className="w-4 h-4" />
@@ -470,9 +466,7 @@ const AdminLayout: React.FC = () => {
                   className={`w-full flex items-center ${
                     sidebarExpanded ? 'justify-between' : 'justify-center'
                   } p-2 rounded-lg ${
-                    theme === 'dark'
-                      ? 'text-gray-400 hover:text-white hover:bg-gray-700'
-                      : 'text-gray-700 hover:text-gray-900 hover:bg-slate-100'
+                    `admin-menu-item ${theme}`
                   }`}
                 >
                   <div className="flex items-center">
@@ -542,9 +536,7 @@ const AdminLayout: React.FC = () => {
                   className={`w-full flex items-center ${
                     sidebarExpanded ? 'justify-between' : 'justify-center'
                   } p-2 rounded-lg ${
-                    theme === 'dark'
-                      ? 'text-gray-400 hover:text-white hover:bg-gray-700'
-                      : 'text-gray-700 hover:text-gray-900 hover:bg-slate-100'
+                    `admin-menu-item ${theme}`
                   }`}
                 >
                   <div className="flex items-center">

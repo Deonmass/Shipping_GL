@@ -398,22 +398,35 @@ const ServicesPage: React.FC = () => {
           {loadError}
         </div>
       )}
-      {/* Services Overview Section */}
-      <section className="relative pt-24 pb-28 bg-primary-700">
-        {/* Titre centré dans la largeur du site */}
-        <div className="container-custom">
+      {/* Bannière d'en-tête avec image de fond */}
+      <div className="relative py-20 md:py-28 overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: 'url(https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/World_map_-_low_resolution.svg/1200px-World_map_-_low_resolution.svg.png)',
+            opacity: 1.15,
+            filter: 'grayscale(100%) brightness(3.5)'
+          }}
+        />
+        <div className="absolute inset-0 bg-red-900/90" />
+        <div className="relative z-10 container-custom text-center px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-center mb-12"
           >
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 text-white drop-shadow-lg">{t('services.title')}</h1>
-            <p className="text-xl text-red-50 max-w-3xl mx-auto drop-shadow-md">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white drop-shadow-lg">
+              {t('services.title')}
+            </h1>
+            <p className="text-xl text-white/90 max-w-3xl mx-auto drop-shadow-md">
               {t('services.subtitle')}
             </p>
           </motion.div>
         </div>
+      </div>
+
+      {/* Section principale des services */}
+      <section className="relative py-12 bg-white">
 
         {/* Grille pleine largeur avec léger padding latéral */}
         <div className="px-4 sm:px-6 lg:px-8">
