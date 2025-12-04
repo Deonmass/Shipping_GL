@@ -1,0 +1,949 @@
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { Plus, Search, Eye, Pencil, Trash2, Filter, RefreshCw } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import Swal from 'sweetalert2';
+
+// Import dynamique de ReactQuill pour éviter les problèmes de rendu côté navigateur
+const ReactQuill = lazy(() => import('react-quill'));
+import 'react-quill/dist/quill.snow.css';
+
+interface OutletContext {
+  theme: 'light' | 'dark';
+}
+
+interface JobOffer {
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  type: 'CDI' | 'CDD' | 'Stage' | 'Alternance';
+  status: 'draft' | 'published' | 'archived';
+  created_at: string;
+  updated_at?: string;
+  salary_min?: number;
+  salary_max?: number;
+  experience_level?: string;
+  department?: string;
+  closing_date?: string;
+}
+
+const JobOfferPage: React.FC = () => {
+  // ... (le reste du code du composant)
+  const context = useOutletContext<OutletContext>();
+  const theme = context?.theme || 'light';
+  
+  const [offers, setOffers] = useState<JobOffer[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [selectedOffer, setSelectedOffer] = useState<JobOffer | null>(null);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [viewingOffer, setViewingOffer] = useState<JobOffer | null>(null);
+  const [formData, setFormData] = useState<Partial<JobOffer>>({ 
+    title: '', 
+    description: '', 
+    location: '', 
+    type: 'CDI', 
+    status: 'draft',
+    closing_date: ''
+  });
+
+  // État pour les statistiques
+  const [stats, setStats] = useState({
+    total: 0,
+    published: 0,
+    draft: 0,
+    archived: 0
+  });
+
+  // Gestion des offres
+  const handleCreate = () => {
+    setSelectedOffer(null);
+    setIsEditing(false);
+    setFormData({ 
+      title: '', 
+      description: '', 
+      location: '', 
+      type: 'CDI', 
+      status: 'draft',
+      closing_date: ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (offer: JobOffer) => {
+    setSelectedOffer(offer);
+    setFormData({
+      ...offer,
+      closing_date: offer.closing_date ? offer.closing_date.split('T')[0] : ''
+    });
+    setIsEditing(true);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!id) {
+      console.error('Aucun ID fourni pour la suppression');
+      return;
+    }
+    
+    console.log('Tentative de suppression de l\'offre avec l\'ID:', id);
+    
+    const result = await Swal.fire({
+      title: 'Êtes-vous sûr ?',
+      text: 'Cette action est irréversible !',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, supprimer',
+      cancelButtonText: 'Annuler',
+      background: theme === 'dark' ? '#1f2937' : '#ffffff',
+      color: theme === 'dark' ? '#ffffff' : '#111827',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        console.log('Tentative de suppression...');
+        const { error } = await supabase
+          .from('job_offers')
+          .delete()
+          .eq('id', id);
+
+        console.log('Réponse de la suppression:', { error });
+
+        if (error) {
+          // Si l'erreur indique que la ligne n'existe pas, on considère que c'est bon
+          if (error.code === '22P02' || error.message.includes('not found')) {
+            console.log('L\'offre était déjà supprimée');
+          } else {
+            throw error;
+          }
+        }
+
+        // Rafraîchir la liste dans tous les cas
+        await fetchOffers();
+        
+        // Afficher un message de succès
+        await Swal.fire({
+          icon: 'success',
+          title: 'Opération réussie',
+          text: 'L\'offre a été supprimée avec succès.',
+          background: theme === 'dark' ? '#1f2937' : '#ffffff',
+          color: theme === 'dark' ? '#ffffff' : '#111827',
+        });
+      } catch (error) {
+        console.error('Error deleting job offer:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Erreur',
+          text: 'Une erreur est survenue lors de la suppression de l\'offre.',
+          background: theme === 'dark' ? '#1f2937' : '#ffffff',
+          color: theme === 'dark' ? '#ffffff' : '#111827',
+        });
+      }
+    }
+  };
+
+  const handleStatusChange = async (id: string, newStatus: 'draft' | 'published' | 'archived') => {
+    try {
+      const { error } = await supabase
+        .from('job_offers')
+        .update({ 
+          status: newStatus, 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      fetchOffers();
+    } catch (error) {
+      console.error('Error updating job offer status:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Une erreur est survenue lors de la mise à jour du statut.',
+        background: theme === 'dark' ? '#1f2937' : '#ffffff',
+        color: theme === 'dark' ? '#ffffff' : '#111827',
+      });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      if (isEditing && selectedOffer) {
+        // Mise à jour de l'offre existante
+        const { error } = await supabase
+          .from('job_offers')
+          .update({
+            ...formData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', selectedOffer.id);
+
+        if (error) throw error;
+        
+        await Swal.fire({
+          icon: 'success',
+          title: 'Succès !',
+          text: 'L\'offre a été mise à jour avec succès.',
+          background: theme === 'dark' ? '#1f2937' : '#ffffff',
+          color: theme === 'dark' ? '#ffffff' : '#111827',
+        });
+      } else {
+        // Création d'une nouvelle offre
+        const { data, error } = await supabase
+          .from('job_offers')
+          .insert([
+            { 
+              ...formData,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+          ])
+          .select();
+
+        if (error) throw error;
+        
+        await Swal.fire({
+          icon: 'success',
+          title: 'Succès !',
+          text: 'L\'offre a été créée avec succès.',
+          background: theme === 'dark' ? '#1f2937' : '#ffffff',
+          color: theme === 'dark' ? '#ffffff' : '#111827',
+        });
+      }
+
+      setIsModalOpen(false);
+      fetchOffers();
+    } catch (error) {
+      console.error('Error saving job offer:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Une erreur est survenue lors de l\'enregistrement de l\'offre.',
+        background: theme === 'dark' ? '#1f2937' : '#ffffff',
+        color: theme === 'dark' ? '#ffffff' : '#111827',
+      });
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target as HTMLInputElement;
+    
+    setFormData(prev => {
+      // Pour les champs de type date, on conserve le format YYYY-MM-DD
+      if (type === 'date') {
+        return {
+          ...prev,
+          [name]: value // On garde la valeur brute pour l'input date
+        };
+      }
+      return {
+        ...prev,
+        [name]: value
+      };
+    });
+  };
+
+  // Configuration de l'éditeur de texte riche
+  const modules = useMemo(() => ({
+    toolbar: [
+      ['bold', 'italic', 'underline', 'strike'],
+      ['blockquote', 'code-block'],
+      [{ 'header': 1 }, { 'header': 2 }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'script': 'sub'}, { 'script': 'super' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      [{ 'direction': 'rtl' }],
+      [{ 'size': ['small', false, 'large', 'huge'] }],
+      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'font': [] }],
+      [{ 'align': [] }],
+      ['clean'],
+      ['link', 'image']
+    ],
+  }), []);
+
+  // Charger les offres d'emploi
+  useEffect(() => {
+    fetchOffers();
+  }, []);
+
+  const fetchOffers = async (isRefresh: boolean = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    try {
+      const { data, error } = await supabase
+        .from('job_offers')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      setOffers(data || []);
+      
+      // Calculer les statistiques
+      if (data) {
+        setStats({
+          total: data.length,
+          published: data.filter((offer: JobOffer) => offer.status === 'published').length,
+          draft: data.filter((offer: JobOffer) => offer.status === 'draft').length,
+          archived: data.filter((offer: JobOffer) => offer.status === 'archived').length
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des offres:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Impossible de charger les offres d\'emploi',
+        background: theme === 'dark' ? '#1f2937' : '#ffffff',
+        color: theme === 'dark' ? '#ffffff' : '#111827',
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Calculate days remaining for closing date with color coding
+  const getDaysRemaining = (closingDate: string) => {
+    if (!closingDate) return { days: null, color: 'gray' };
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const closing = new Date(closingDate);
+    closing.setHours(0, 0, 0, 0);
+    
+    // If closing date is in the past
+    if (closing < today) return { days: 0, color: 'red' };
+    
+    const diffTime = closing.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 3) return { days: diffDays, color: 'red' };
+    if (diffDays <= 7) return { days: diffDays, color: 'orange' };
+    return { days: diffDays, color: 'green' };
+  };
+
+  // Toggle offer status between published and draft
+  const toggleOfferStatus = async (offer: JobOffer) => {
+    const newStatus = offer.status === 'published' ? 'draft' : 'published';
+    await handleStatusChange(offer.id, newStatus);
+  };
+
+  // Handle view details
+  const handleViewDetails = (offer: JobOffer) => {
+    setViewingOffer(offer);
+    // You can implement a modal or navigate to a details page here
+    // For now, we'll just show an alert with the details
+    Swal.fire({
+      title: offer.title,
+      html: `
+        <div class="text-left">
+          <p><strong>Type:</strong> ${offer.type}</p>
+          <p><strong>Localisation:</strong> ${offer.location}</p>
+          <p><strong>Département:</strong> ${offer.department || 'Non spécifié'}</p>
+          <p><strong>Date de clôture:</strong> ${offer.closing_date ? new Date(offer.closing_date).toLocaleDateString('fr-FR') : 'Non définie'}</p>
+          <p><strong>Statut:</strong> ${offer.status === 'published' ? 'Publiée' : offer.status === 'draft' ? 'Brouillon' : 'Archivée'}</p>
+          <div class="mt-4">
+            <h4 class="font-bold">Description:</h4>
+            <div class="border rounded p-2 max-h-40 overflow-y-auto">${offer.description || 'Aucune description'}</div>
+          </div>
+        </div>
+      `,
+      showCloseButton: true,
+      background: theme === 'dark' ? '#1f2937' : '#ffffff',
+      color: theme === 'dark' ? '#ffffff' : '#111827',
+    });
+  };
+
+  // Filtrer les offres par recherche
+  const filteredOffers = useMemo(() => {
+    return [...offers].filter(offer => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        offer.title.toLowerCase().includes(searchLower) ||
+        (offer.description && offer.description.toLowerCase().includes(searchLower)) ||
+        (offer.location && offer.location.toLowerCase().includes(searchLower)) ||
+        (offer.department && offer.department.toLowerCase().includes(searchLower))
+      );
+    });
+  }, [offers, searchTerm]);
+
+  return (
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
+      <Suspense fallback={<div>Chargement...</div>}>
+      <div className="mb-8 mt-20 ">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl text-white font-bold">Gestion des offres d'emploi</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Gérez et suivez vos offres d'emploi
+            </p>
+          </div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => fetchOffers(true)}
+              className={`inline-flex items-center px-3 py-2 border rounded-md text-sm font-medium ${
+                theme === 'dark'
+                  ? 'bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600'
+                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+              title="Rafraîchir"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Rafraîchir
+            </button>
+            <button
+              onClick={handleCreate}
+              className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+            >
+              <Plus className="-ml-1 mr-2 h-5 w-5" />
+              Nouvelle offre
+            </button>
+          </div>
+        </div>
+
+        {/* Barre de recherche */}
+        <div className="mb-6">
+          <div className="relative w-full">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              className={`block w-full pl-10 pr-3 py-2 border ${
+                theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+              } rounded-md leading-5 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+              placeholder="Rechercher une offre..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Cartes de statistiques */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {/* Carte Total */}
+          <div className={`p-5 rounded-xl ${
+            theme === 'dark' ? 'bg-gradient-to-br from-blue-900/50 to-blue-800/30 border border-blue-800/50' : 'bg-white border border-gray-200 shadow-sm'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-blue-200' : 'text-blue-600'}`}>Total des offres</p>
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                </svg>
+              </div>
+            </div>
+            <p className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{stats.total}</p>
+            <div className="mt-1 text-sm">
+              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
+                Toutes les offres confondues
+              </span>
+            </div>
+          </div>
+
+          {/* Carte Publiées */}
+          <div className={`p-5 rounded-xl ${
+            theme === 'dark' ? 'bg-gradient-to-br from-green-900/50 to-green-800/30 border border-green-800/50' : 'bg-white border border-gray-200 shadow-sm'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-green-200' : 'text-green-600'}`}>Publiées</p>
+              <div className="p-2 rounded-lg bg-green-500/10">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            <p className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{stats.published}</p>
+            <div className="mt-1 text-sm">
+              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
+                {stats.total > 0 ? Math.round((stats.published / stats.total) * 100) : 0}% du total
+              </span>
+            </div>
+          </div>
+
+          {/* Carte Brouillons */}
+          <div className={`p-5 rounded-xl ${
+            theme === 'dark' ? 'bg-gradient-to-br from-yellow-900/50 to-yellow-800/30 border border-yellow-800/50' : 'bg-white border border-gray-200 shadow-sm'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-yellow-200' : 'text-yellow-600'}`}>Brouillons</p>
+              <div className="p-2 rounded-lg bg-yellow-500/10">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                </svg>
+              </div>
+            </div>
+            <p className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{stats.draft}</p>
+            <div className="mt-1 text-sm">
+              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
+                {stats.total > 0 ? Math.round((stats.draft / stats.total) * 100) : 0}% du total
+              </span>
+            </div>
+          </div>
+
+          {/* Carte Expirées */}
+          <div className={`p-5 rounded-xl ${
+            theme === 'dark' ? 'bg-gradient-to-br from-gray-700/50 to-gray-600/30 border border-gray-600/50' : 'bg-white border border-gray-200 shadow-sm'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-600'}`}>Expirées</p>
+              <div className="p-2 rounded-lg bg-gray-500/10">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            <p className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{stats.archived}</p>
+            <div className="mt-1 text-sm">
+              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
+                {stats.total > 0 ? Math.round((stats.archived / stats.total) * 100) : 0}% du total
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      
+      <div className={`rounded-lg shadow overflow-hidden ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+        {loading ? (
+          <div className="p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="mt-4 text-gray-500 dark:text-gray-400">Chargement des offres...</p>
+          </div>
+        ) : (
+          <div className={`overflow-hidden rounded-lg border ${
+            theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+          }`}>
+            <table className="min-w-full divide-y">
+              <thead className={theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}>
+                <tr>
+                  <th scope="col" className={`px-6 py-3.5 text-left text-sm font-semibold ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-900'
+                  }`}>
+                    Titre
+                  </th>
+                  <th scope="col" className="px-6 py-3.5 text-left text-sm font-semibold text-gray-500">
+                    Localisation
+                  </th>
+                  <th scope="col" className="px-6 py-3.5 text-left text-sm font-semibold text-gray-500">
+                    Dates
+                  </th>
+                  <th scope="col" className="px-6 py-3.5 text-left text-sm font-semibold text-gray-500">
+                    Jours restants
+                  </th>
+                  <th scope="col" className="px-6 py-3.5 text-left text-sm font-semibold text-gray-500">
+                    Statut
+                  </th>
+                  <th scope="col" className="relative px-6 py-3.5">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${
+                theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'
+              } ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
+                {filteredOffers.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                      Aucune offre trouvée
+                    </td>
+                  </tr>
+                ) : (
+                  filteredOffers.map((offer) => (
+                    <tr
+                      key={offer.id}
+                      className={`${theme === 'dark' ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div>
+                            <div className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                              {offer.title}
+                            </div>
+                            {offer.department && (
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                {offer.department}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {offer.location || 'Non spécifiée'}
+                        </div>
+                        {offer.department && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            
+                            <div className="mt-1">
+                              <span className={`px-2 py-0.5 inline-flex text-xs leading-4 font-medium rounded-full ${
+                                theme === 'dark' ? 'bg-blue-900/50 text-blue-200' : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {offer.type}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-500'
+                      }`}>
+                        <div className="space-y-1">
+                          <div>
+                            <span className="font-medium">Création:</span> {new Date(offer.created_at).toLocaleDateString('fr-FR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric'
+                            })}
+                          </div>
+                          <div>
+                            <span className="font-medium">Clôture:</span> {offer.closing_date ? new Date(offer.closing_date).toLocaleDateString('fr-FR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric'
+                            }) : 'Non définie'}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {offer.closing_date ? (
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            getDaysRemaining(offer.closing_date).color === 'red' 
+                              ? 'bg-red-100 text-red-800' 
+                              : getDaysRemaining(offer.closing_date).color === 'orange'
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-green-100 text-green-800'
+                          }`}>
+                            {getDaysRemaining(offer.closing_date).days === 0 
+                              ? 'Expiré' 
+                              : `${getDaysRemaining(offer.closing_date).days} j`}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            Non défini
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex justify-end">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              className="sr-only peer" 
+                              checked={offer.status === 'published'}
+                              onChange={() => toggleOfferStatus(offer)}
+                              disabled={!!(offer.closing_date && getDaysRemaining(offer.closing_date).days === 0)}
+                            />
+                            <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${offer.status === 'published' ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+                          </label>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end items-center space-x-3">
+                          <button
+                            onClick={() => handleViewDetails(offer)}
+                            className={`inline-flex h-9 w-9 items-center justify-center 
+                            rounded-md border text-xs font-medium
+                            ${
+                              theme === 'dark'
+                                ? 'bg-blue-500/20 border-blue-500/30 text-blue-400 hover:bg-blue-500/30'
+                                : 'bg-blue-100 border-blue-200 text-blue-600 hover:bg-blue-200/50'
+                            }
+                            hover:shadow-md hover:-translate-y-0.5 
+                            transition-all duration-150`}
+                            title="Voir les détails"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleEdit(offer)}
+                            className={`inline-flex h-9 w-9 items-center justify-center 
+                            rounded-md border text-xs font-medium
+                            ${
+                              theme === 'dark'
+                                ? 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/30'
+                                : 'bg-yellow-100 border-yellow-200 text-yellow-600 hover:bg-yellow-200/50'
+                            }
+                            hover:shadow-md hover:-translate-y-0.5 
+                            transition-all duration-150`}
+                            title="Modifier"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(offer.id)}
+                            className={`inline-flex h-9 w-9 items-center justify-center 
+                            rounded-md border text-xs font-medium
+                            ${
+                              theme === 'dark'
+                                ? 'bg-red-500/20 border-red-500/30 text-red-400 hover:bg-red-500/30'
+                                : 'bg-red-100 border-red-200 text-red-600 hover:bg-red-200/50'
+                            }
+                            hover:shadow-md hover:-translate-y-0.5 
+                            transition-all duration-150`}
+                            title="Supprimer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                  )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Modal pour afficher/modifier une offre */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className={`rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                  {isEditing ? "Modifier l'offre" : "Nouvelle offre"}
+                </h2>
+                <button
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setSelectedOffer(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                >
+                  <span className="sr-only">Fermer</span>
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="title" className="block text-sm font-medium mb-1">
+                      Titre du poste *
+                    </label>
+                    <input
+                      type="text"
+                      id="title"
+                      name="title"
+                      required
+                      value={formData.title || ''}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 border rounded-md ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
+                      placeholder="Ex: Développeur Full Stack"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="type" className="block text-sm font-medium mb-1">
+                        Type de contrat *
+                      </label>
+                      <select
+                        id="type"
+                        name="type"
+                        required
+                        value={formData.type || 'CDI'}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
+                      >
+                        <option value="CDI">CDI</option>
+                        <option value="CDD">CDD</option>
+                        <option value="Stage">Stage</option>
+                        <option value="Alternance">Alternance</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="location" className="block text-sm font-medium mb-1">
+                        Localisation *
+                      </label>
+                      <input
+                        type="text"
+                        id="location"
+                        name="location"
+                        required
+                        value={formData.location || ''}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
+                        placeholder="Ex: Paris, France"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="department" className="block text-sm font-medium mb-1">
+                        Département / Service
+                      </label>
+                      <input
+                        type="text"
+                        id="department"
+                        name="department"
+                        value={formData.department || ''}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
+                        placeholder="Ex: Développement"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="experience_level" className="block text-sm font-medium mb-1">
+                        Niveau d'expérience
+                      </label>
+                      <input
+                        type="text"
+                        id="experience_level"
+                        name="experience_level"
+                        value={formData.experience_level || ''}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
+                        placeholder="Ex: Débutant accepté"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="salary_min" className="block text-sm font-medium mb-1">
+                        Salaire minimum (USD)
+                      </label>
+                      <input
+                        type="number"
+                        id="salary_min"
+                        name="salary_min"
+                        min="0"
+                        step="100"
+                        value={formData.salary_min || ''}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
+                        placeholder="Ex: 30000"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="salary_max" className="block text-sm font-medium mb-1">
+                        Salaire maximum (USD)
+                      </label>
+                      <input
+                        type="number"
+                        id="salary_max"
+                        name="salary_max"
+                        min="0"
+                        step="100"
+                        value={formData.salary_max || ''}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
+                        placeholder="Ex: 45000"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium mb-1">
+                      Description du poste *
+                    </label>
+                    <div className={`${theme === 'dark' ? 'bg-gray-700' : 'bg-white'} rounded-md`}>
+                      <Suspense fallback={<div className="p-2 text-gray-500">Chargement de l'éditeur...</div>}>
+                        <div className={theme === 'dark' ? 'quill-dark' : ''}>
+                          <ReactQuill
+                            theme="snow"
+                            value={formData.description || ''}
+                            onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
+                            modules={modules}
+                            className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+                            placeholder="Décrivez en détail le poste, les missions, les responsabilités..."
+                          />
+                        </div>
+                      </Suspense>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="status" className="block text-sm font-medium mb-1">
+                      Statut *
+                    </label>
+                    <select
+                      id="status"
+                      name="status"
+                      required
+                      value={formData.status || 'draft'}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 border rounded-md ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
+                    >
+                      <option value="draft">Brouillon</option>
+                      <option value="published">Publiée</option>
+                      <option value="archived">Archivée</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="closing_date" className="block text-sm font-medium mb-1">
+                      Date de clôture *
+                    </label>
+                    <input
+                      type="date"
+                      id="closing_date"
+                      name="closing_date"
+                      required
+                      min={new Date().toISOString().split('T')[0]}
+                      value={formData.closing_date ? formData.closing_date.split('T')[0] : ''}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 border rounded-md ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsModalOpen(false);
+                      setSelectedOffer(null);
+                    }}
+                    className={`px-4 py-2 rounded-md ${theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'} transition-colors`}
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    {isEditing ? 'Mettre à jour' : 'Créer l\'offre'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+      </Suspense>
+    </div>
+  );
+};
+
+export default JobOfferPage;

@@ -43,6 +43,11 @@ const AssignRolesPage: React.FC = () => {
     { key: 'users', label: 'Utilisateurs' },
     { key: 'users_assign_roles', label: 'Attribuer rôle' },
     { key: 'users_permissions', label: 'Permissions des rôles' },
+    // Groupe Recrutement
+    { key: 'recruitment', label: 'Recrutement', isGroup: true },
+    { key: 'job_offers', label: 'Offres', parent: 'recruitment' },
+    { key: 'candidates', label: 'Candidats', parent: 'recruitment' },
+    // Autres éléments
     { key: 'partners', label: 'Partenaires' },
     { key: 'posts', label: 'Posts' },
     { key: 'comments', label: 'Commentaires' },
@@ -60,6 +65,7 @@ const AssignRolesPage: React.FC = () => {
     { key: 'notifications_update', label: 'Notifications - Mises à jour du site' },
     { key: 'reports', label: 'Rapports' },
     { key: 'settings', label: 'Paramètres' },
+    { key: 'menu_visibility', label: 'Visibilité des menus' },
     { key: 'updates', label: 'Mises à jour' },
   ];
 

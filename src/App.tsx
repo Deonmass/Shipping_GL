@@ -41,6 +41,9 @@ import AssignRolesPage from './pages/admin/AssignRolesPage';
 import NotificationsPage from './pages/admin/NotificationsPage';
 import AdminServicesPage from './pages/admin/ServicesPage';
 import AdminQuoteRequestsPage from './pages/admin/QuoteRequestsPage';
+import CandidaturePage from './pages/admin/CandidaturePage';
+import JobOfferPage from './pages/admin/JobOfferPage';
+import MenuVisibilityPage from './pages/admin/MenuVisibilityPage';
 
 function App() {
   const location = useLocation();
@@ -82,23 +85,29 @@ function App() {
             </ProtectedRoute>
           }>
             <Route path="dashboard" element={<AdminDashboardPage />} />
-            <Route path="users" element={<AdminUsersPage />} />
-            <Route path="users/visitors" element={<AdminUsersPage />} />
-            <Route path="users/admins" element={<AdminUsersPage />} />
-            <Route path="users/assign-roles" element={<AssignRolesPage />} />
-            <Route path="users/permissions" element={<RolePermissionsPage />} />
+            <Route path="users">
+              <Route index element={<AdminUsersPage />} />
+              <Route path="visitors" element={<AdminUsersPage />} />
+              <Route path="admins" element={<AdminUsersPage />} />
+              <Route path="assign-roles" element={<AssignRolesPage />} />
+              <Route path="permissions" element={<RolePermissionsPage />} />
+            </Route>
             <Route path="partners" element={<AdminPartnersPage />} />
             <Route path="posts" element={<PostsPage />} />
             <Route path="services" element={<AdminServicesPage />} />
             <Route path="quote-requests" element={<AdminQuoteRequestsPage />} />
-            <Route path="comments" element={<CommentsPage />} />
+            <Route path="candidatures" element={<CandidaturePage />} />
+            <Route path="offres-emploi" element={<JobOfferPage />} />
             <Route path="likes" element={<LikesPage />} />
+            <Route path="comments" element={<CommentsPage />} />
             <Route path="events" element={<EventsPage />} />
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="newsletter" element={<NewsletterPage />} />
             <Route path="reports" element={<AdminReportsPage />} />
             <Route path="settings" element={<AdminSettingsPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="menu-visibility" element={<MenuVisibilityPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
       </AnimatePresence>

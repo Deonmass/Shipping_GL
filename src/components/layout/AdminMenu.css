@@ -1,0 +1,35 @@
+.admin-menu-item {
+  @apply transition-colors duration-200;
+}
+
+.admin-menu-item.dark {
+  @apply text-gray-200 hover:text-white hover:bg-gray-700;
+}
+
+.admin-menu-item.light {
+  @apply text-gray-800 hover:text-gray-900 hover:bg-slate-200;
+}
+
+.admin-submenu-item {
+  @apply transition-colors duration-200;
+}
+
+.admin-submenu-item.dark {
+  @apply text-gray-200 hover:text-white hover:bg-gray-700;
+}
+
+.admin-submenu-item.light {
+  @apply text-gray-800 hover:text-gray-900 hover:bg-slate-200;
+}
+
+.admin-menu-active {
+  @apply text-white bg-red-600;
+}
+
+.admin-menu-icon {
+  @apply w-5 h-5;
+}
+
+.admin-menu-text {
+  @apply ml-3 whitespace-nowrap hidden md:inline;
+}

@@ -43,22 +43,7 @@ const RolePermissionsPage: React.FC = () => {
   const [actionMenuRoleId, setActionMenuRoleId] = useState<string | null>(null);
 
   const baseRoles: string[] = [];
-  const resources = ['posts', 'comments', 'users', 'events', 'categories', 'likes', 'newsletter', 'services'];
-  const menuItems = [
-    { key: 'dashboard', label: 'Dashboard' },
-    { key: 'users', label: 'Utilisateurs' },
-    { key: 'users_assign_roles', label: 'Attribuer rôle' },
-    { key: 'users_permissions', label: 'Permissions des rôles' },
-    { key: 'partners', label: 'Partenaires' },
-    { key: 'posts', label: 'Posts' },
-    { key: 'comments', label: 'Commentaires' },
-    { key: 'likes', label: 'Likes' },
-    { key: 'events', label: 'Événements' },
-    { key: 'categories', label: 'Catégories' },
-    { key: 'newsletter', label: 'Newsletter' },
-    { key: 'reports', label: 'Rapports' },
-    { key: 'settings', label: 'Paramètres' },
-  ];
+  const resources = ['posts', 'comments', 'users', 'events', 'categories', 'likes', 'newsletter', 'services', 'menu_visibility'];
   const [allRoles, setAllRoles] = useState<string[]>([]);
 
   useEffect(() => {
@@ -407,6 +392,19 @@ const RolePermissionsPage: React.FC = () => {
 
   const isDark = theme === 'dark';
 
+  const formatResourceName = (resource: string) => {
+    const resourceNames: { [key: string]: string } = {
+      'menu_visibility': 'Visibilité des menus',
+      'users_assign_roles': 'Attribuer des rôles',
+      'users_permissions': 'Gérer les permissions',
+      // Ajoutez d'autres mises en forme personnalisées si nécessaire
+    };
+    
+    return resourceNames[resource] || resource.split('_').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center mb-4 mt-20">
@@ -583,11 +581,11 @@ const RolePermissionsPage: React.FC = () => {
                     className={`${isDark ? 'hover:bg-gray-700/60' : 'hover:bg-gray-50'}`}
                   >
                     <td
-                      className={`px-6 py-4 font-medium sticky left-0 capitalize ${
+                      className={`px-6 py-4 font-medium sticky left-0 ${
                         isDark ? 'text-white bg-gray-800' : 'text-gray-900 bg-white'
                       }`}
                     >
-                      {resource}
+                      {formatResourceName(resource)}
                     </td>
                     {['can_view', 'can_add', 'can_edit', 'can_delete'].map((permField) => (
                       <td key={permField} className="px-4 py-4 text-center">

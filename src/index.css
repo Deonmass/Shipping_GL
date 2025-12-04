@@ -2,6 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Styles personnalisés pour l'éditeur en mode sombre */
+.quill-dark .ql-toolbar.ql-snow,
+.quill-dark .ql-container.ql-snow {
+  @apply border-gray-600 !important;
+}
+
+.quill-dark .ql-snow .ql-stroke {
+  @apply stroke-white !important;
+}
+
+.quill-dark .ql-snow .ql-fill {
+  @apply fill-white !important;
+}
+
+.quill-dark .ql-snow .ql-picker {
+  @apply text-white !important;
+}
+
+.quill-dark .ql-snow .ql-picker-options {
+  @apply bg-gray-800 border-gray-600 !important;
+}
+
+.quill-dark .ql-snow .ql-picker-item {
+  @apply text-white !important;
+}
+
+.quill-dark .ql-toolbar.ql-snow .ql-picker.ql-expanded .ql-picker-label {
+  @apply border-gray-600 text-white !important;
+}
+
+/* Style pour le texte dans l'éditeur en mode sombre */
+.quill-dark .ql-editor {
+  @apply text-white;
+}
+
+/* Style pour le placeholder en mode sombre */
+.quill-dark .ql-editor.ql-blank::before {
+  @apply text-gray-400 !important;
+  font-style: normal;
+}
+
+/* Style pour les éléments désactivés */
+.quill-dark .ql-toolbar.ql-snow .ql-formats button.ql-active,
+.quill-dark .ql-toolbar.ql-snow .ql-formats button:hover {
+  @apply text-blue-400 !important;
+}
+
+.quill-dark .ql-toolbar.ql-snow .ql-formats button.ql-active .ql-stroke,
+.quill-dark .ql-toolbar.ql-snow .ql-formats button:hover .ql-stroke {
+  @apply stroke-blue-400 !important;
+}
+
+.quill-dark .ql-toolbar.ql-snow .ql-formats button.ql-active .ql-fill,
+.quill-dark .ql-toolbar.ql-snow .ql-formats button:hover .ql-fill {
+  @apply fill-blue-400 !important;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -23,6 +80,33 @@
   .bg-primary-900 h6,
   .bg-primary-900 p {
     @apply text-white;
+  }
+}
+
+/* Styles pour le contenu riche */
+.prose {
+  h1, h2, h3, h4, h5, h6 {
+    @apply mt-4 mb-2 font-semibold;
+  }
+  p {
+    @apply my-2;
+  }
+  ul, ol {
+    @apply my-2 pl-5;
+  }
+  li {
+    @apply my-1;
+  }
+  strong {
+    @apply font-semibold;
+  }
+  a {
+    @apply text-primary-600 hover:underline;
+  }
+  img {
+    @apply rounded-lg my-2;
+    max-width: 100%;
+    height: auto;
   }
 }
 

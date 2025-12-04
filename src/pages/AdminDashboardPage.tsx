@@ -3,17 +3,66 @@ import { motion } from 'framer-motion';
 import {
   Users, Heart, FileText, Handshake,
   Calendar, MessageSquare, X, ArrowRight,
-  Settings, BarChart3, Bell, Wrench
+  Settings, BarChart3, Bell, Wrench, Briefcase,
+  RefreshCw
 } from 'lucide-react';
 import {
-  LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
+  ResponsiveContainer, Legend, Cell, Area, AreaChart, PieChart, Pie, LabelList
 } from 'recharts';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { ChartModal } from '../components/admin/ChartModal';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div style={{
+        backgroundColor: '#1F2937',
+        border: '1px solid #374151',
+        borderRadius: '0.5rem',
+        padding: '10px',
+        color: '#FFFFFF',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+      }}>
+        <p className="font-semibold mb-2">{label}</p>
+        {payload.map((entry: any, index: number) => {
+          // Remplacer les noms des séries par des libellés plus conviviaux
+          const displayName = entry.name === 'quoteRequests' ? 'Demande de Devis' : 
+                            entry.name === 'jobApplications' ? 'Candidatures' :
+                            entry.name === 'newsletters' ? 'Newsletters' :
+                            entry.name === 'publishedOffers' ? 'Offres publiées' :
+                            entry.name === 'publishedPosts' ? 'Articles publiés' : entry.name;
+          
+          return (
+            <div key={`item-${index}`} style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '4px',
+              color: '#E5E7EB'
+            }}>
+              <div style={{
+                display: 'inline-block',
+                width: '12px',
+                height: '12px',
+                backgroundColor: entry.color,
+                marginRight: '8px',
+                borderRadius: '2px'
+              }} />
+              <span style={{ marginRight: '8px' }}>{displayName}:</span>
+              <span style={{ fontWeight: 600, color: '#FFFFFF' }}>
+                {typeof entry.value === 'number' ? entry.value.toLocaleString('fr-FR') : entry.value}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+  return null;
+};
 
 interface Stats {
   partners: { total: number; newThisMonth: number; trend: number };
@@ -41,6 +90,23 @@ interface Stats {
     active: number;
     withQuotes: number;
   };
+  candidatures: {
+    total: number;
+    newThisMonth: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+    trend: number;
+  };
+  jobOffers: {
+    total: number;
+    published: number;
+    draft: number;
+    archived: number;
+    expiringSoon: number;
+    newThisMonth: number;
+    trend: number;
+  };
 }
 
 interface DetailedData {
@@ -49,10 +115,64 @@ interface DetailedData {
   columns: { key: string; header: string }[];
 }
 
+interface MonthData {
+  monthDate: Date;
+  start: Date;
+  end: Date;
+  name: string;
+  shortName: string;
+  jobApplications: number;
+  comments: number;
+  newsletters: number;
+  quoteRequests: number;
+  publishedOffers: number;
+  publishedPosts: number;
+}
+
+interface MonthlyTrendItem {
+  monthDate?: string;
+  name?: string;
+  // Add other properties as needed
+  [key: string]: any;
+}
+
+// Fonction utilitaire pour vérifier s'il y a des données à afficher
+const hasData = (data: any[]) => {
+  return data && data.length > 0 && data.some(item => 
+    (item.newsletters && item.newsletters > 0) || 
+    (item.quoteRequests && item.quoteRequests > 0) || 
+    (item.jobApplications && item.jobApplications > 0) || 
+    (item.publishedOffers && item.publishedOffers > 0) || 
+    (item.publishedPosts && item.publishedPosts > 0)
+  );
+};
+
 const AdminDashboardPage: React.FC = () => {
   const [statsLoading, setStatsLoading] = useState(true);
   const [chartsLoading, setChartsLoading] = useState(true);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  // État pour gérer la visibilité de chaque série dans le graphique
+  const [visibleSeries, setVisibleSeries] = useState({
+    comments: true,
+    newsletters: true,
+    quoteRequests: true,
+    jobApplications: true,
+    publishedOffers: true,
+    publishedPosts: true
+  });
+  
+  // Fonction pour basculer la visibilité d'une série
+  const toggleSeriesVisibility = (key: string) => {
+    setVisibleSeries(prev => {
+      const newState = {
+        ...prev,
+        [key]: !prev[key as keyof typeof prev]
+      };
+      console.log(`Toggle visibility for ${key}:`, newState);
+      return newState;
+    });
+  };
   const [stats, setStats] = useState<Stats>({
     partners: { total: 0, newThisMonth: 0, trend: 0 },
     likes: { total: 0, avgPerPost: 0, trend: 0 },
@@ -62,7 +182,17 @@ const AdminDashboardPage: React.FC = () => {
     comments: { total: 0, trend: 0 },
     events: { upcoming: 0, total: 0 },
     quotes: { total: 0, pending: 0, processed: 0, newThisMonth: 0 },
-    services: { total: 0, active: 0, withQuotes: 0 }
+    services: { total: 0, active: 0, withQuotes: 0 },
+    candidatures: { total: 0, newThisMonth: 0, pending: 0, approved: 0, rejected: 0, trend: 0 },
+    jobOffers: { 
+      total: 0, 
+      published: 0, 
+      draft: 0, 
+      archived: 0, 
+      expiringSoon: 0, 
+      newThisMonth: 0, 
+      trend: 0 
+    }
   });
   const [displayStats, setDisplayStats] = useState<Stats>({
     partners: { total: 0, newThisMonth: 0, trend: 0 },
@@ -73,7 +203,17 @@ const AdminDashboardPage: React.FC = () => {
     comments: { total: 0, trend: 0 },
     events: { upcoming: 0, total: 0 },
     quotes: { total: 0, pending: 0, processed: 0, newThisMonth: 0 },
-    services: { total: 0, active: 0, withQuotes: 0 }
+    services: { total: 0, active: 0, withQuotes: 0 },
+    candidatures: { total: 0, newThisMonth: 0, pending: 0, approved: 0, rejected: 0, trend: 0 },
+    jobOffers: { 
+      total: 0, 
+      published: 0, 
+      draft: 0, 
+      archived: 0, 
+      expiringSoon: 0, 
+      newThisMonth: 0, 
+      trend: 0 
+    }
   });
 
   const [selectedDetail, setSelectedDetail] = useState<DetailedData | null>(null);
@@ -86,7 +226,11 @@ const AdminDashboardPage: React.FC = () => {
   } | null>(null);
   const [chartData, setChartData] = useState<any>({
     monthlyTrends: [],
-    userStatus: []
+    userStatus: [],
+    quoteRequests: [],
+    jobApplications: [],
+    publishedOffers: [],
+    publishedPosts: []
   });
   const [allowedMenuKeys, setAllowedMenuKeys] = useState<Set<string>>(new Set());
   const [menuPermissionsActive, setMenuPermissionsActive] = useState(false);
@@ -138,9 +282,13 @@ const AdminDashboardPage: React.FC = () => {
     return allowedMenuKeys.has(key);
   };
 
-  const safeNavigate = (key: string, path: string) => {
-    if (!canSeeMenuKey(key)) return;
+  const safeNavigate = (chart: string, path: string) => {
+    setExpandedChart(expandedChart === chart ? null : chart);
     navigate(path);
+  };
+
+  const navigateToJobOffers = () => {
+    navigate('/admin/offres-emploi');
   };
 
   // Pendant le chargement des statistiques, animons des chiffres aléatoires
@@ -231,6 +379,52 @@ const AdminDashboardPage: React.FC = () => {
     };
   }, []);
 
+  const fetchCandidaturesStats = async () => {
+    try {
+      // Récupérer tous les profils
+      const { data: allCandidatures, error } = await supabase
+        .from('profiles')
+        .select('id, created_at, updated_at')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erreur lors de la récupération des candidatures:', error);
+        return;
+      }
+
+      console.log('Tous les profils récupérés:', allCandidatures);
+
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      const startOfCurrentMonth = new Date(currentYear, currentMonth, 1);
+      startOfCurrentMonth.setHours(0, 0, 0, 0);
+
+      // Compter les candidatures
+      const stats = {
+        total: allCandidatures?.length || 0,
+        newThisMonth: allCandidatures?.filter(c => {
+          const created = new Date(c.created_at);
+          return created >= startOfCurrentMonth;
+        }).length || 0,
+        pending: 0, // Ces valeurs ne sont plus utilisées
+        approved: 0, // car on ne filtre plus par statut
+        rejected: 0,
+        trend: 0
+      };
+
+      console.log('Statistiques des candidatures (depuis profiles):', stats);
+
+      setStats(prev => ({
+        ...prev,
+        candidatures: stats
+      }));
+
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statistiques des candidatures:', error);
+    }
+  };
+
   const fetchDashboardData = async () => {
     try {
       setStatsLoading(true);
@@ -238,7 +432,10 @@ const AdminDashboardPage: React.FC = () => {
       // Charger d'abord les statistiques critiques
       await Promise.allSettled([
         fetchQuoteStats(),
-        fetchServiceStats()
+        fetchServiceStats(),
+        fetchCandidaturesStats(),
+        fetchJobOffersStats(),
+        fetchLikesStats()
       ]);
 
       // Ensuite, charger les autres statistiques en arrière-plan
@@ -259,70 +456,48 @@ const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  // Charger les données au montage du composant
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
   const fetchQuoteStats = async () => {
     try {
-      // Vérifier si la table existe
-      const { data: tableExists } = await supabase
+      // Récupérer toutes les demandes de devis
+      const { data: allQuotes, error } = await supabase
         .from('quote_requests')
-        .select('id')
-        .limit(1)
-        .maybeSingle();
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (!tableExists) {
-        console.warn('La table quote_requests n\'existe pas');
+      if (error) {
+        console.error('Erreur lors de la récupération des demandes de devis:', error);
         return;
       }
 
-      // Exécuter les requêtes en parallèle
-      const [
-        { count: totalCount = 0 },
-        { count: pendingCount = 0 },
-        { count: processedCount = 0 },
-        { count: newThisMonthCount = 0 }
-      ] = await Promise.all([
-        supabase
-          .from('quote_requests')
-          .select('*', { count: 'exact', head: true })
-          .then(({ count }) => ({ count: count || 0 }))
-          .catch(() => ({ count: 0 })),
+      console.log('Toutes les demandes de devis récupérées:', allQuotes);
 
-        supabase
-          .from('quote_requests')
-          .select('*', { count: 'exact', head: true })
-          .is('processed_at', null)
-          .then(({ count }) => ({ count: count || 0 }))
-          .catch(() => ({ count: 0 })),
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      const startOfCurrentMonth = new Date(currentYear, currentMonth, 1);
+      startOfCurrentMonth.setHours(0, 0, 0, 0);
 
-        supabase
-          .from('quote_requests')
-          .select('*', { count: 'exact', head: true })
-          .not('processed_at', 'is', null)
-          .then(({ count }) => ({ count: count || 0 }))
-          .catch(() => ({ count: 0 })),
+      // Compter les demandes de devis
+      const stats = {
+        total: allQuotes?.length || 0,
+        pending: allQuotes?.filter(q => q.status === 'pending').length || 0,
+        processed: allQuotes?.filter(q => q.status !== 'pending').length || 0,
+        newThisMonth: allQuotes?.filter(q => {
+          const created = new Date(q.created_at);
+          return created >= startOfCurrentMonth;
+        }).length || 0
+      };
 
-        (async () => {
-          const startOfCurrentMonth = new Date();
-          startOfCurrentMonth.setDate(1);
-          startOfCurrentMonth.setHours(0, 0, 0, 0);
-
-          const { count } = await supabase
-            .from('quote_requests')
-            .select('*', { count: 'exact', head: true })
-            .gte('created_at', startOfCurrentMonth.toISOString())
-            .catch(() => ({ count: 0 }));
-
-          return { count: count || 0 };
-        })()
-      ]);
+      console.log('Statistiques des demandes de devis:', stats);
 
       setStats(prev => ({
         ...prev,
-        quotes: {
-          total: totalCount,
-          pending: pendingCount,
-          processed: processedCount,
-          newThisMonth: newThisMonthCount,
-        }
+        quotes: stats
       }));
 
     } catch (error) {
@@ -332,56 +507,80 @@ const AdminDashboardPage: React.FC = () => {
 
   const fetchServiceStats = async () => {
     try {
-      // Vérifier si la table existe
-      const { data: tableExists } = await supabase
-        .from('services')
-        .select('id')
-        .limit(1)
-        .maybeSingle();
+      // Récupérer tous les services
+      const { data: services } = await supabase
+        .from('service')
+        .select('id, service_name, service_code, email_reception');
 
-      if (!tableExists) {
-        console.warn('La table services n\'existe pas');
-        return;
-      }
+      const totalCount = services?.length || 0;
+      
+      // Puisque nous n'avons pas de colonne is_active, on considère tous les services comme actifs
+      const activeCount = totalCount;
 
-      // Exécuter les requêtes en parallèle
-      const [
-        { count: totalCount = 0 },
-        { count: activeCount = 0 },
-        { count: withQuotesCount = 0 }
-      ] = await Promise.all([
-        supabase
-          .from('services')
-          .select('*', { count: 'exact', head: true })
-          .then(({ count }) => ({ count: count || 0 }))
-          .catch(() => ({ count: 0 })),
-
-        supabase
-          .from('services')
-          .select('*', { count: 'exact', head: true })
-          .eq('is_active', true)
-          .then(({ count }) => ({ count: count || 0 }))
-          .catch(() => ({ count: 0 })),
-
-        supabase
-          .from('services')
-          .select('*', { count: 'exact', head: true })
-          .not('quote_requests', 'is', null)
-          .then(({ count }) => ({ count: count || 0 }))
-          .catch(() => ({ count: 0 }))
-      ]);
+      // Compter les services avec des devis
+      const { count: withQuotesCount } = await supabase
+        .from('quotations')
+        .select('service_id', { count: 'exact', head: true })
+        .not('service_id', 'is', null);
 
       setStats(prev => ({
         ...prev,
         services: {
           total: totalCount,
-          active: activeCount,
-          withQuotes: withQuotesCount
+          active: activeCount, // Même valeur que totalCount car pas de statut actif/inactif
+          withQuotes: withQuotesCount || 0
         }
       }));
 
     } catch (error) {
       console.error('Erreur lors de la récupération des statistiques des services:', error);
+    }
+  };
+
+  const fetchJobOffersStats = async () => {
+    try {
+      const { data: allOffers, error } = await supabase
+        .from('job_offers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erreur lors de la récupération des offres d\'emploi:', error);
+        return;
+      }
+
+      console.log('Toutes les offres d\'emploi récupérées:', allOffers);
+
+      const now = new Date();
+      const oneMonthAgo = subMonths(now, 1);
+      const twoWeeksFromNow = new Date();
+      twoWeeksFromNow.setDate(now.getDate() + 14);
+
+      const stats = {
+        total: allOffers?.length || 0,
+        published: allOffers?.filter(o => o.status === 'published').length || 0,
+        draft: allOffers?.filter(o => o.status === 'draft').length || 0,
+        archived: allOffers?.filter(o => o.status === 'archived').length || 0,
+        expiringSoon: allOffers?.filter(o => 
+          o.closing_date && 
+          new Date(o.closing_date) >= now && 
+          new Date(o.closing_date) <= twoWeeksFromNow
+        ).length || 0,
+        newThisMonth: allOffers?.filter(o => 
+          new Date(o.created_at) >= oneMonthAgo
+        ).length || 0,
+        trend: 0
+      };
+
+      console.log('Statistiques des offres d\'emploi:', stats);
+
+      setStats(prev => ({
+        ...prev,
+        jobOffers: stats
+      }));
+
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statistiques des offres d\'emploi:', error);
     }
   };
 
@@ -405,18 +604,79 @@ const AdminDashboardPage: React.FC = () => {
   };
 
   const fetchLikesStats = async () => {
-    const { count: likesCount } = await supabase
-      .from('post_likes')
-      .select('*', { count: 'exact', head: true });
-    const { count: postsCount } = await supabase
-      .from('news_posts')
-      .select('*', { count: 'exact', head: true });
-    const avgPerPost = postsCount ? (likesCount || 0) / postsCount : 0;
+    try {
+      // Récupérer le nombre total de likes
+      const { count: totalLikes, error: countError } = await supabase
+        .from('post_likes')
+        .select('*', { count: 'exact', head: true });
 
-    setStats(prev => ({
-      ...prev,
-      likes: { total: likesCount || 0, avgPerPost: Math.round(avgPerPost * 10) / 10, trend: 15 }
-    }));
+      if (countError) throw countError;
+
+      // Calculer la tendance (comparaison avec le mois précédent)
+      const lastMonth = new Date();
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+      const { count: lastMonthLikes, error: lastMonthError } = await supabase
+        .from('post_likes')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', lastMonth.toISOString());
+
+      if (lastMonthError) throw lastMonthError;
+
+      const trend = lastMonthLikes 
+        ? Math.round(((totalLikes || 0) - lastMonthLikes) / lastMonthLikes * 100) 
+        : (totalLikes ? 100 : 0);
+
+      setStats(prev => ({
+        ...prev,
+        likes: { 
+          total: totalLikes || 0, 
+          avgPerPost: 0, // On ne calcule plus la moyenne par post
+          trend 
+        }
+      }));
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statistiques de likes:', error);
+    }
+  };
+
+  const fetchCommentStats = async () => {
+    try {
+      // Récupérer le nombre total de commentaires
+      const { count: totalComments, error: countError } = await supabase
+        .from('post_comments')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) throw countError;
+
+      // Calculer la tendance (comparaison avec le mois précédent)
+      const lastMonth = new Date();
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+      const { count: lastMonthComments, error: lastMonthError } = await supabase
+        .from('post_comments')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', lastMonth.toISOString());
+
+      if (lastMonthError) throw lastMonthError;
+
+      const trend = lastMonthComments 
+        ? Math.round(((totalComments || 0) - lastMonthComments) / lastMonthComments * 100) 
+        : (totalComments ? 100 : 0);
+
+      setStats(prev => ({
+        ...prev,
+        comments: { 
+          total: totalComments || 0,
+          trend 
+        }
+      }));
+      
+      return; // Sortie anticipée car on a terminé
+
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statistiques de commentaires:', error);
+    }
   };
 
   const fetchPostStats = async () => {
@@ -534,17 +794,6 @@ const AdminDashboardPage: React.FC = () => {
     }
   };
 
-  const fetchCommentStats = async () => {
-    const { count: commentsCount } = await supabase
-      .from('post_comments')
-      .select('*', { count: 'exact', head: true });
-
-    setStats(prev => ({
-      ...prev,
-      comments: { total: commentsCount || 0, trend: 12 }
-    }));
-  };
-
   const fetchEventStats = async () => {
     const { data: allEvents } = await supabase.from('news_events').select('event_date');
     const now = new Date();
@@ -575,65 +824,437 @@ const AdminDashboardPage: React.FC = () => {
     }));
   };
 
+  // Fonction pour compter les candidatures par mois
+  const countCandidaturesByMonth = (candidatures: any[], monthStart: Date, monthEnd: Date) => {
+    return candidatures.filter(c => {
+      const date = new Date(c.created_at);
+      return date >= monthStart && date <= monthEnd;
+    }).length;
+  };
+
   const fetchChartData = async () => {
     try {
       setChartsLoading(true);
       const now = new Date();
-      const months = Array.from({ length: 6 }, (_, idx) => 5 - idx).map((i) => {
-        const monthDate = subMonths(now, i);
-        return {
-          monthDate,
-          start: startOfMonth(monthDate),
-          end: endOfMonth(monthDate),
-        };
-      });
-
-      const rangeStart = months[0].start;
-      const { data: partnersAll } = await supabase
-        .from('partners')
-        .select('created_at')
-        .gte('created_at', rangeStart.toISOString());
-
-      const { data: { session } } = await supabase.auth.getSession();
-      let allUsers: any[] = [];
-      if (session?.access_token) {
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users`,
-          { headers: { Authorization: `Bearer ${session.access_token}` } }
-        );
-        if (response.ok) {
-          const payload = await response.json();
-          allUsers = payload.users || [];
+      
+      // Récupérer les commentaires avec leur date de création depuis post_comments
+      console.log('Récupération des commentaires depuis post_comments...');
+      const { data: allComments, error: commentsError } = await supabase
+        .from('post_comments')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      if (commentsError) {
+        console.error('Erreur lors de la récupération des commentaires:', commentsError);
+      } else {
+        console.log('Commentaires récupérés depuis post_comments:', allComments);
+        if (allComments && allComments.length > 0) {
+          allComments.forEach(comment => {
+            console.log('Commentaire (post_comments):', {
+              id: comment.id,
+              post_id: comment.post_id,
+              user_id: comment.user_id,
+              content: comment.content,
+              created_at: comment.created_at ? new Date(comment.created_at).toLocaleDateString('fr-FR') : 'Date invalide',
+              updated_at: comment.updated_at
+            });
+          });
+        } else {
+          console.log('Aucun commentaire trouvé dans post_comments');
         }
       }
+      
+      // Récupérer d'abord les candidatures
+      const { data: allCandidatures, error: candidaturesError } = await supabase
+        .from('profiles')
+        .select('created_at')
+        .order('created_at', { ascending: false });
 
-      const monthlyTrends = months.map(({ monthDate, start, end }) => {
-        const partnersCount = (partnersAll || []).filter(p => {
-          const d = new Date(p.created_at);
-          return d >= start && d <= end;
-        }).length;
-        const usersCount = allUsers.filter((u: any) => {
-          const d = new Date(u.created_at);
-          return d >= start && d <= end;
-        }).length;
-        return {
-          month: format(monthDate, 'MMM', { locale: fr }),
-          partners: partnersCount,
-          users: usersCount
-        };
+      if (candidaturesError) {
+        console.error('Erreur lors de la récupération des candidatures:', candidaturesError);
+        return;
+      }
+      
+      // Générer les données pour les 12 derniers mois
+      const monthsData: MonthData[] = [];
+      for (let i = 11; i >= 0; i--) {
+        const monthDate = subMonths(now, i);
+        const monthStart = startOfMonth(monthDate);
+        const monthEnd = endOfMonth(monthDate);
+        
+        // Compter les candidatures pour ce mois
+        const candidaturesCount = allCandidatures 
+          ? countCandidaturesByMonth(allCandidatures, monthStart, monthEnd)
+          : 0;
+        
+        monthsData.push({
+          monthDate,
+          start: monthStart,
+          end: monthEnd,
+          name: format(monthDate, 'MMMM yyyy', { locale: fr }),
+          shortName: format(monthDate, 'MMM', { locale: fr }),
+          jobApplications: candidaturesCount,
+          // Compter les commentaires pour ce mois (depuis post_comments)
+          comments: allComments && allComments.length > 0 
+            ? allComments.filter(comment => {
+                if (!comment || !comment.created_at) return false;
+                try {
+                  const commentDate = new Date(comment.created_at);
+                  const isInRange = commentDate >= monthStart && commentDate <= monthEnd;
+                  if (isInRange) {
+                    console.log(`Commentaire trouvé pour ${format(monthDate, 'MMMM yyyy', { locale: fr })}:`, {
+                      id: comment.id,
+                      post_id: comment.post_id,
+                      created_at: comment.created_at
+                    });
+                  }
+                  return isInRange;
+                } catch (e) {
+                  console.error('Erreur lors du traitement de la date du commentaire:', e, comment);
+                  return false;
+                }
+              }).length 
+            : 0,
+          // Conserver les autres métriques avec des valeurs par défaut pour l'instant
+          newsletters: 0,
+          quoteRequests: 0,
+          publishedOffers: 0,
+          publishedPosts: 0
+        });
+      }
+
+      // Afficher le décompte des commentaires par mois pour le débogage
+      console.log('Résumé des commentaires par mois:');
+      monthsData.forEach(month => {
+        console.log(`${month.name}: ${month.comments} commentaire(s)`);
       });
 
-      const verified = allUsers.filter((u: any) => u.email_confirmed_at).length;
-      const pending = allUsers.length - verified;
-      const userStatus: { name: string; value: number }[] = [
-        { name: 'Vérifiés', value: verified },
-        { name: 'En attente', value: pending }
-      ];
+      // Création des données pour le graphique
+      const monthlyTrends = monthsData.map(monthData => {
+        const result = {
+          name: monthData.shortName,
+          fullName: monthData.name,
+          monthDate: monthData.monthDate,
+          start: monthData.start,
+          end: monthData.end,
+          jobApplications: monthData.jobApplications || 0,
+          comments: monthData.comments || 0,
+          newsletters: monthData.newsletters || 0,
+          quoteRequests: monthData.quoteRequests || 0,
+          publishedOffers: monthData.publishedOffers || 0,
+          publishedPosts: monthData.publishedPosts || 0
+        };
+        
+        console.log(`Données pour ${monthData.name}:`, result);
+        return result;
+      });
 
+      const rangeStart = monthsData[0].start;
+      
+      // Récupération des autres données en parallèle
+      const [
+        { data: quotesWithServices, error: quotesError },
+        { data: newsletters },
+        { data: publishedPosts, error: postsError },
+        { data: jobOffers, error: jobOffersError },
+        sessionData
+      ] = await Promise.all([
+        // Récupération des demandes de devis avec les services associés
+        (async () => {
+          console.log('Début de la récupération des demandes de devis...');
+          const { data, error } = await supabase
+            .from('quote_requests')
+            .select('id, created_at, service_name')
+            .not('service_name', 'is', null)
+            .gte('created_at', monthsData[0].start.toISOString());
+          
+          console.log('Résultat brut de la requête quote_requests:', { data, error });
+          return { data, error };
+        })(),
+        
+        // Récupération des abonnements newsletter
+        supabase
+          .from('newsletter_subscribers')
+          .select('subscribed_at, status')
+          .gte('subscribed_at', monthsData[0].start.toISOString())
+          .eq('status', 'active'),
+        
+        // Récupération des articles publiés avec leur date d'événement
+        supabase
+          .from('news_posts')
+          .select('event_date, is_published')
+          .eq('is_published', true)
+          .not('event_date', 'is', null)
+          .gte('event_date', monthsData[0].start.toISOString()),
+        
+        // Récupération des offres d'emploi
+        supabase
+          .from('job_offers')
+          .select('created_at, status')
+          .gte('created_at', monthsData[0].start.toISOString()),
+        
+        // Session utilisateur
+        supabase.auth.getSession()
+      ]);
+
+      // Mise à jour des articles publiés avec les vrais comptages
+      if (publishedPosts) {
+        console.log('Articles publiés récupérés:', publishedPosts);
+        monthsData.forEach(monthData => {
+          const postsInMonth = publishedPosts.filter((post: any) => {
+            if (!post.event_date) return false;
+            try {
+              const eventDate = new Date(post.event_date);
+              return eventDate >= monthData.start && eventDate <= monthData.end;
+            } catch (e) {
+              console.error('Erreur de format de date:', post.event_date, e);
+              return false;
+            }
+          });
+          monthData.publishedPosts = postsInMonth.length;
+          console.log(`Mois ${monthData.name}: ${postsInMonth.length} articles`);
+        });
+        console.log('Résumé des articles publiés par mois:', monthsData.map(m => ({
+          mois: m.name, 
+          debut: m.start.toISOString().split('T')[0],
+          fin: m.end.toISOString().split('T')[0],
+          articles: m.publishedPosts
+        })));
+
+        // Mise à jour des autres métriques dans monthlyTrends
+        monthlyTrends.forEach((month, index) => {
+          // Ne pas écraser publishedOffers qui a déjà été mis à jour
+          month.publishedPosts = monthsData[index].publishedPosts || 0;
+          month.newsletters = monthsData[index].newsletters || 0;
+          month.quoteRequests = monthsData[index].quoteRequests || 0;
+          
+          // Débogage des valeurs
+          console.log(`Mois ${month.name} - Métriques:`, {
+            articles: month.publishedPosts,
+            newsletters: month.newsletters,
+            devis: month.quoteRequests,
+            offres: month.publishedOffers
+          });
+        });
+      }
+
+      // Mise à jour des newsletters avec les vrais comptages
+      if (newsletters) {
+        console.log('=== DÉBOGAGE - Newsletters récupérées ===');
+        console.log('Nombre total d\'abonnés newsletter:', newsletters.length);
+        console.log('Détail des abonnements:', newsletters.map((n: any) => ({
+          id: n.id,
+          subscribed_at: n.subscribed_at,
+          status: n.status,
+          date: n.subscribed_at ? new Date(n.subscribed_at).toISOString() : 'DATE_INVALIDE'
+        })));
+        
+        monthsData.forEach((monthData, index) => {
+          console.log(`\n=== Traitement du mois: ${monthData.name} (${monthData.start.toISOString()} - ${monthData.end.toISOString()}) ===`);
+          
+          const newslettersInMonth = newsletters.filter((n: any) => {
+            try {
+              if (!n.subscribed_at) {
+                console.log('Abonnement sans date d\'abonnement:', n);
+                return false;
+              }
+              
+              const date = new Date(n.subscribed_at);
+              const isInDateRange = date >= monthData.start && date <= monthData.end;
+              
+              // Log pour le débogage
+              if (isInDateRange) {
+                console.log(`- Abonnement #${n.id}:`, {
+                  date: date.toISOString(),
+                  status: n.status,
+                  inDateRange: 'OUI'
+                });
+              }
+              
+              return isInDateRange && n.status === 'active';
+            } catch (e) {
+              console.error('Erreur de format de date d\'abonnement:', n?.subscribed_at, e);
+              return false;
+            }
+          });
+          
+          const newslettersCount = newslettersInMonth.length;
+          monthData.newsletters = newslettersCount;
+          
+          // Mettre à jour directement monthlyTrends
+          if (monthlyTrends[index]) {
+            monthlyTrends[index].newsletters = newslettersCount;
+          }
+          
+          console.log(`Résultat pour ${monthData.name}: ${newslettersCount} abonnements actifs`);
+        });
+        
+        console.log('=== FIN DU DÉBOGAGE DES NEWSLETTERS ===\n');
+        console.log('Vérification de monthlyTrends après mise à jour des newsletters:', 
+          JSON.parse(JSON.stringify(monthlyTrends.map(m => ({
+            mois: m.name,
+            newsletters: m.newsletters,
+            dateDebut: m.start.toISOString().split('T')[0],
+            dateFin: m.end.toISOString().split('T')[0]
+          }))))
+        );
+      }
+
+      // Mise à jour des demandes de devis avec les vrais comptages
+      if (quotesWithServices) {
+        console.log('=== DÉBOGAGE - Demandes de devis récupérées ===');
+        console.log('Nombre total de demandes de devis:', quotesWithServices.length);
+        console.log('Détail des demandes:', quotesWithServices.map((q: any) => ({
+          id: q.id,
+          created_at: q.created_at,
+          date: new Date(q.created_at).toISOString()
+        })));
+        
+        monthsData.forEach((monthData, index) => {
+          console.log(`\n=== Traitement du mois: ${monthData.name} (${monthData.start.toISOString()} - ${monthData.end.toISOString()}) ===`);
+          
+          // Compter les demandes de devis pour ce mois
+          const quotesInMonth = quotesWithServices.filter((quote: any) => {
+            try {
+              const quoteDate = new Date(quote.created_at);
+              const isInDateRange = quoteDate >= monthData.start && quoteDate <= monthData.end;
+              
+              // Log pour le débogage
+              if (isInDateRange) {
+                console.log(`- Demande #${quote.id}:`, {
+                  date: quoteDate.toISOString(),
+                  inDateRange: 'OUI'
+                });
+              }
+              
+              return isInDateRange;
+            } catch (e) {
+              console.error('Erreur de format de date de devis:', quote?.created_at, e);
+              return false;
+            }
+          });
+          
+          const quotesCount = quotesInMonth.length;
+          monthData.quoteRequests = quotesCount;
+          
+          // Mettre à jour directement monthlyTrends
+          if (monthlyTrends[index]) {
+            monthlyTrends[index].quoteRequests = quotesCount;
+          }
+          
+          console.log(`Résultat pour ${monthData.name}: ${quotesCount} demandes de devis`);
+        });
+        
+        console.log('=== FIN DU DÉBOGAGE DES DEMANDES DE DEVIS ===\n');
+        console.log('Vérification de monthlyTrends après mise à jour des demandes de devis:', JSON.parse(JSON.stringify(monthlyTrends)));
+      }
+
+      // Mise à jour des offres d'emploi avec les vrais comptages
+      if (jobOffers) {
+        console.log('=== DÉBOGAGE - Offres d\'emploi récupérées ===');
+        console.log('Nombre total d\'offres:', jobOffers.length);
+        console.log('Détail des offres:', jobOffers.map((o: any) => ({
+          id: o.id,
+          status: o.status,
+          created_at: o.created_at,
+          is_published: o.status === 'published' ? 'OUI' : 'NON',
+          date: new Date(o.created_at).toISOString()
+        })));
+        
+        monthsData.forEach((monthData, index) => {
+          console.log(`\n=== Traitement du mois: ${monthData.name} (${monthData.start.toISOString()} - ${monthData.end.toISOString()}) ===`);
+          
+          // Compter les offres publiées pour ce mois
+          const offersInMonth = jobOffers.filter((offer: any) => {
+            try {
+              const offerDate = new Date(offer.created_at);
+              const isInDateRange = offerDate >= monthData.start && offerDate <= monthData.end;
+              const isPublished = String(offer.status).toLowerCase() === 'published';
+              
+              // Log pour le débogage
+              if (isPublished) {
+                console.log(`- Offre #${offer.id}:`, {
+                  date: offerDate.toISOString(),
+                  status: offer.status,
+                  inDateRange: isInDateRange ? 'OUI' : 'NON',
+                  isPublished: isPublished ? 'OUI' : 'NON'
+                });
+              }
+              
+              return isPublished && isInDateRange;
+            } catch (e) {
+              console.error('Erreur de format de date d\'offre:', offer?.created_at, e);
+              return false;
+            }
+          });
+          
+          const publishedOffersCount = offersInMonth.length;
+          monthData.publishedOffers = publishedOffersCount;
+          
+          // Mettre à jour directement monthlyTrends
+          if (monthlyTrends[index]) {
+            monthlyTrends[index].publishedOffers = publishedOffersCount;
+          }
+          
+          console.log(`Résultat pour ${monthData.name}: ${publishedOffersCount} offres publiées`);
+        });
+        
+        console.log('=== FIN DU DÉBOGAGE DES OFFRES ===\n');
+        console.log('Vérification de monthlyTrends après mise à jour des offres:', JSON.parse(JSON.stringify(monthlyTrends)));
+      }
+
+      // Préparation des données pour le graphique des demandes par service
+      const serviceStatsMap = new Map();
+      
+      if (quotesWithServices && quotesWithServices.length > 0) {
+        console.log('Demandes de devis avec services:', quotesWithServices); // Debug
+        
+        quotesWithServices.forEach(quote => {
+          // Utiliser directement service_name puisque c'est ce qu'on récupère
+          const serviceName = quote.service_name || 'Sans service';
+          const count = serviceStatsMap.get(serviceName) || 0;
+          serviceStatsMap.set(serviceName, count + 1);
+        });
+      } else {
+        console.log('Aucune demande de devis trouvée ou erreur de chargement');
+      }
+
+      const serviceStats = Array.from(serviceStatsMap.entries()).map(([name, value], index) => ({
+        name: name,
+        value: value,
+        active: true,
+        color: `hsl(${index * 70 % 360}, 70%, 60%)`
+      }));
+      
+      console.log('Résultat de la requête quotesWithServices:', { quotesWithServices, quotesError }); // Debug
+      console.log('Statistiques des services calculées:', serviceStats); // Debug
+
+      // Mise à jour de l'état avec les nouvelles données
+      console.log('Mise à jour du graphique avec les données:', {
+        monthlyTrends,
+        publishedPosts: monthlyTrends.map(m => ({
+          mois: m.name,
+          articles: m.publishedPosts
+        }))
+      });
+      
       setChartData({
         monthlyTrends,
-        userStatus
+        serviceStats,
+        comments: monthlyTrends.map((item: any) => item.comments || 0),
+        quoteRequests: monthlyTrends.map((item: any) => item.quoteRequests || 0),
+        jobApplications: monthlyTrends.map((item: any) => item.jobApplications || 0),
+        publishedOffers: monthlyTrends.map((item: any) => item.publishedOffers || 0),
+        publishedPosts: monthlyTrends.map((item: any) => item.publishedPosts || 0),
+        userStatus: [
+          { name: 'Commentaires', value: allComments?.length || 0, color: '#8b5cf6' },
+          { name: 'Candidatures', value: allCandidatures?.length || 0, color: '#3b82f6' },
+          { name: 'Demandes de devis', value: quotesWithServices?.length || 0, color: '#8b5cf6' },
+          { name: 'Abonnés newsletter', value: newsletters?.length || 0, color: '#8b5cf6' }
+        ]
       });
+
+      setChartsLoading(false);
     } catch (error) {
       console.error('Error fetching chart data:', error);
     } finally {
@@ -754,10 +1375,33 @@ const AdminDashboardPage: React.FC = () => {
 
   const COLORS = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'];
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const refreshData = async () => {
+    try {
+      setIsRefreshing(true);
+      await fetchDashboardData();
+    } catch (error) {
+      console.error('Erreur lors de l\'actualisation des données:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4 mt-20">
-        <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Dashboard</h1>
+        <div className="flex items-center gap-4">
+          <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Dashboard</h1>
+          <button
+            onClick={refreshData}
+            disabled={isRefreshing || statsLoading}
+            className={`p-2 rounded-full ${isRefreshing || statsLoading ? 'text-gray-400' : 'text-primary-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            title="Actualiser les données"
+          >
+            <RefreshCw className={`w-5 h-5 ${isRefreshing || statsLoading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
         {statsLoading && (
           <div className={`flex items-center gap-2 text-xs ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
@@ -864,6 +1508,10 @@ const AdminDashboardPage: React.FC = () => {
           <div>
             <p className="text-3xl font-bold text-white leading-tight">{effectiveStats.users.total}</p>
             <p className="text-xs text-amber-100 mt-1">Utilisateurs au total</p>
+            <div className="mt-2 text-xs text-amber-100/80 space-y-1">
+              <p>{effectiveStats.users.admins} admin{effectiveStats.users.admins > 1 ? 's' : ''} · {effectiveStats.users.regular} utilisateur{effectiveStats.users.regular > 1 ? 's' : ''}</p>
+              <p>{effectiveStats.users.active} actif{effectiveStats.users.active > 1 ? 's' : ''} · {effectiveStats.users.inactive} inactif{effectiveStats.users.inactive > 1 ? 's' : ''}</p>
+            </div>
           </div>
           <div className="mt-3 flex items-center justify-between w-full text-xs text-amber-100/80">
             <span>Voir la liste des utilisateurs</span>
@@ -899,8 +1547,33 @@ const AdminDashboardPage: React.FC = () => {
         </button>
 
         <button
+          onClick={() => safeNavigate('candidatures', '/admin/candidatures')}
+          className="relative overflow-hidden rounded-xl px-5 py-4 flex flex-col items-start justify-between text-left bg-gradient-to-br from-rose-600 via-pink-600 to-fuchsia-600 shadow-lg hover:shadow-xl transition-all"
+        >
+          <div className="flex items-center justify-between w-full mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center">
+                <FileText className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-sm font-semibold text-white">Candidatures</span>
+            </div>
+            <span className="text-xs font-semibold text-rose-200 bg-rose-900/30 px-2 py-1 rounded-full">
+              +{effectiveStats.candidatures.newThisMonth} ce mois
+            </span>
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-white leading-tight">{effectiveStats.candidatures.total}</p>
+            <p className="text-xs text-pink-100 mt-1">Candidatures au total</p>
+          </div>
+          <div className="mt-3 flex items-center justify-between w-full text-xs text-pink-100/80">
+            <span>Voir toutes les candidatures</span>
+            <ArrowRight className="w-4 h-4" />
+          </div>
+        </button>
+
+        <button
           onClick={() => safeNavigate('services', '/admin/services')}
-          className="relative overflow-hidden rounded-xl px-5 py-4 flex flex-col items-start justify-between text-left bg-gradient-to-br from-cyan-600 via-sky-600 to-blue-600 shadow-lg hover:shadow-xl transition-all"
+          className="relative overflow-hidden rounded-xl px-5 py-4 flex flex-col items-start justify-between text-left bg-gradient-to-br from-emerald-600 to-teal-600 shadow-lg hover:shadow-xl transition-all"
         >
           <div className="flex items-center justify-between w-full mb-3">
             <div className="flex items-center gap-3">
@@ -909,174 +1582,344 @@ const AdminDashboardPage: React.FC = () => {
               </div>
               <span className="text-sm font-semibold text-white">Services</span>
             </div>
-            <span className="text-xs font-semibold text-cyan-900 bg-cyan-200 px-2 py-1 rounded-full">
-              {effectiveStats.services.active} actifs
+            <span className="text-xs font-semibold text-emerald-900 bg-emerald-200 px-2 py-1 rounded-full">
+              {effectiveStats.services?.total || 0} services
             </span>
           </div>
           <div>
-            <p className="text-3xl font-bold text-white leading-tight">{effectiveStats.services.total}</p>
-            <p className="text-xs text-cyan-100 mt-1">Services au total</p>
+            <p className="text-3xl font-bold text-white leading-tight">{effectiveStats.services?.total || 0}</p>
+            <p className="text-xs text-emerald-100 mt-1">Services disponibles</p>
           </div>
-          <div className="mt-3 flex items-center justify-between w-full text-xs text-cyan-100/80">
+          <div className="mt-3 flex items-center justify-between w-full text-xs text-emerald-100/80">
             <span>Gérer les services</span>
+            <ArrowRight className="w-4 h-4" />
+          </div>
+        </button>
+
+        <button
+          onClick={navigateToJobOffers}
+          className="relative overflow-hidden rounded-xl px-5 py-4 flex flex-col items-start justify-between text-left bg-gradient-to-br from-indigo-600 to-purple-600 shadow-lg hover:shadow-xl transition-all"
+        >
+          <div className="flex items-center justify-between w-full mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center">
+                <Briefcase className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-sm font-semibold text-white">Offres d'emploi</span>
+            </div>
+            <span className="text-xs font-semibold text-indigo-900 bg-indigo-200 px-2 py-1 rounded-full">
+              {effectiveStats.jobOffers.published} publiées
+            </span>
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-white leading-tight">{effectiveStats.jobOffers.total}</p>
+            <p className="text-xs text-indigo-100 mt-1">Offres au total</p>
+          </div>
+          <div className="mt-3 flex items-center justify-between w-full text-xs text-indigo-100/80">
+            <span>Gérer les offres</span>
             <ArrowRight className="w-4 h-4" />
           </div>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 mb-6">
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          onClick={() => safeNavigate('posts', '/admin/posts')}
-          className={`group relative overflow-hidden rounded-lg p-6 cursor-pointer border transition-colors ${
-            theme === 'dark'
-              ? 'border-gray-700 hover:border-white/30 bg-gray-800'
-              : 'border-gray-200 hover:border-primary-300/60 bg-white shadow-sm'
-          }`}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <FileText
-                className={`w-8 h-8 ${
-                  theme === 'dark'
-                    ? 'text-gray-300 group-hover:text-white'
-                    : 'text-gray-500 group-hover:text-white'
-                }`}
-              />
-              <span className="text-sm font-medium text-yellow-500">{effectiveStats.posts.pending} en attente</span>
-            </div>
-            <h3
-              className={`text-3xl font-bold mb-2 ${
-                theme === 'dark'
-                  ? 'text-white group-hover:text-white'
-                  : 'text-gray-900 group-hover:text-white'
-              }`}
-            >
-              {effectiveStats.posts.total}
+      {/* Graphiques principaux */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        
+        {/* Graphique des abonnements newsletter */}
+        <div className="col-span-1 lg:col-span-2 bg-transparent">
+          <div className="flex flex-col items-center text-center mb-4 gap-2">
+            <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              Évolution des indicateurs mensuels
             </h3>
-            <p
-              className={
-                theme === 'dark'
-                  ? 'text-gray-200 text-sm group-hover:text-white'
-                  : 'text-gray-800 text-sm group-hover:text-white'
-              }
-            >
-              Posts
-            </p>
-            <p
-              className={
-                theme === 'dark'
-                  ? 'text-gray-100 text-xs mt-2 group-hover:text-white'
-                  : 'text-gray-700 text-xs mt-2 group-hover:text-white'
-              }
-            >
-              <span
-                className={
-                  theme === 'dark'
-                    ? 'text-green-300 font-medium group-hover:text-white'
-                    : 'text-emerald-500 font-medium group-hover:text-white'
-                }
+            <div className="flex flex-wrap justify-center items-center gap-2">
+              <div className="flex flex-wrap justify-center items-center gap-2">
+                {[
+                  { key: 'comments', label: 'Commentaires', color: '#10b981' },
+                  { key: 'newsletters', label: 'Newsletters', color: '#8b5cf6' },
+                  { key: 'quoteRequests', label: 'Devis', color: '#f59e0b' },
+                  { key: 'jobApplications', label: 'Candidatures', color: '#3b82f6' },
+                  { key: 'publishedOffers', label: 'Offres publiées', color: '#ec4899' },
+                  { key: 'publishedPosts', label: 'Articles', color: '#14b8a6' }
+                ].map(({ key, label, color }) => (
+                  <div 
+                    key={key}
+                    className="flex items-center cursor-pointer px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    onClick={() => toggleSeriesVisibility(key)}
+                  >
+                    <div 
+                      className="w-3 h-3 rounded-full mr-1 transition-opacity"
+                      style={{ 
+                        backgroundColor: color,
+                        opacity: visibleSeries[key as keyof typeof visibleSeries] ? 1 : 0.3,
+                        transition: 'opacity 0.2s ease-in-out'
+                      }}
+                    />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
+                  </div>
+                ))}
+              </div>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="text-sm rounded border border-gray-300 px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white ml-2"
               >
-                {effectiveStats.posts.published}
-              </span>{' '}
-              publiés
-            </p>
-          </div>
-        </motion.div>
-
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          onClick={() => safeNavigate('users', '/admin/users')}
-          className={`group relative overflow-hidden rounded-lg p-6 cursor-pointer border transition-colors ${
-            theme === 'dark'
-              ? 'border-gray-700 hover:border-white/30 bg-gray-800'
-              : 'border-gray-200 hover:border-primary-300/60 bg-white shadow-sm'
-          }`}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <Users
-                className={`w-8 h-8 ${
-                  theme === 'dark'
-                    ? 'text-gray-300 group-hover:text-white'
-                    : 'text-gray-500 group-hover:text-white'
-                }`}
-              />
-              <span className="text-xs font-medium text-green-900 bg-green-300 px-2 py-1 rounded-full">
-                +{effectiveStats.users.newThisMonth} ce mois
-              </span>
+                {[2023, 2024, 2025].map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
             </div>
-            <h3
-              className={`text-3xl font-bold mb-2 ${
-                theme === 'dark'
-                  ? 'text-white group-hover:text-white'
-                  : 'text-gray-900 group-hover:text-white'
-              }`}
-            >
-              {effectiveStats.users.total}
-            </h3>
-            <p
-              className={
-                theme === 'dark'
-                  ? 'text-gray-200 text-sm mb-1 group-hover:text-white'
-                  : 'text-gray-800 text-sm mb-1 group-hover:text-white'
-              }
-            >
-              <span
-                className={
-                  theme === 'dark'
-                    ? 'text-amber-200 font-semibold group-hover:text-white'
-                    : 'text-amber-500 font-semibold group-hover:text-white'
-                }
-              >
-                {effectiveStats.users.admins}
-              </span>{' '}
-              admins ·{' '}
-              <span
-                className={
-                  theme === 'dark'
-                    ? 'text-blue-200 font-semibold group-hover:text-white'
-                    : 'text-blue-500 font-semibold group-hover:text-white'
-                }
-              >
-                {effectiveStats.users.regular}
-              </span>{' '}
-              users
-            </p>
-            <p
-              className={
-                theme === 'dark'
-                  ? 'text-gray-100 text-xs group-hover:text-white'
-                  : 'text-gray-700 text-xs group-hover:text-white'
-              }
-            >
-              <span
-                className={
-                  theme === 'dark'
-                    ? 'text-emerald-200 font-medium group-hover:text-white'
-                    : 'text-emerald-500 font-medium group-hover:text-white'
-                }
-              >
-                {effectiveStats.users.active}
-              </span>{' '}
-              actifs ·{' '}
-              <span
-                className={
-                  theme === 'dark'
-                    ? 'text-red-200 font-medium group-hover:text-white'
-                    : 'text-red-500 font-medium group-hover:text-white'
-                }
-              >
-                {effectiveStats.users.inactive}
-              </span>{' '}
-              inactifs
-            </p>
           </div>
-        </motion.div>
+          <div className="h-72 pt-8">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={chartData.monthlyTrends.filter((item: MonthlyTrendItem) => {
+                  const dateString = item.monthDate || item.name || new Date().toISOString();
+                  const itemYear = new Date(dateString).getFullYear();
+                  return itemYear === selectedYear;
+                })}
+                margin={{ top: 30, right: 30, left: 0, bottom: 0 }}
+                stackOffset="none"
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="#9CA3AF"
+                  tick={{ fill: theme === 'dark' ? '#9CA3AF' : '#4B5563' }}
+                />
+                <YAxis 
+                  stroke="#9CA3AF"
+                  tick={{ fill: theme === 'dark' ? '#9CA3AF' : '#4B5563' }}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                
+                {hasData(chartData.monthlyTrends) ? (
+                  <>
+                    <defs>
+                      <linearGradient id="colorNewsletter" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
+                      </linearGradient>
+                      <linearGradient id="colorQuoteRequests" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.1}/>
+                      </linearGradient>
+                      <linearGradient id="colorJobApplications" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                      </linearGradient>
+                      <linearGradient id="colorPublishedOffers" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.1}/>
+                      </linearGradient>
+                      <linearGradient id="colorPublishedPosts" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ec4899" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#ec4899" stopOpacity={0.1}/>
+                      </linearGradient>
+                      <linearGradient id="colorComments" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                <defs>
+                  <linearGradient id="colorNewsletter" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
+                  </linearGradient>
+                  <linearGradient id="colorQuoteRequests" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.1}/>
+                  </linearGradient>
+                  <linearGradient id="colorJobApplications" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                  </linearGradient>
+                  <linearGradient id="colorPublishedOffers" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.1}/>
+                  </linearGradient>
+                  <linearGradient id="colorPublishedPosts" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ec4899" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#ec4899" stopOpacity={0.1}/>
+                  </linearGradient>
+                  <linearGradient id="colorComments" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+                <XAxis 
+                  dataKey="name"
+                  tick={{
+                    fill: theme === 'dark' ? '#9ca3af' : '#6b7280',
+                    fontSize: '0.75rem'
+                  }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis 
+                  tick={{ 
+                    fill: theme === 'dark' ? '#9ca3af' : '#6b7280',
+                    fontSize: '0.75rem'
+                  }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke={theme === 'dark' ? '#374151' : '#e5e7eb'}
+                  vertical={false}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: theme === 'dark' ? '#1f2937' : '#ffffff',
+                    borderColor: theme === 'dark' ? '#374151' : '#e5e7eb',
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                  }}
+                  labelStyle={{
+                    color: theme === 'dark' ? '#e5e7eb' : '#111827',
+                    fontWeight: 500
+                  }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="newsletters" 
+                  name="Newsletters"
+                  stroke="#8b5cf6" 
+                  fillOpacity={1} 
+                  fill="url(#colorNewsletter)"
+                  hide={!visibleSeries.newsletters}
+                >
+                  <LabelList 
+                    dataKey="newsletters" 
+                    position="top" 
+                    fill="#8b5cf6"
+                    style={{ fontSize: '11px', fontWeight: 500 }}
+                    offset={5}  // Légèrement décalé vers le haut
+                    formatter={(value: number) => value > 0 ? value : null}
+                  />
+                </Area>
+                <Area 
+                  type="monotone" 
+                  dataKey="quoteRequests" 
+                  name="Devis" 
+                  stroke="#f59e0b" 
+                  fillOpacity={1} 
+                  fill="url(#colorQuoteRequests)"
+                  hide={!visibleSeries.quoteRequests}
+                >
+                  <LabelList 
+                    dataKey="quoteRequests" 
+                    position="top" 
+                    fill="#f59e0b"
+                    style={{ fontSize: '11px', fontWeight: 500 }}
+                    offset={3}  // Légèrement décalé vers le bas
+                    formatter={(value: number) => value > 0 ? value : null}
+                  />
+                </Area>
+                <Area 
+                  type="monotone" 
+                  dataKey="jobApplications" 
+                  name="Candidatures" 
+                  stroke="#3b82f6" 
+                  fillOpacity={1} 
+                  fill="url(#colorJobApplications)"
+                  hide={!visibleSeries.jobApplications}
+                >
+                  <LabelList 
+                    dataKey="jobApplications" 
+                    position="top" 
+                    fill="#3b82f6"
+                    style={{ fontSize: '11px', fontWeight: 500 }}
+                    formatter={(value: number) => value > 0 ? value : null}
+                  />
+                </Area>
+                <Area 
+                  type="monotone" 
+                  dataKey="publishedOffers" 
+                  name="Offres publiées" 
+                  stroke="#f59e0b" 
+                  fillOpacity={1} 
+                  fill="url(#colorPublishedOffers)"
+                  hide={!visibleSeries.publishedOffers}
+                  activeDot={{
+                    r: 4,
+                    fill: '#f59e0b',
+                    stroke: '#fff',
+                    strokeWidth: 1
+                  }}
+                >
+                  <LabelList 
+                    dataKey="publishedOffers" 
+                    position="top" 
+                    fill="#f59e0b"
+                    style={{ fontSize: '11px', fontWeight: 500 }}
+                    formatter={(value: number) => value > 0 ? value : null}
+                  />
+                </Area>
+                <Area 
+                  type="monotone" 
+                  dataKey="comments" 
+                  name="Commentaires" 
+                  stroke="#10b981"
+                  fillOpacity={1}
+                  fill="url(#colorComments)" 
+                  hide={!visibleSeries.comments}
+                  activeDot={{ r: 4, stroke: '#10b981', strokeWidth: 2, fill: '#ffffff' }}
+                >
+                  <LabelList 
+                    dataKey="comments" 
+                    position="top" 
+                    fill="#10b981" 
+                    fontSize={12} 
+                    fontWeight={500}
+                    offset={10}  // Décalage vers le haut
+                    formatter={(value: number) => visibleSeries.comments && value > 0 ? value : null}
+                  />
+                </Area>
+                <Area 
+                  type="monotone" 
+                  dataKey="publishedPosts" 
+                  name="Articles publiés"
+                  stroke="#ec4899" 
+                  fillOpacity={1} 
+                  fill="url(#colorPublishedPosts)"
+                  hide={!visibleSeries.publishedPosts}
+                  activeDot={{
+                    r: 4,
+                    fill: '#ec4899',
+                    stroke: '#fff',
+                    strokeWidth: 1
+                  }}
+                >
+                  <LabelList 
+                    dataKey="publishedPosts" 
+                    position="top" 
+                    fill="#ec4899"
+                    style={{ fontSize: '11px', fontWeight: 500 }}
+                    offset={-10}  // Décalage vers le bas
+                    formatter={(value: number) => value > 0 ? value : null}
+                  />
+                </Area>
+                  </>
+                ) : (
+                  <text 
+                    x="50%" 
+                    y="50%" 
+                    textAnchor="middle" 
+                    dominantBaseline="middle"
+                    fill="#9CA3AF"
+                  >
+                    Aucune donnée disponible
+                  </text>
+                )}
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+                
       </div>
 
+      {/* Blocs de statistiques existants */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <motion.div
           whileHover={{ scale: 1.02 }}
@@ -1150,6 +1993,7 @@ const AdminDashboardPage: React.FC = () => {
           </div>
         </motion.div>
 
+
         <motion.div
           whileHover={{ scale: 1.02 }}
           onClick={() => safeNavigate('likes', '/admin/likes')}
@@ -1171,10 +2015,12 @@ const AdminDashboardPage: React.FC = () => {
               />
               <span
                 className={`text-sm font-medium ${
-                  theme === 'dark' ? 'text-green-200' : 'text-emerald-600'
+                  effectiveStats.likes.trend >= 0 
+                    ? theme === 'dark' ? 'text-green-200' : 'text-emerald-600'
+                    : theme === 'dark' ? 'text-red-200' : 'text-red-600'
                 }`}
               >
-                +{effectiveStats.likes.trend}%
+                {effectiveStats.likes.trend >= 0 ? '+' : ''}{effectiveStats.likes.trend}%
               </span>
             </div>
             <h3
@@ -1195,24 +2041,26 @@ const AdminDashboardPage: React.FC = () => {
             >
               Likes totaux
             </p>
-            <p
-              className={
-                theme === 'dark'
-                  ? 'text-gray-100 text-xs mt-2 group-hover:text-white'
-                  : 'text-gray-700 text-xs mt-2 group-hover:text-white'
-              }
-            >
-              <span
+            {effectiveStats.likes.avgPerPost > 0 && (
+              <p
                 className={
                   theme === 'dark'
-                    ? 'text-pink-200 font-medium group-hover:text-white'
-                    : 'text-pink-500 font-medium group-hover:text-white'
+                    ? 'text-gray-100 text-xs mt-2 group-hover:text-white'
+                    : 'text-gray-700 text-xs mt-2 group-hover:text-white'
                 }
               >
-                {effectiveStats.likes.avgPerPost}
-              </span>{' '}
-              moy. par post
-            </p>
+                <span
+                  className={
+                    theme === 'dark'
+                      ? 'text-pink-200 font-medium group-hover:text-white'
+                      : 'text-pink-500 font-medium group-hover:text-white'
+                  }
+                >
+                  {effectiveStats.likes.avgPerPost}
+                </span>{' '}
+                moy. par post
+              </p>
+            )}
           </div>
         </motion.div>
 
@@ -1237,10 +2085,12 @@ const AdminDashboardPage: React.FC = () => {
               />
               <span
                 className={`text-sm font-medium ${
-                  theme === 'dark' ? 'text-green-200' : 'text-emerald-600'
+                  effectiveStats.comments.trend >= 0 
+                    ? theme === 'dark' ? 'text-green-200' : 'text-emerald-600'
+                    : theme === 'dark' ? 'text-red-200' : 'text-red-600'
                 }`}
               >
-                +{effectiveStats.comments.trend}%
+                {effectiveStats.comments.trend >= 0 ? '+' : ''}{effectiveStats.comments.trend}%
               </span>
             </div>
             <h3
