@@ -25,6 +25,30 @@ const MenuVisibilityPage: React.FC = () => {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [renamingItems, setRenamingItems] = useState<Record<string, boolean>>({});
+  
+  // Détecter le thème du système
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    // Fonction pour mettre à jour le thème
+    const updateTheme = () => {
+      const isDark = mediaQuery.matches;
+      document.documentElement.classList.toggle('dark', isDark);
+    };
+
+    // Mettre à jour le thème au chargement
+    updateTheme();
+
+    // Écouter les changements de préférence de thème
+    mediaQuery.addEventListener('change', updateTheme);
+
+    // Nettoyer l'écouteur d'événement au démontage du composant
+    return () => {
+      mediaQuery.removeEventListener('change', updateTheme);
+    };
+  }, []);
 
   useEffect(() => {
     fetchMenuItems();
@@ -385,30 +409,35 @@ WITH CHECK (true);`);
   const activeMenuItems = menuItems.filter(item => item.is_visible);
 
   return (
-    <div className="container mx-auto p-4 mt-20">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestion de la visibilité du menu</h1>
-        <div className="flex space-x-2">
-          <button
-            onClick={togglePreview}
-            className={`flex items-center px-4 py-2 ${isPreviewOpen ? 'bg-blue-600 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} rounded-md text-sm font-medium transition-colors duration-200`}
-          >
-            <Eye className="w-4 h-4 mr-2" />
-            {isPreviewOpen ? 'Masquer l\'aperçu' : 'Aperçu du menu'}
-          </button>
-          <button
-            onClick={refreshData}
-            className="flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm font-medium transition-colors duration-200"
-            disabled={loading}
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            {loading ? 'Chargement...' : 'Rafraîchir'}
-          </button>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+      <div className="container mx-auto p-4 pt-20">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestion de la visibilité du menu</h1>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={togglePreview}
+              className={`flex items-center px-4 py-2 ${
+                isPreviewOpen 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+              } rounded-md text-sm font-medium transition-colors duration-200 border border-gray-200 dark:border-gray-700`}
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              {isPreviewOpen ? 'Masquer l\'aperçu' : 'Aperçu du menu'}
+            </button>
+            <button
+              onClick={refreshData}
+              className="flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm font-medium transition-colors duration-200"
+              disabled={loading}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? 'Chargement...' : 'Rafraîchir'}
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Aperçu compact avec animation */}
-      {isPreviewOpen && (
+        {/* Aperçu compact avec animation */}
+        {isPreviewOpen && (
         <div className="mb-4 p-3 bg-white rounded-md shadow-sm border border-gray-100 transition-all duration-300 ease-in-out">
           <div className="flex items-center justify-between text-sm">
             {/* Logo compact */}
@@ -456,29 +485,29 @@ WITH CHECK (true);`);
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden transition-colors duration-200">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden transition-colors duration-200 border border-gray-200 dark:border-gray-700">
         {/* Barre d'actions */}
         <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex space-x-2">
             <button
               onClick={() => moveItem('up')}
               disabled={selectedItems.size === 0}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+              className={`px-3 py-1.5 rounded-md text-sm font-medium border ${
                 selectedItems.size > 0
-                  ? 'bg-blue-500 text-white hover:bg-blue-600'
-                  : 'bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700'
-              }`}
+                  ? 'bg-blue-500 text-white hover:bg-blue-600 border-blue-600'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed border-gray-200 dark:border-gray-600'
+              } transition-colors duration-200`}
             >
               Monter
             </button>
             <button
               onClick={() => moveItem('down')}
               disabled={selectedItems.size === 0}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+              className={`px-3 py-1.5 rounded-md text-sm font-medium border ${
                 selectedItems.size > 0
-                  ? 'bg-blue-500 text-white hover:bg-blue-600'
-                  : 'bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700'
-              }`}
+                  ? 'bg-blue-500 text-white hover:bg-blue-600 border-blue-600'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed border-gray-200 dark:border-gray-600'
+              } transition-colors duration-200`}
             >
               Descendre
             </button>
@@ -486,11 +515,11 @@ WITH CHECK (true);`);
           <button
             onClick={saveOrder}
             disabled={isSavingOrder}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium flex items-center ${
+            className={`px-4 py-1.5 rounded-md text-sm font-medium flex items-center border ${
               isSavingOrder
-                ? 'bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700'
-                : 'bg-green-500 text-white hover:bg-green-600'
-            }`}
+                ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed border-gray-200 dark:border-gray-600'
+                : 'bg-green-500 text-white hover:bg-green-600 border-green-600'
+            } transition-colors duration-200`}
           >
             {isSavingOrder ? (
               <>
@@ -507,45 +536,41 @@ WITH CHECK (true);`);
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="">
               <tr>
                 <th className="w-12 px-4 py-3">
                   <input
                     type="checkbox"
                     checked={selectedItems.size === menuItems.length && menuItems.length > 0}
                     onChange={selectAllItems}
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded dark:bg-gray-800 dark:border-gray-600"
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                   />
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Élément du menu
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Statut
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider text-right">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right">
                   Action
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
               {menuItems.map((item, index) => (
                 <tr 
                   key={item.id}
-                  className={`${
-                    selectedItems.has(item.id) 
-                      ? 'bg-blue-50 dark:bg-blue-900/30' 
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
+                  className={`${selectedItems.has(item.id) ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
                 >
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">
                     <div className="flex items-center">
                       <input
                         type="checkbox"
                         checked={selectedItems.has(item.id)}
                         onChange={() => toggleItemSelection(item.id)}
-                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 dark:ring-offset-gray-800"
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
                     </div>
                   </td>
@@ -563,7 +588,7 @@ WITH CHECK (true);`);
                               if (e.key === 'Enter') saveName(item.id);
                               if (e.key === 'Escape') cancelEditing(item.id);
                             }}
-                            className="border rounded px-2 py-1 text-sm w-48 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
+                            className="border rounded px-2 py-1 text-sm w-48 bg-white text-gray-900 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             autoFocus
                           />
                           <button
@@ -609,15 +634,11 @@ WITH CHECK (true);`);
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      item.is_visible 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
-                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                    }`}>
-                      {item.is_visible ? 'Visible' : 'Masqué'}
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${item.is_visible ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      {item.is_visible ? 'Visible' : 'Caché'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
                     <div className="flex items-center justify-end">
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
@@ -636,6 +657,7 @@ WITH CHECK (true);`);
             </tbody>
           </table>
         </div>
+      </div>
       </div>
     </div>
   );
