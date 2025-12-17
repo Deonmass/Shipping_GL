@@ -444,6 +444,9 @@ const AdminServicesPage: React.FC = () => {
                   <th className={isDark ? 'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-300' : 'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600'}>
                     Description
                   </th>
+                  <th className={isDark ? 'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-300' : 'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600'}>
+                    Email de réception
+                  </th>
                   <th className={isDark ? 'px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-300' : 'px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-600'}>
                     Actions
                   </th>
@@ -488,6 +491,11 @@ const AdminServicesPage: React.FC = () => {
                       <td className="px-6 py-4">
                         <p className={isDark ? 'text-sm text-gray-300' : 'text-sm text-gray-600'}>
                           {service.service_description || '—'}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className={isDark ? 'text-sm text-gray-300' : 'text-sm text-gray-600'}>
+                          {service.email_reception || '—'}
                         </p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -601,15 +609,28 @@ const AdminServicesPage: React.FC = () => {
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div>
+                <label className={isDark ? 'block text-sm font-medium mb-1 text-gray-200' : 'block text-sm font-medium mb-1 text-gray-700'}>
+                  Email de réception
+                </label>
+                <input
+                  type="email"
+                  value={formData.email_reception}
+                  onChange={(e) => handleFormChange('email_reception', e.target.value)}
+                  className={
+                    isDark
+                      ? 'w-full px-3 py-2 rounded-md border text-sm bg-gray-900 border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500'
+                      : 'w-full px-3 py-2 rounded-md border text-sm bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500'
+                  }
+                  placeholder="email@exemple.com"
+                />
+              </div>
+
+              <div className="pt-4 flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setShowFormModal(false)}
-                  className={
-                    isDark
-                      ? 'px-4 py-2 rounded-lg text-sm font-medium border border-gray-600 text-gray-200 hover:bg-gray-800'
-                      : 'px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-100'
-                  }
+                  className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-100"
                 >
                   Annuler
                 </button>
