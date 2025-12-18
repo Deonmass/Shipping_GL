@@ -6,7 +6,7 @@ import { Truck, Ship, Plane, Package, PartyPopper, SettingsIcon as Confetti } fr
 import HeroSection from '../components/home/HeroSection';
 import ServicesSection from '../components/home/ServicesSection';
 import AboutSection from '../components/home/AboutSection';
-import TestimonialsSection from '../components/home/TestimonialsSection';
+// import TestimonialsSection from '../components/home/TestimonialsSection';
 import SliderSection from '../components/home/SliderSection';
 import CtaSection from '../components/home/CtaSection';
 

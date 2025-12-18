@@ -1,52 +1,9 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { MessageSquare, MapPin, CheckCircle } from 'lucide-react';
+import { MapPin, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import {offices} from "../../constants";
 
 const CtaSection: React.FC = () => {
-  const { t } = useTranslation();
-
-  const offices = [
-    {
-      city: "KINSHASA",
-      isHeadquarters: true,
-      address: [
-        "Street du Livre N° 157,",
-        "Pauline Building, 3rd Floor #302,",
-        "Commune de GOMBE, KINSHASA, DRC"
-      ],
-      importance: "Hub principal pour l'accès au Port de Matadi, principal port maritime de la RDC"
-    },
-    {
-      city: "GOMA",
-      address: [
-        "Avenue Mulay Benezeth, n°50",
-        "Quartier les Volcans, Commune de Goma",
-        "Nord Kivu, DRC"
-      ],
-      importance: "Position stratégique pour les corridors commerciaux vers l'Afrique de l'Est"
-    },
-    {
-      city: "LUBUMBASHI",
-      address: [
-        "AV. SENDWE NO 90",
-        "MAKUTANO",
-        "COMMUNE DE LUBUMBASHI, DRC"
-      ],
-      importance: "Porte d'entrée vers le corridor Sud via Kasumbalesa et les ports de Durban"
-    },
-    {
-      city: "DAR ES SALAAM",
-      address: [
-        "SHIPPING GL",
-        "C/O ROYAL FREIGHT",
-        "PLOT 995/149, OFF UHURU STREET,",
-        "P.O. BOX 4040,",
-        "DAR ES SALAAM, TANZANIA"
-      ],
-      importance: "Accès direct au Port de Dar es Salaam, hub majeur pour l'Afrique de l'Est"
-    }
-  ];
 
   return (
     <section className="relative bg-primary-900 text-white min-h-screen scroll-snap-align-start flex items-center overflow-hidden">
@@ -69,7 +26,7 @@ const CtaSection: React.FC = () => {
               <h3 className="text-2xl md:text-3xl font-bold mb-1">
                 Nos Bureaux Stratégiques
               </h3>
-              <p className="text-lg text-gray-300 max-w-3xl mx-auto">
+              <p className="text-lg text-gray-300 max-w-3xl mx-auto mb-4">
                 Positionnés stratégiquement près des principaux ports d'entrée pour la RDC, 
                 nos bureaux garantissent une logistique optimale et un accès privilégié aux corridors commerciaux africains.
               </p>

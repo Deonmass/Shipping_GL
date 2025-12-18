@@ -1,27 +1,22 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Mail, Phone, Send, Clock, User, MessageSquare, FileText, DollarSign, Info, X, MessageCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { MapPin, Mail, FileText, DollarSign, Info, X, MessageCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import {offices} from "../constants";
 
 const ContactPage: React.FC = () => {
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showContactModal, setShowContactModal] = useState<string | null>(null);
-  const [contactForm, setContactForm] = useState({
-    email: '',
-    cc: '',
-    message: ''
-  });
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     subject: '',
     message: ''
   });
-  
-  const [isServicesOpen, setIsServicesOpen] = useState(false);
-  
+
   const contactServices = [
     {
       id: 'quotations',
@@ -253,43 +248,7 @@ const ContactPage: React.FC = () => {
             </motion.div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4">
-              {[
-                {
-                  city: "KINSHASA",
-                  isHeadquarters: true,
-                  address: [
-                    "Street du Livre N° 157,",
-                    "Pauline Building, 3rd Floor #302,",
-                    "Commune de GOMBE, KINSHASA, DRC"
-                  ]
-                },
-                {
-                  city: "GOMA",
-                  address: [
-                    "Avenue Mulay Benezeth, n°50",
-                    "Quartier les Volcans, Commune de Goma",
-                    "Nord Kivu, DRC"
-                  ]
-                },
-                {
-                  city: "LUBUMBASHI",
-                  address: [
-                    "AV. SENDWE NO 90",
-                    "MAKUTANO",
-                    "COMMUNE DE LUBUMBASHI, DRC"
-                  ]
-                },
-                {
-                  city: "DAR ES SALAAM",
-                  address: [
-                    "SHIPPING GL",
-                    "C/O ROYAL FREIGHT",
-                    "PLOT 995/149, OFF UHURU STREET,",
-                    "P.O. BOX 4040,",
-                    "DAR ES SALAAM, TANZANIA"
-                  ]
-                }
-              ].map((office, index) => (
+              {offices.map((office, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
