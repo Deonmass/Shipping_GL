@@ -1,0 +1,15 @@
+[Settings]
+ID = "3787c02f-0551-496d-8a4e-a2537fdec43e"
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+
+[[headers]]
+for = "/*"
+[headers.values]
+X-Frame-Options = "DENY"
+X-XSS-Protection = "1; mode=block"
+Referrer-Policy = "no-referrer"
+X-Content-Type-Options = "nosniff"
