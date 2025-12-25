@@ -7,12 +7,22 @@ import App from './App';
 import './index.css';
 import './i18n/i18n';
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { refetchOnWindowFocus: false },
+  },
+})
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
-        <Toaster position="top-right" />
+        <QueryClientProvider client={queryClient}>
+          <App />
+          <Toaster position="top-right" />
+        </QueryClientProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>

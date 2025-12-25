@@ -39,3 +39,18 @@ export const offices = [
         importance: "Accès direct au Port de Dar es Salaam, hub majeur pour l'Afrique de l'Est"
     }
 ];
+
+export {default as endpoints} from './endpoints'
+
+export const localStorageKeys = {
+    token: 'ldSAywaJOSdlaAhreab3342jkhvzx02HdHHDgsaosxkjbzpsnsgfas',
+    user: 'Udg2lashjdvskiu21e937sakshlxba93wbs93',
+    permissions: 'Hpagdb9273kjhvxlauhgedlkhxszx83ksbnp',
+}
+
+export const cacheTime = {
+    long: 6000,
+    medium: 3000,
+    short: 1000,
+    none: 0,
+}
