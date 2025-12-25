@@ -4,44 +4,7 @@ import { motion } from 'framer-motion';
 import { MapPin, CheckCircle, X, FileText, DollarSign, Info, Mail, Send, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
-
-const offices = [
-  {
-    city: "KINSHASA",
-    isHeadquarters: true,
-    address: [
-      "Street du Livre N° 157,",
-      "Pauline Building, 3rd Floor #302,",
-      "Commune de GOMBE, KINSHASA, DRC"
-    ]
-  },
-  {
-    city: "GOMA",
-    address: [
-      "Avenue Mulay Benezeth, n°50",
-      "Quartier les Volcans, Commune de Goma",
-      "Nord Kivu, DRC"
-    ]
-  },
-  {
-    city: "LUBUMBASHI",
-    address: [
-      "AV. SENDWE NO 90",
-      "MAKUTANO",
-      "COMMUNE DE LUBUMBASHI, DRC"
-    ]
-  },
-  {
-    city: "DAR ES SALAAM",
-    address: [
-      "SHIPPING GL",
-      "C/O ROYAL FREIGHT",
-      "PLOT 995/149, OFF UHURU STREET,",
-      "P.O. BOX 4040,",
-      "DAR ES SALAAM, TANZANIA"
-    ]
-  }
-];
+import { UseGetOpenOffices } from '../services';
 
 const teamMembers = [
   {
@@ -98,6 +61,9 @@ const AboutPage: React.FC = () => {
     cc: '',
     message: ''
   });
+
+  const {isLoading: isGettingOffices, data: offices} = UseGetOpenOffices()
+  console.log("Offices data:", offices);
 
   const contactServices = [
     {
@@ -530,7 +496,12 @@ const AboutPage: React.FC = () => {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {offices.map((office, index) => (
+            {isGettingOffices && (
+              <div className="col-span-full text-center text-gray-600">
+                {t('about.offices.loading')}
+              </div>
+            )}
+            {offices?.responseData?.data?.length && offices?.responseData?.data?.map((office: any, index: number) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
@@ -547,13 +518,13 @@ const AboutPage: React.FC = () => {
                     <CheckCircle className="w-6 h-6 text-primary-600" />
                   </div>
                 )}
-                <h3 className="text-xl font-semibold text-gray-900 mb-4 mt-8">{office.city}</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4 mt-8">{office.title}</h3>
                 <div className="space-y-1">
-                  {office.address.map((line, i) => (
-                    <p key={i} className="text-gray-600">{line}</p>
-                  ))}
+                  <p className="text-gray-600">{office.address_line_1}</p>
+                  <p className="text-gray-600">{office.address_line_2}</p>
+                  <p className="text-gray-600">{office.address_line_3}</p>
                 </div>
-                {office.isHeadquarters && (
+                {office.is_hq?.toString() === "1" && (
                   <div className="mt-4 inline-block bg-primary-50 text-primary-700 text-sm font-medium px-3 py-1 rounded-full">
                     {t('about.offices.headquarters')}
                   </div>

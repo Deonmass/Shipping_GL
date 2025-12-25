@@ -8,6 +8,12 @@ import {
     UseUpdateQuery
 } from "../QueryManager.ts";
 
+export const UseGetOpenOffices = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "OpenOffices",
+    options: options,
+    endpoint: endpoints.openOffices,
+})
+
 export const UseGetOffices = (options?: GetQueryParams) => UseGetQuery({
     identifier: "Offices",
     options: options,
