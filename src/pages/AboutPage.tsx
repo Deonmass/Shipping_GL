@@ -63,7 +63,6 @@ const AboutPage: React.FC = () => {
   });
 
   const {isLoading: isGettingOffices, data: offices} = UseGetOpenOffices()
-  console.log("Offices data:", offices);
 
   const contactServices = [
     {

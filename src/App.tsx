@@ -44,6 +44,7 @@ import AdminQuoteRequestsPage from './pages/admin/QuoteRequestsPage';
 import CandidaturePage from './pages/admin/CandidaturePage';
 import JobOfferPage from './pages/admin/JobOfferPage';
 import MenuVisibilityPage from './pages/admin/MenuVisibilityPage';
+import OfficesPage from "./pages/admin/OfficesPage.tsx";
 
 function App() {
   const location = useLocation();
@@ -107,6 +108,9 @@ function App() {
             <Route path="settings" element={<AdminSettingsPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="menu-visibility" element={<MenuVisibilityPage />} />
+
+            <Route path="offices" element={<OfficesPage />} />
+
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

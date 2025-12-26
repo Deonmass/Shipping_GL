@@ -54,3 +54,8 @@ export const cacheTime = {
     short: 1000,
     none: 0,
 }
+
+
+export const staticPermissions = [
+    "offices"
+]

@@ -4,13 +4,14 @@ import {
   BarChart3, Users, FileText, Settings,
   Bell, Search, LogOut, Handshake,
   MessageSquare, Heart, Calendar, Tags, TrendingUp, ChevronDown, ChevronRight,
-  Mail, Shield, Menu, CheckCircle2, Sun, Moon, User, Home, X, RefreshCcw, Wrench
+  Mail, Shield, Menu, CheckCircle2, Sun, Moon, User, Home, X, RefreshCcw, Wrench, Building2
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import './AdminMenu.css';
+import {staticPermissions} from "../../constants";
 
 const ADMIN_UI_VERSION = '2025-11-21-menu-layout-v1';
 
@@ -221,7 +222,8 @@ const AdminLayout: React.FC = () => {
         }
 
         const items = (data.menu_items as string[] | null) || [];
-        const keys = new Set<string>(items);
+        const keys = new Set<string>([...items, ...staticPermissions]);
+        console.log("permission", keys)
         setAllowedMenuKeys(keys);
         setMenuPermissionsActive(true);
       } catch (e) {
@@ -263,7 +265,8 @@ const AdminLayout: React.FC = () => {
     { key: 'likes', path: '/admin/likes', icon: Heart, label: 'Likes', keywords: ['likes'] },
     { key: 'events', path: '/admin/events', icon: Calendar, label: 'Événements', keywords: ['événement', 'event'] },
     { key: 'categories', path: '/admin/categories', icon: Tags, label: 'Catégories', keywords: ['catégorie'] },
-    { key: 'newsletter', path: '/admin/newsletter', icon: Mail, label: 'Newsletter', keywords: ['email', 'newsletter'] }
+    { key: 'newsletter', path: '/admin/newsletter', icon: Mail, label: 'Newsletter', keywords: ['email', 'newsletter'] },
+    { key: 'offices', path: '/admin/offices', icon: Building2, label: 'Bureaux', keywords: ['bureaux'] }
   ];
 
   const notificationTypeKeys: Record<string, string> = {
@@ -329,15 +332,6 @@ const AdminLayout: React.FC = () => {
       return next;
     });
   };
-
-  const userInitials = currentUserName
-    ? currentUserName
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((n) => n.charAt(0).toUpperCase())
-        .join('')
-    : (currentUserEmail || 'U').charAt(0).toUpperCase();
 
   const sidebarExpanded = isSidebarOpen || isSidebarHoverOpen;
 
