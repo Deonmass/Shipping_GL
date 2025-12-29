@@ -55,6 +55,25 @@ export const cacheTime = {
     none: 0,
 }
 
+export const permissionsOperations= [
+    {
+        id: 1,
+        title: "Role"
+    },
+    {
+        id: 2,
+        title: "Ajouter"
+    },
+    {
+        id: 3,
+        title: "Modifier"
+    },
+    {
+        id: 4,
+        title: "Supprimer"
+    }
+]
+
 
 export const staticPermissions = [
     "offices",
