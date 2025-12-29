@@ -1,14 +1,13 @@
 import React, {useState, useEffect} from 'react';
-import {Link, useNavigate} from 'react-router-dom';
+import {Link} from 'react-router-dom';
 import {motion} from 'framer-motion';
 import {Ship, Mail, Lock, Eye, EyeOff, ShieldCheck} from 'lucide-react';
-import {useAuth} from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import {UseLogin} from "../services";
 import {setAuthUser} from "../utils";
 
 const AdminLoginPage: React.FC = () => {
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');

@@ -3,13 +3,13 @@ import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
 import {useOutletContext} from "react-router-dom";
 import {format} from "date-fns";
 import {fr} from "date-fns/locale";
-import {UseGetOpenOffices} from "../../services";
+import {UseGetOffices} from "../../services";
 
 const OfficesPage = () => {
     const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
     const isDark = theme === 'dark';
 
-    const {isLoading: isGettingOffices, isRefetching: isReGettingOffices, data: offices, refetch: reGetOffices} = UseGetOpenOffices()
+    const {isLoading: isGettingOffices, isRefetching: isReGettingOffices, data: offices, refetch: reGetOffices} = UseGetOffices()
 
     const handleToggleVisibility = (item: any) => {
         console.log(item)
