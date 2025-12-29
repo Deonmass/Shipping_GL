@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {useOutletContext} from 'react-router-dom';
 import {motion} from 'framer-motion';
-import {Shield, Save, RefreshCw, Plus, Trash2, AlertTriangle, X, Pencil, Pin, MoreVertical} from 'lucide-react';
+import {Shield, Save, Plus, Trash2, AlertTriangle, X, Pencil, Pin, MoreVertical} from 'lucide-react';
 import {supabase} from '../../lib/supabase';
 import Swal from 'sweetalert2';
 import {UseAddRole, UseDeleteRole, UseGetRoles} from "../../services";
@@ -40,13 +40,13 @@ const RolePermissionsPage: React.FC = () => {
     // const [permissions, setPermissions] = useState<Permission[]>([]);
     const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
     const [saving, setSaving] = useState(false);
-    const [selectedRole, setSelectedRole] = useState<string>('');
+    const [selectedRole, setSelectedRole] = useState<any>('');
     const [showAddRoleModal, setShowAddRoleModal] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
     const [newRole, setNewRole] = useState({title: '', description: ''});
     const [newRoleIsAdmin, setNewRoleIsAdmin] = useState<boolean>(true);
     const [showEditRoleModal, setShowEditRoleModal] = useState<string | null>(null);
-    const [editRole, setEditRole] = useState<{ name: string; description: string }>({name: '', description: ''});
+    const [editRole, setEditRole] = useState<{ title: string; description: string }>({name: '', description: ''});
     const [pinnedSlugs, setPinnedSlugs] = useState<Set<string>>(new Set());
     const [actionMenuRoleId, setActionMenuRoleId] = useState<string | null>(null);
 
@@ -78,6 +78,7 @@ const RolePermissionsPage: React.FC = () => {
                     title: 'Erreur',
                     text: addResult?.responseData?.message || "Erreur lors de l'enregistrement"
                 });
+                setShowAddRoleModal(false);
             } else {
                 reGetRoles()
                 Swal.fire({
@@ -94,6 +95,26 @@ const RolePermissionsPage: React.FC = () => {
         }
 
     }, [addResult]);
+
+    useEffect(() => {
+        if (deleteResult) {
+            if (deleteResult?.responseData?.error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erreur',
+                    text: deleteResult?.responseData?.message || "Erreur lors de la suppression"
+                });
+                setShowDeleteConfirm(null);
+            } else {
+                reGetRoles()
+                Swal.fire({icon: 'success', title: 'Succès', text: 'Rôle supprimé avec succès'});
+                setSelectedRole(null)
+                setShowAddRoleModal(false);
+                setShowDeleteConfirm(null);
+            }
+        }
+
+    }, [deleteResult]);
 
     const fetchCustomRoles = async () => {
         try {
@@ -196,34 +217,7 @@ const RolePermissionsPage: React.FC = () => {
     };
 
     const handleDeleteRole = async (roleId: string) => {
-        console.log(roleId)
-        return
-        try {
-            const roleToDelete = customRoles.find(r => r.id === roleId);
-            if (!roleToDelete) return;
-
-            await supabase
-                .from('role_permissions')
-                .delete()
-                .eq('role', roleToDelete.slug);
-
-            const {error} = await supabase
-                .from('roles')
-                .delete()
-                .eq('id', roleId);
-
-            if (error) throw error;
-
-            Swal.fire({icon: 'success', title: 'Succès', text: 'Rôle supprimé avec succès'});
-            await fetchCustomRoles();
-            await fetchPermissions();
-            setSelectedRole(''); // reset, will be set from fetched roles
-        } catch (error: any) {
-            console.error('Error deleting role:', error);
-            Swal.fire({icon: 'error', title: 'Erreur', text: error.message || 'Erreur lors de la suppression'});
-        } finally {
-            setShowDeleteConfirm(null);
-        }
+        deleteRole({id: roleId, status: "-1"})
     };
 
     const handleSave = async () => {
@@ -382,19 +376,6 @@ const RolePermissionsPage: React.FC = () => {
 
     const isDark = theme === 'dark';
 
-    const formatResourceName = (resource: string) => {
-        const resourceNames: { [key: string]: string } = {
-            'menu_visibility': 'Visibilité des menus',
-            'users_assign_roles': 'Attribuer des rôles',
-            'users_permissions': 'Gérer les permissions',
-            // Ajoutez d'autres mises en forme personnalisées si nécessaire
-        };
-
-        return resourceNames[resource] || resource.split('_').map(word =>
-            word.charAt(0).toUpperCase() + word.slice(1)
-        ).join(' ');
-    };
-
     return (
         <div className="p-6 space-y-6">
             <AdminPageHeader
@@ -404,6 +385,26 @@ const RolePermissionsPage: React.FC = () => {
                     await reGetRoles()
                 }}
             />
+
+            {/* Légende dynamique */}
+            {selectedRole && (
+                <div
+                    className={`rounded-lg border p-4 mt-4 ${
+                        isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                    }`}
+                >
+                    <h3
+                        className={`text-lg font-semibold mb-2 ${
+                            isDark ? 'text-white' : 'text-gray-900'
+                        }`}
+                    >
+                        Permissions du rôle "{selectedRole?.title}"
+                    </h3>
+                    <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                        {selectedRole?.description}
+                    </p>
+                </div>
+            )}
 
             <div className="flex space-x-6">
                 {/* Liste des rôles */}
@@ -415,14 +416,11 @@ const RolePermissionsPage: React.FC = () => {
                     <h2 className={`text-lg font-semibold mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Rôles</h2>
                     <div className="space-y-2">
                         {roles?.responseData?.data?.map((role: any) => {
-                            //const r = customRoles.find(cr => cr.slug === roleSlug);
-                            //if (!r) return null;
-                            //const pinned = pinnedSlugs.has(roleSlug);
                             return (
                                 <div
                                     key={role?.id}
                                     className={`rounded-lg border transition-colors ${
-                                        selectedRole === role?.id
+                                        selectedRole?.id === role?.id
                                             ? isDark
                                                 ? 'border-primary-500 bg-primary-600/20 hover:bg-primary-600/30'
                                                 : 'border-primary-600 bg-primary-50 hover:bg-primary-100'
@@ -433,7 +431,7 @@ const RolePermissionsPage: React.FC = () => {
                                 >
                                     <div className="flex items-center justify-between px-3 py-2">
                                         <button
-                                            onClick={() => setSelectedRole(role?.id)}
+                                            onClick={() => setSelectedRole(role)}
                                             className={`text-left font-medium truncate flex-1 ${
                                                 isDark ? 'text-white' : 'text-gray-900'
                                             }`}
@@ -463,28 +461,13 @@ const RolePermissionsPage: React.FC = () => {
                                                 >
                                                     <button
                                                         type="button"
-                                                        className={`w-full px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 ${
-                                                            isDark ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-700'
+                                                        className={`w-full px-3 py-2 text-sm flex items-center gap-2   hover:bg-gray-50 ${
+                                                            isDark ? 'text-blue-400 hover:bg-blue-950/40' : 'text-blue-600'
                                                         }`}
-                                                        onClick={() => {
-                                                            setPinnedSlugs(prev => {
-                                                                const n = new Set(prev);
-                                                                if (n.has(role)) n.delete(role); else n.add(role);
-                                                                return n;
-                                                            });
-                                                            setActionMenuRoleId(null);
-                                                        }}
-                                                    >
-                                                        <Pin className="w-4 h-4"/>
-                                                        <span>{role ? 'Désépingler' : 'Épingler'}</span>
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        className="w-full px-3 py-2 text-sm flex items-center gap-2 text-gray-700 hover:bg-gray-50"
                                                         onClick={() => {
                                                             setShowEditRoleModal(role.id);
                                                             setEditRole({
-                                                                name: role.title,
+                                                                title: role.title,
                                                                 description: role.description
                                                             });
                                                             setActionMenuRoleId(null);
@@ -612,25 +595,6 @@ const RolePermissionsPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Légende dynamique */}
-            {selectedRole && (
-                <div
-                    className={`rounded-lg border p-4 mt-4 ${
-                        isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-                    }`}
-                >
-                    <h3
-                        className={`text-lg font-semibold mb-2 ${
-                            isDark ? 'text-white' : 'text-gray-900'
-                        }`}
-                    >
-                        Permissions du rôle "{getRoleName(selectedRole)}"
-                    </h3>
-                    <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                        {getRoleDescription(selectedRole)}
-                    </p>
-                </div>
-            )}
 
             {/* Modale édition rôle */}
             {showEditRoleModal && (() => {
@@ -708,8 +672,8 @@ const RolePermissionsPage: React.FC = () => {
                                         <input
                                             type="text"
                                             required
-                                            value={editRole.name}
-                                            onChange={(e) => setEditRole({...editRole, name: e.target.value})}
+                                            value={editRole.title}
+                                            onChange={(e) => setEditRole({...editRole, title: e.target.value})}
                                             className={`w-full rounded-lg px-4 py-2 focus:ring-primary-500 focus:border-primary-500 border ${
                                                 isDark
                                                     ? 'bg-gray-700 border-gray-600 text-white'
@@ -914,7 +878,7 @@ const RolePermissionsPage: React.FC = () => {
                                 onClick={() => handleDeleteRole(showDeleteConfirm!)}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
                             >
-                                Supprimer
+                                {isDeletingRole ? "Chargement..." : "Supprimer"}
                             </button>
                         </div>
                     </motion.div>
