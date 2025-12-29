@@ -5,6 +5,7 @@ import {Ship, Mail, Lock, Eye, EyeOff, ShieldCheck} from 'lucide-react';
 import {useAuth} from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import {UseLogin} from "../services";
+import {setAuthUser} from "../utils";
 
 const AdminLoginPage: React.FC = () => {
     const navigate = useNavigate();
@@ -23,8 +24,9 @@ const AdminLoginPage: React.FC = () => {
         if (loginData?.responseData) {
             if (loginData?.responseData?.error) {
                 toast.error(loginData?.responseData?.message || 'Erreur lors de la vérification des informations');
-                setError("loginData?.responseData?.message")
+                setError(loginData?.responseData?.message)
             } else {
+                setAuthUser(loginData?.responseData?.data)
                 toast.success('Connexion réussie');
                 navigate('/admin/dashboard');
             }
