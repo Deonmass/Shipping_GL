@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { Shield, Save, RefreshCw, Plus, Trash2, AlertTriangle, X, Pencil, Pin, MoreVertical } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Swal from 'sweetalert2';
+import {UseGetRoles} from "../../services";
+import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
 
 interface Permission {
   id: string;
@@ -28,9 +30,9 @@ interface CustomRole {
 
 const RolePermissionsPage: React.FC = () => {
   const { theme } = useOutletContext<{ theme: 'dark' | 'light' }>();
+  const {data: roles, isPending: isGettingRoles, refetch: reGetRoles} = UseGetRoles()
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [showAddRoleModal, setShowAddRoleModal] = useState(false);
@@ -42,7 +44,6 @@ const RolePermissionsPage: React.FC = () => {
   const [pinnedSlugs, setPinnedSlugs] = useState<Set<string>>(new Set());
   const [actionMenuRoleId, setActionMenuRoleId] = useState<string | null>(null);
 
-  const baseRoles: string[] = [];
   const resources = ['posts', 'comments', 'users', 'events', 'categories', 'likes', 'newsletter', 'services', 'menu_visibility'];
   const [allRoles, setAllRoles] = useState<string[]>([]);
 
@@ -95,7 +96,6 @@ const RolePermissionsPage: React.FC = () => {
 
   const fetchPermissions = async () => {
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('role_permissions')
         .select('*')
@@ -114,7 +114,6 @@ const RolePermissionsPage: React.FC = () => {
       console.error('Error fetching permissions:', error);
       Swal.fire({ icon: 'error', title: 'Erreur', text: 'Erreur lors du chargement des permissions' });
     } finally {
-      setLoading(false);
     }
   };
 
@@ -346,8 +345,6 @@ const RolePermissionsPage: React.FC = () => {
     return customRole?.name || slug;
   };
 
-  const isCustomRole = (slug: string): boolean => true;
-
   const getRoleDescription = (roleSlug: string): string => {
     const actionMap: { [key: string]: string } = {
       can_view: 'voir',
@@ -382,7 +379,7 @@ const RolePermissionsPage: React.FC = () => {
     return `Ce rôle peut ${resourcesWithActions.join(', ')} et ${last}.`;
   };
 
-  if (loading) {
+  if (isGettingRoles) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
@@ -407,24 +404,13 @@ const RolePermissionsPage: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center mb-4 mt-20">
-        <h1 className={`text-2xl font-bold flex items-center gap-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-          <Shield className="w-6 h-6 text-primary-500" />
-          Gestion des Permissions
-        </h1>
-        <div className="flex space-x-3">
-          <button
-            onClick={fetchPermissions}
-            className={`px-4 py-2 rounded-lg flex items-center border text-sm font-medium ${
-              theme === 'dark'
-                ? 'bg-gray-800 border-gray-600 text-gray-100 hover:bg-gray-700'
-                : 'bg-gray-100 border-gray-300 text-gray-800 hover:bg-gray-200'
-            }`}
-          >
-            <RefreshCw className="w-4 h-4 mr-2" /> Actualiser
-          </button>
-        </div>
-      </div>
+      <AdminPageHeader
+          Icon={<Shield className="w-6 h-6 text-primary-500" />}
+          title="Gestion des Permissions"
+          onRefresh={async () => {
+            await reGetRoles()
+          }}
+      />
 
       <div className="flex space-x-6">
         {/* Liste des rôles */}

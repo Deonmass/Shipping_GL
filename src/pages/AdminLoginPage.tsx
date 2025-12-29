@@ -28,7 +28,8 @@ const AdminLoginPage: React.FC = () => {
             } else {
                 setAuthUser(loginData?.responseData?.data)
                 toast.success('Connexion réussie');
-                navigate('/admin/dashboard');
+                window.location.href = "/admin/dashboard"
+                //navigate('/admin/dashboard');
             }
         }
     }, [loginData]);

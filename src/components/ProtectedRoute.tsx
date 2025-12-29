@@ -11,6 +11,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin 
   const {currentUser} = useContext(AdminContext);
   const location = useLocation();
 
+  console.log(">>>currentUser", currentUser)
+
   if (!currentUser) {
     return <Navigate to={requireAdmin ? "/admin-login" : "/login"} state={{ from: location }} replace />;
   }
