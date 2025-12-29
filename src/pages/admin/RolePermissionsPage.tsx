@@ -1,13 +1,18 @@
 import React, {useState, useEffect} from 'react';
 import {useOutletContext} from 'react-router-dom';
 import {motion} from 'framer-motion';
-import {Shield, Save, Plus, Trash2, AlertTriangle, X, Pencil, Pin, MoreVertical} from 'lucide-react';
-import {supabase} from '../../lib/supabase';
+import {Shield, Save, Plus, Trash2, AlertTriangle, X, Pencil, MoreVertical} from 'lucide-react';
 import Swal from 'sweetalert2';
-import {UseAddRole, UseDeleteRole, UseGetRoles, UseUpdateRole} from "../../services";
+import {
+    UseAddRole,
+    UseDeleteRole,
+    UseGetRoles,
+    UseUpdateRole,
+    UseGetAppPermissions,
+    UseGetRolesPermissions
+} from "../../services";
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
 import {permissionsOperations} from "../../constants";
-import {UseGetAppPermissions} from "../../services/queries/UsersQueries.ts";
 
 const RolePermissionsPage: React.FC = () => {
     const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
@@ -16,6 +21,7 @@ const RolePermissionsPage: React.FC = () => {
     const {data: updateResult, mutate: updateRole, isPending: isUpdatingRole} = UseUpdateRole()
     const {data: deleteResult, mutate: deleteRole, isPending: isDeletingRole} = UseDeleteRole()
     const {data: permissions, isPending: isGettingPermissions} = UseGetAppPermissions()
+    const {data: rolesPermissions, isPending: isGettingRolesPermissions} = UseGetRolesPermissions({format: "array"})
 
     const [selectedRole, setSelectedRole] = useState<any>('');
     const [showAddRoleModal, setShowAddRoleModal] = useState(false);
@@ -122,7 +128,7 @@ const RolePermissionsPage: React.FC = () => {
 
     };
 
-    if (isGettingRoles || isGettingPermissions) {
+    if (isGettingRoles || isGettingPermissions || isGettingRolesPermissions) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div

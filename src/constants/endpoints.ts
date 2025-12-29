@@ -7,6 +7,7 @@ const urls =  {
     roles: '/api/roles',
     offices: '/api/offices',
     appPermissions: '/api/app-permissions',
+    rolesPermissions: '/api/role-default-permissions',
 }
 
 export default urls

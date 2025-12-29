@@ -58,7 +58,7 @@ export const cacheTime = {
 export const permissionsOperations= [
     {
         id: 1,
-        title: "Role"
+        title: "Voir"
     },
     {
         id: 2,

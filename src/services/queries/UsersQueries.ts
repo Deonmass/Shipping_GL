@@ -36,6 +36,11 @@ export const UseAddRole = () => UsePostQuery(endpoints.roles, "addRole")
 export const UseUpdateRole = () => UseUpdateQuery(endpoints.roles, "updateRole")
 export const UseDeleteRole = () => UseUpdateQuery(`${endpoints.roles}-delete`, "deleteRole")
 
+export const UseGetRolesPermissions = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "RolesPermissions",
+    options: options,
+    endpoint: endpoints.appPermissions,
+})
 export const UseGetAppPermissions = (options?: GetQueryParams) => UseGetQuery({
     identifier: "AppPermissions",
     options: options,
