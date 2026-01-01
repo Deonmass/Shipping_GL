@@ -39,13 +39,16 @@ export const UseDeleteRole = () => UseUpdateQuery(`${endpoints.roles}-delete`, "
 export const UseGetRolesPermissions = (options?: GetQueryParams) => UseGetQuery({
     identifier: "RolesPermissions",
     options: options,
-    endpoint: endpoints.appPermissions,
+    endpoint: endpoints.rolesPermissions,
 })
+export const UseUpdateRolePermissions = () => UsePostQuery(`${endpoints.rolesPermissions}-add-multi`, "updateRolePermissions")
+
 export const UseGetAppPermissions = (options?: GetQueryParams) => UseGetQuery({
     identifier: "AppPermissions",
     options: options,
     endpoint: endpoints.appPermissions,
 })
+
 // export const UseGetAppPermissionOps = (options?: GetQueryParams) => UseGetQuery({
 //     identifier: "AppPermissionsOps",
 //     options: options,

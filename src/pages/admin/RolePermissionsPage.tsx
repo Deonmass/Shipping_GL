@@ -2,54 +2,103 @@ import React, {useState, useEffect} from 'react';
 import {useOutletContext} from 'react-router-dom';
 import {motion} from 'framer-motion';
 import {Shield, Save, Plus, Trash2, AlertTriangle, X, Pencil, MoreVertical} from 'lucide-react';
-import Swal from 'sweetalert2';
 import {
     UseAddRole,
     UseDeleteRole,
     UseGetRoles,
     UseUpdateRole,
     UseGetAppPermissions,
-    UseGetRolesPermissions
+    UseGetRolesPermissions, UseUpdateRolePermissions
 } from "../../services";
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
 import {permissionsOperations} from "../../constants";
+import AppToast from "../../utils/AppToast.ts";
+
+const CheckInput = ({isDark, permissions, ops, role, permission, onChange}: {
+    isDark: boolean,
+    permissions: any,
+    ops: string,
+    role: any,
+    permission: any
+    onChange: (value: any) => void,
+}) => {
+
+    const exists = (): boolean => {
+        if(permissions && permissions[role?.id]){
+            if(permissions[role?.id][permission?.id]){
+                return permissions[role?.id][permission?.id]?.permission_ops?.split(",").includes(ops)
+            }
+        }
+        return false
+    }
+
+    const toggleValue = () => {
+        const perms =  permissions && permissions[role?.id]  ? permissions[role?.id][permission?.id] : [];
+        let values = perms?.permission_ops
+            ?.split(",")
+            ?.map((v: string) => v)
+            ?.filter(Boolean)
+
+        const index = values?.indexOf(ops)
+        if (index >= 0)  values.splice(index, 1)
+        else {
+            if(values) values.push(ops)
+            else values = [`${ops}`]
+        }
+        onChange({
+            role_id: role?.id,
+            permission_id: permission?.id,
+            new_permissions: values.join(",")
+        })
+    }
+
+    return (
+        <input
+            type="checkbox"
+            checked={exists()}
+            onChange={() => toggleValue()}
+            className={`w-5 h-5 cursor-pointer rounded-sm border-2 text-emerald-500 accent-emerald-500 focus:ring-emerald-500 focus:ring-offset-1 ${
+                isDark
+                    ? 'border-emerald-400 bg-gray-800'
+                    : 'border-emerald-500 bg-white'
+            }`}
+        />
+    )
+}
 
 const RolePermissionsPage: React.FC = () => {
     const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
+    const isDark = theme === 'dark';
+
     const {data: roles, isPending: isGettingRoles, refetch: reGetRoles} = UseGetRoles()
     const {data: addResult, mutate: addRole, isPending: isAddingRole} = UseAddRole()
     const {data: updateResult, mutate: updateRole, isPending: isUpdatingRole} = UseUpdateRole()
     const {data: deleteResult, mutate: deleteRole, isPending: isDeletingRole} = UseDeleteRole()
     const {data: permissions, isPending: isGettingPermissions} = UseGetAppPermissions()
-    const {data: rolesPermissions, isPending: isGettingRolesPermissions} = UseGetRolesPermissions({format: "array"})
+    const {data: rolesPermissions, isPending: isGettingRolesPermissions, refetch: reGetRolePermissions} = UseGetRolesPermissions({format: "array"})
+    const {data: updateRolePermissionResult, mutate: updateRolePermissions, isPending: isUpdatingRolePermissions} = UseUpdateRolePermissions()
 
+    const [permissionStatus, setPermissionStatus] = useState<any>();
     const [selectedRole, setSelectedRole] = useState<any>('');
     const [showAddRoleModal, setShowAddRoleModal] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
     const [newRole, setNewRole] = useState({title: '', description: ''});
     const [showEditRoleModal, setShowEditRoleModal] = useState<string | null>(null);
-    const [editRole, setEditRole] = useState<{ id: string, title: string; description: string }>({id: "", title: '', description: ''});
+    const [editRole, setEditRole] = useState<{ id: string, title: string; description: string }>({
+        id: "",
+        title: '',
+        description: ''
+    });
     const [actionMenuRoleId, setActionMenuRoleId] = useState<string | null>(null);
 
     useEffect(() => {
         if (addResult) {
             if (addResult?.responseData?.error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Erreur',
-                    text: addResult?.responseData?.message || "Erreur lors de l'enregistrement"
-                });
+                AppToast.error(isDark, addResult?.responseData?.message || "Erreur lors de l'enregistrement")
                 setShowAddRoleModal(false);
             } else {
                 reGetRoles()
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Succès',
-                    text: 'Rôle créé avec succès',
-                    background: isDark ? '#020617' : '#ffffff',
-                    color: isDark ? '#e5e7eb' : '#111827',
-                    confirmButtonColor: '#22c55e',
-                });
+                AppToast.success(isDark, 'Rôle créé avec succès',)
                 setNewRole({title: '', description: ''});
                 setShowAddRoleModal(false);
             }
@@ -59,15 +108,11 @@ const RolePermissionsPage: React.FC = () => {
     useEffect(() => {
         if (updateResult) {
             if (updateResult?.responseData?.error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Erreur',
-                    text: updateResult?.responseData?.message || "Erreur lors de la modification"
-                });
+                AppToast.error(isDark, updateResult?.responseData?.message || "Erreur lors de la modification")
                 setShowAddRoleModal(false);
             } else {
                 reGetRoles()
-                Swal.fire({icon: 'success', title: 'Succès', text: 'Rôle modifié avec succès'});
+                AppToast.success(isDark, 'Rôle modifié avec succès')
                 setShowEditRoleModal(null);
                 setEditRole({id: '', title: '', description: ''});
             }
@@ -77,15 +122,11 @@ const RolePermissionsPage: React.FC = () => {
     useEffect(() => {
         if (deleteResult) {
             if (deleteResult?.responseData?.error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Erreur',
-                    text: deleteResult?.responseData?.message || "Erreur lors de la suppression"
-                });
+                AppToast.error(isDark, deleteResult?.responseData?.message || "Erreur lors de la suppression")
                 setShowDeleteConfirm(null);
             } else {
                 reGetRoles()
-                Swal.fire({icon: 'success', title: 'Succès', text: 'Rôle supprimé avec succès'});
+                AppToast.success(isDark, 'Rôle supprimé avec succès')
                 setSelectedRole(null)
                 setShowAddRoleModal(false);
                 setShowDeleteConfirm(null);
@@ -93,11 +134,41 @@ const RolePermissionsPage: React.FC = () => {
         }
     }, [deleteResult]);
 
+    useEffect(() => {
+        if (updateRolePermissionResult) {
+            if (updateRolePermissionResult?.responseData?.error) {
+                AppToast.error(isDark, updateRolePermissionResult?.responseData?.message || "Erreur lors de la mise a jour de permissions")
+                setShowDeleteConfirm(null);
+            } else {
+                reGetRolePermissions()
+                AppToast.success(isDark, 'Les permissions du role mises a jour avec succès')
+            }
+        }
+    }, [updateRolePermissionResult]);
+
+    useEffect(() => {
+        if (selectedRole && rolesPermissions?.responseData?.data) {
+            const permissions = rolesPermissions?.responseData?.data[selectedRole?.id]
+            const temp: any = {}
+            if(permissions){
+                Object.values(permissions)?.forEach((item: any) => {
+                    if(!temp[item?.role_id]) temp[item?.role_id] = []
+                    temp[`${item?.role_id}`][`${item?.permission_id}`] = {
+                        role_id: item?.role_id,
+                        permission_id: item?.permission_id,
+                        permission_ops: item?.permission_ops,
+                        created_by: "1",
+                    }
+                })
+            }
+            setPermissionStatus(temp)
+        }
+    }, [rolesPermissions, selectedRole]);
 
     const handleAddRole = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newRole.title.trim()) {
-            Swal.fire({icon: 'error', title: 'Erreur', text: 'Le nom du rôle est requis'});
+            AppToast.error(isDark, 'Le nom du rôle est requis')
             return;
         }
 
@@ -114,7 +185,7 @@ const RolePermissionsPage: React.FC = () => {
     const handleEditRole = (e: React.FormEvent) => {
         e.preventDefault();
         if (!editRole?.title.trim()) {
-            Swal.fire({icon: 'error', title: 'Erreur', text: 'Le nom du rôle est requis'});
+            AppToast.error(isDark, 'Le nom du rôle est requis')
             return;
         }
         updateRole({
@@ -125,10 +196,30 @@ const RolePermissionsPage: React.FC = () => {
     }
 
     const handleSave = async () => {
-
+        const result  = Object.values(permissionStatus)
+            .flatMap((rolePermissions: any) => Object.values(rolePermissions))
+        updateRolePermissions({role_id: selectedRole?.id, permissions: result})
     };
 
-    if (isGettingRoles || isGettingPermissions || isGettingRolesPermissions) {
+    const onCheckInputPress = (opsValue: any) => {
+        setPermissionStatus((prev: any) => {
+            return {
+                ...prev,
+                [opsValue.role_id]: {
+                    ...(prev?.[opsValue.role_id] || {}),
+                    [opsValue.permission_id]: {
+                        role_id: opsValue.role_id,
+                        permission_id: opsValue.permission_id,
+                        permission_ops: opsValue.new_permissions,
+                        created_by: "1",
+                    },
+                },
+            }
+        })
+    }
+
+
+    if (isGettingRoles || isGettingPermissions || isGettingRolesPermissions || isUpdatingRolePermissions) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div
@@ -137,7 +228,6 @@ const RolePermissionsPage: React.FC = () => {
         );
     }
 
-    const isDark = theme === 'dark';
 
     return (
         <div className="p-6 space-y-6">
@@ -287,6 +377,15 @@ const RolePermissionsPage: React.FC = () => {
                                             : 'text-gray-700 bg-gray-100'
                                     }`}
                                 >
+                                    Code
+                                </th>
+                                <th
+                                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider sticky left-0 ${
+                                        isDark
+                                            ? 'text-gray-200 bg-gray-900/40'
+                                            : 'text-gray-700 bg-gray-100'
+                                    }`}
+                                >
                                     Ressource
                                 </th>
                                 {permissionsOperations.map(
@@ -314,30 +413,46 @@ const RolePermissionsPage: React.FC = () => {
                                             isDark ? 'text-white bg-gray-800' : 'text-gray-900 bg-white'
                                         }`}
                                     >
+                                        {permission.id}
+                                    </td>
+                                    <td
+                                        className={`px-6 py-4 font-medium sticky left-0 ${
+                                            isDark ? 'text-white bg-gray-800' : 'text-gray-900 bg-white'
+                                        }`}
+                                    >
                                         {permission.title}
                                     </td>
-                                    {permissionsOperations.map((permField) => (
-                                        <td key={permField.id} className="px-4 py-4 text-center">
-                                            <input
-                                                type="checkbox"
-                                                //checked={getPermission(selectedRole, resource, permField as keyof Permission)}
-                                                // onChange={(e) =>
-                                                //     handlePermissionChange(
-                                                //         selectedRole,
-                                                //         resource,
-                                                //         permField as keyof Permission,
-                                                //         e.target.checked,
-                                                //     )
-                                                // }
-                                                onChange={console.log}
-                                                className={`w-5 h-5 cursor-pointer rounded-sm border-2 text-emerald-500 accent-emerald-500 focus:ring-emerald-500 focus:ring-offset-1 ${
-                                                    isDark
-                                                        ? 'border-emerald-400 bg-gray-800'
-                                                        : 'border-emerald-500 bg-white'
-                                                }`}
+                                    {permissionsOperations.map((opsField) => selectedRole ? (
+                                        <td key={opsField.id} className="px-4 py-4 text-center">
+                                            <CheckInput
+                                                ops={opsField?.id?.toString()}
+                                                permission={permission}
+                                                role={selectedRole}
+                                                isDark={isDark}
+                                                //permissions={rolesPermissions?.responseData?.data[selectedRole?.id] ? rolesPermissions?.responseData?.data[selectedRole?.id][permission.id] : null}
+                                                permissions={permissionStatus}
+                                                onChange={onCheckInputPress}
                                             />
+                                            {/*<input*/}
+                                            {/*    type="checkbox"*/}
+                                            {/*    checked={getStatus(selectedRole, permission, `${opsField.id}`)}*/}
+                                            {/*    // onChange={(e) =>*/}
+                                            {/*    //     handlePermissionChange(*/}
+                                            {/*    //         selectedRole,*/}
+                                            {/*    //         resource,*/}
+                                            {/*    //         permField as keyof Permission,*/}
+                                            {/*    //         e.target.checked,*/}
+                                            {/*    //     )*/}
+                                            {/*    // }*/}
+                                            {/*    onChange={console.log}*/}
+                                            {/*    className={`w-5 h-5 cursor-pointer rounded-sm border-2 text-emerald-500 accent-emerald-500 focus:ring-emerald-500 focus:ring-offset-1 ${*/}
+                                            {/*        isDark*/}
+                                            {/*            ? 'border-emerald-400 bg-gray-800'*/}
+                                            {/*            : 'border-emerald-500 bg-white'*/}
+                                            {/*    }`}*/}
+                                            {/*/>*/}
                                         </td>
-                                    ))}
+                                    ) : null)}
                                 </tr>
                             ))}
                             </tbody>
@@ -349,6 +464,7 @@ const RolePermissionsPage: React.FC = () => {
                         }`}
                     >
                         <button
+                            disabled={!selectedRole}
                             onClick={handleSave}
                             className="px-5 py-2.5 bg-primary-600 rounded-lg text-white flex items-center gap-2 hover:bg-primary-700 disabled:opacity-50 text-sm font-medium"
                         >
@@ -361,7 +477,7 @@ const RolePermissionsPage: React.FC = () => {
 
             {/* Modale édition rôle */}
             {showEditRoleModal && (() => {
-               return (
+                return (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                         <motion.div
                             initial={{opacity: 0, scale: 0.95}}
