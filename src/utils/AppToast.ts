@@ -20,8 +20,18 @@ const error = (isDark: boolean, message: string) => {
         color: isDark ? '#e5e7eb' : '#111827',
     });
 }
+const warning = (isDark: boolean, message: string) => {
+    Swal.fire({
+        icon: 'warning',
+        title: 'Message',
+        text: message,
+        background: isDark ? '#020617' : '#ffffff',
+        color: isDark ? '#e5e7eb' : '#111827',
+    });
+}
 
 export default {
     success,
     error,
+    warning
 }
