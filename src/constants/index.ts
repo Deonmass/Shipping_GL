@@ -55,6 +55,15 @@ export const cacheTime = {
     none: 0,
 }
 
+
+
+export const appOps = {
+    read: 1,
+    create:  2,
+    update: 3,
+    delete: 4
+}
+
 export const permissionsOperations= [
     {
         id: 1,
