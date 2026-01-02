@@ -1,9 +1,11 @@
 import React from 'react';
 import { MapPin, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import {offices} from "../../constants";
+import {UseGetOpenOffices} from "../../services";
 
 const CtaSection: React.FC = () => {
+
+    const {data: offices, isLoading: isGettingOffices} = UseGetOpenOffices()
 
   return (
     <section className="relative bg-primary-900 text-white min-h-screen scroll-snap-align-start flex items-center overflow-hidden">
@@ -32,8 +34,10 @@ const CtaSection: React.FC = () => {
               </p>
             </div>
 
+              {isGettingOffices ? <div>Chargement ...</div> : null}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {offices.map((office, index) => (
+              {offices?.responseData?.data?.map((office: any, index: null) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
@@ -45,9 +49,9 @@ const CtaSection: React.FC = () => {
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center">
                       <MapPin className="w-6 h-6 text-accent-400 mr-3" />
-                      <h4 className="text-xl font-semibold text-white">{office.city}</h4>
+                      <h4 className="text-xl font-semibold text-white">{office.title}</h4>
                     </div>
-                    {office.isHeadquarters && (
+                    {office?.is_hq?.toString() === "1" && (
                       <div className="flex items-center">
                         <CheckCircle className="w-5 h-5 text-accent-400 mr-1" />
                         <span className="text-sm text-accent-400 font-medium">Siège</span>
@@ -56,14 +60,14 @@ const CtaSection: React.FC = () => {
                   </div>
                   
                   <div className="space-y-1 mb-4">
-                    {office.address.map((line, i) => (
-                      <p key={i} className="text-gray-300 text-sm">{line}</p>
-                    ))}
+                      <p className="text-gray-300 text-sm">{office?.address_line_1}</p>
+                      <p className="text-gray-300 text-sm">{office?.address_line_2}</p>
+                      <p className="text-gray-300 text-sm">{office?.address_line_3}</p>
                   </div>
                   
                   <div className="bg-primary-700/30 rounded-lg p-3">
                     <p className="text-gray-200 text-sm italic">
-                      <strong>Avantage stratégique :</strong> {office.importance}
+                      <strong>Avantage stratégique :</strong> {office.description}
                     </p>
                   </div>
                 </motion.div>
