@@ -6,6 +6,7 @@ export const UseLogin = () => UsePostQuery(endpoints.login, "login")
 export const UseLogout = () => UsePostQuery(endpoints.logout, "logout")
 export const UseAddUser = () => UsePostQuery(endpoints.users, "addUser")
 export const UseUpdateUser = () => UseUpdateQuery(endpoints.users, "updateUser")
+export const UseToggleUserStatus = () => UseUpdateQuery(`${endpoints.users}-toggle-status`, "toggleStatusUser")
 export const UseDeleteUser = () => UseUpdateQuery(`${endpoints.users}-delete`, "deleteUser")
 export const UseGetUsers = (options?: GetQueryParams) => UseGetQuery({
     identifier: "Users",

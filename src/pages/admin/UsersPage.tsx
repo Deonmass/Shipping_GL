@@ -15,8 +15,19 @@ import {FilterBar} from '../../components/admin/FilterBar';
 import {ChartPanel} from '../../components/admin/ChartPanel';
 import {ChartModal} from '../../components/admin/ChartModal';
 import {setUserRole, type UserRole} from '../../lib/admin/userRoles';
-import {UseGetUsers, UseGetUsersStats} from "../../services";
+import {
+    UseAddUser,
+    UseGetRoles,
+    UseGetUsers,
+    UseGetUsersStats,
+    UseToggleUserStatus,
+    UseUpdateUser
+} from "../../services";
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
+import AppToast from "../../utils/AppToast.ts";
+import {HasPermission} from "../../utils/PermissionChecker.ts";
+import {appPermissions} from "../../constants/appPermissions.ts";
+import {appOps} from "../../constants";
 
 interface CustomRole {
     id: string;
@@ -60,6 +71,15 @@ interface UserStats {
     inactive: number;
     newThisMonth: number;
     customRoles: number;
+}
+
+const emptyUser = {
+    email: '',
+    password: '',
+    name: '',
+    phone: '',
+    role_id: '',
+    role_title: '',
 }
 
 const isActive = (u: any) =>
@@ -122,7 +142,7 @@ const UsersPage: React.FC = () => {
         data: any[];
         dataKeys?: any[]
     } | null>(null);
-    const [showStatusConfirm, setShowStatusConfirm] = useState<User | null>(null);
+    const [showStatusConfirm, setShowStatusConfirm] = useState<any | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showRoleModal, setShowRoleModal] = useState<User | null>(null);
@@ -146,14 +166,7 @@ const UsersPage: React.FC = () => {
     const [isResetRunning, setIsResetRunning] = useState(false);
     const [resetProgress, setResetProgress] = useState(0);
 
-    const [formData, setFormData] = useState({
-        email: '',
-        password: '',
-        name: '',
-        phone: '',
-        company: '',
-        role: 'user' as UserRole
-    });
+    const [formData, setFormData] = useState<any>(emptyUser);
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -162,23 +175,22 @@ const UsersPage: React.FC = () => {
         role: 'user' as UserRole
     });
 
-    const [showViewModal, setShowViewModal] = useState<User | null>(null);
+    const [showViewModal, setShowViewModal] = useState<any>(null);
     const [showResetConfirm, setShowResetConfirm] = useState<User | null>(null);
 
     const tableContainerRef = useRef<HTMLDivElement>(null);
 
 
     const {isPending: isGettingUsers, data: users, refetch: reGetUsers} = UseGetUsers()
+    const {isPending: isGettingRoles, data: roles} = UseGetRoles({noPermission: 1})
+    const {isPending: isAddingUser, data: addUserResult, mutate: addUser} = UseAddUser()
+    const {isPending: isUpdatingUser, data: updateUserResult, mutate: updateUser} = UseUpdateUser()
+    const {
+        isPending: isTogglingStatusUser,
+        data: toggleStatusUserResult,
+        mutate: toggleStatusUser
+    } = UseToggleUserStatus()
 
-
-    const ensureProfile = (u: User) => ({
-        full_name: u.profile?.full_name ?? (u.user_metadata?.name ?? ''),
-        email: u.profile?.email ?? u.email,
-        phone_number: u.profile?.phone_number ?? '',
-        company: u.profile?.company ?? '',
-        avatar_url: u.profile?.avatar_url ?? '',
-        is_active: u.profile?.is_active ?? !!u.email_confirmed_at,
-    });
 
     useEffect(() => {
         (async () => {
@@ -520,8 +532,6 @@ const UsersPage: React.FC = () => {
             return;
         }
 
-        console.log('handleConfirmReset triggered for users:', targets.map(u => u.email));
-
         try {
             const total = targets.length;
             setIsResetRunning(true);
@@ -566,85 +576,59 @@ const UsersPage: React.FC = () => {
         }
     };
 
+    useEffect(() => {
+        if (addUserResult) {
+            if (addUserResult?.responseData?.error) {
+                AppToast.error(theme === "dark", addUserResult?.responseData?.message || "Erreur lors de l'enregistrement")
+            } else {
+                reGetUsers()
+                AppToast.success(theme === "dark", 'Utilisateur ajouté avec succès')
+                setShowAddModal(false);
+                setFormData(emptyUser);
+                setConfirmPassword('');
+            }
+        }
+    }, [addUserResult]);
+
+    useEffect(() => {
+        if (toggleStatusUserResult) {
+            if (toggleStatusUserResult?.responseData?.error) {
+                AppToast.error(theme === "dark", toggleStatusUserResult?.responseData?.message || "Erreur lors de la mise à jour")
+            } else {
+                reGetUsers()
+                AppToast.success(theme === "dark", 'Utilisateur mis à jour avec succès')
+                setShowStatusConfirm(null);
+            }
+        }
+    }, [toggleStatusUserResult]);
+
     const handleAddUser = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (!formData.email || !formData.password || !formData.name) {
-            Swal.fire({icon: 'error', title: 'Erreur', text: 'Veuillez remplir tous les champs requis'});
+        if (!formData.email || !formData.password || !formData.name || !formData.role_id) {
+            AppToast.error(theme === "dark", 'Veuillez remplir tous les champs requis')
             return;
         }
-
         const pwdValidation = getPasswordValidation(formData.password, confirmPassword);
 
         if (!pwdValidation.lengthOk || !pwdValidation.hasUpper || !pwdValidation.hasLower || !pwdValidation.hasDigit || !pwdValidation.hasSpecial) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Mot de passe invalide',
-                text: 'Le mot de passe doit contenir au moins 8 caractères, avec des lettres majuscules, minuscules, des chiffres et un caractère spécial.',
-            });
+            AppToast.error(theme === "dark", 'Le mot de passe doit contenir au moins 8 caractères, avec des lettres majuscules, minuscules, des chiffres et un caractère spécial.',)
             return;
         }
 
         if (!pwdValidation.match) {
-            Swal.fire({icon: 'error', title: 'Erreur', text: 'La confirmation du mot de passe ne correspond pas'});
+            AppToast.error(theme === "dark", 'La confirmation du mot de passe ne correspond pas')
             return;
         }
-
-        try {
-            const {data: authData, error: authError} = await supabase.auth.signUp({
-                email: formData.email,
-                password: formData.password,
-                options: {
-                    emailRedirectTo: undefined,
-                    data: {
-                        full_name: formData.name
-                    }
-                }
-            });
-
-            if (authError) throw authError;
-
-            if (authData.user) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                const {error: profileError} = await supabase
-                    .from('users')
-                    .update({
-                        full_name: formData.name,
-                        phone_number: formData.phone || null,
-                        company: formData.company || null
-                    })
-                    .eq('id', authData.user.id);
-
-                if (profileError) {
-                    console.error('Profile update error:', profileError);
-                }
-
-                await setUserRole(authData.user.id, formData.role);
-            }
-
-            Swal.fire({icon: 'success', title: 'Succès', text: 'Utilisateur ajouté avec succès'});
-            setShowAddModal(false);
-            setFormData({email: '', password: '', name: '', phone: '', company: '', role: 'user' as UserRole});
-            setConfirmPassword('');
-            await fetchUsers();
-        } catch (error: any) {
-            console.error('Error adding user:', error);
-
-            let message = 'Erreur lors de l\'ajout de l\'utilisateur';
-
-            if (typeof error?.message === 'string') {
-                if (error.message.includes('Database error saving new user')) {
-                    message = 'Erreur de base de données lors de la création du nouvel utilisateur. Vérifiez que le mot de passe respecte les critères de sécurité et que cet email n\'est pas déjà utilisé.';
-                } else if (error.message.toLowerCase().includes('password')) {
-                    message = 'Le mot de passe ne respecte pas la politique de sécurité. Vérifiez les critères et réessayez.';
-                } else if (error.message.toLowerCase().includes('duplicate key value') || error.message.toLowerCase().includes('already exists')) {
-                    message = 'Un compte avec cet email existe déjà.';
-                }
-            }
-
-            Swal.fire({icon: 'error', title: 'Erreur', text: message});
-        }
+        addUser({
+            name: formData.name,
+            email: formData.email,
+            username: formData.email,
+            role_id: formData.role_id,
+            phone: formData.phone,
+            password: formData.password,
+            confirm_password: confirmPassword,
+            should_change_password: "1"
+        })
     };
 
     const handleUpdateUser = async (e: React.FormEvent) => {
@@ -738,68 +722,25 @@ const UsersPage: React.FC = () => {
     };
 
     const handleUpdateUserStatus = async (user: User) => {
-        if (!userPermissions.can_toggle_status) return;
-        const prevIsActive = isActive(user);
-        try {
-            const newIsActive = !prevIsActive;
-            const newStatus = newIsActive ? 'active' : 'inactive';
-
-            // Optimistic UI update
-            // setUsers(prev => prev.map(u => (
-            //     u.id === user.id ? {...u, profile: {...ensureProfile(u), is_active: newIsActive}} : u
-            // )));
-
-            const {error} = await supabase
-                .from('users')
-                .update({status: newStatus})
-                .eq('id', user.id);
-
-            if (error) {
-                throw new Error(error.message || 'Échec de la mise à jour du statut');
-            }
-
-            Swal.fire({
-                icon: 'success',
-                title: 'Succès',
-                text: `Compte ${newIsActive ? 'activé' : 'désactivé'} avec succès`,
-            });
-            // Optionnel: rafraîchir pour cohérence serveur
-            await fetchUsers();
-        } catch (error: any) {
-            console.error('Error updating user status:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Erreur',
-                text: error.message || 'Erreur lors de la mise à jour du statut'
-            });
-            // Revert optimistic UI
-            // setUsers(prev => prev.map(u => (
-            //     u.id === user.id ? {...u, profile: {...ensureProfile(u), is_active: prevIsActive}} : u
-            // )));
-        } finally {
-            setShowStatusConfirm(null);
-        }
+        toggleStatusUser({id: user.id})
     };
 
     // handleResetPassword remplacé par la réinitialisation directe via handleConfirmReset et la fonction Edge admin-users.
 
     const getActionItems = (user: User) => [
         {
+            visible: HasPermission(appPermissions.users, appOps.update),
             label: isActive(user) ? 'Désactiver compte' : 'Activer compte',
             icon: isActive(user) ? ToggleRight : ToggleLeft,
             onClick: () => {
-                if (!userPermissions.can_toggle_status) return;
                 setShowStatusConfirm(user);
             },
-            color: userPermissions.can_toggle_status
-                ? (isActive(user) ? 'text-emerald-400' : 'text-red-400')
-                : 'text-gray-400',
+            color: (isActive(user) ? 'text-emerald-400' : 'text-red-400'),
             bgColor: '',
-            borderColor: userPermissions.can_toggle_status
-                ? (isActive(user) ? 'border-emerald-500/60' : 'border-red-500/60')
-                : 'border-gray-600',
+            borderColor: (isActive(user) ? 'border-emerald-500/60' : 'border-red-500/60'),
         },
         {
+            visible: HasPermission(appPermissions.users, appOps.read),
             label: 'Voir détails',
             icon: Eye,
             onClick: () => {
@@ -810,20 +751,13 @@ const UsersPage: React.FC = () => {
             borderColor: 'border-blue-500/30'
         },
         {
+            visible: HasPermission(appPermissions.users, appOps.update),
             label: 'Modifier',
             icon: Edit,
             onClick: () => {
                 //if (!userPermissions.can_edit) return;
                 setSelectedUser(user);
-                const userRole = getUserMainRole(user);
-                setFormData({
-                    email: user.email,
-                    password: '',
-                    name: user.profile?.full_name || user.user_metadata?.name || '',
-                    phone: user.profile?.phone_number || '',
-                    company: user.profile?.company || '',
-                    role: userRole as UserRole
-                });
+                setFormData(user);
                 setShowEditModal(true);
             },
             color: userPermissions.can_edit ? 'text-green-400' : 'text-gray-400',
@@ -831,6 +765,7 @@ const UsersPage: React.FC = () => {
             borderColor: userPermissions.can_edit ? 'border-green-500/30' : 'border-gray-600'
         },
         {
+            visible: HasPermission(appPermissions.users, appOps.update),
             label: 'Réinitialiser mot de passe',
             icon: KeyRound,
             onClick: () => {
@@ -841,6 +776,7 @@ const UsersPage: React.FC = () => {
             borderColor: canResetPasswords ? 'border-amber-500/30' : 'border-gray-600'
         },
         {
+            visible: HasPermission(appPermissions.users, appOps.delete),
             label: 'Supprimer',
             icon: Trash2,
             onClick: () => {
@@ -851,13 +787,6 @@ const UsersPage: React.FC = () => {
             borderColor: userPermissions.can_delete ? 'border-red-500/30' : 'border-gray-600'
         }
     ];
-
-    const getUserMainRole = (user: User): string => {
-        if (user.isAdmin) return 'admin';
-        if (user.isPartner) return 'partner';
-        if (user.customRoles && user.customRoles.length > 0) return user.customRoles[0];
-        return 'user';
-    };
 
     const filteredUsers = users?.responseData?.data?.filter((user: any) => {
         const profileName = user.profile?.full_name || user.user_metadata?.name || '';
@@ -891,7 +820,7 @@ const UsersPage: React.FC = () => {
         return filteredUsers.reduce((acc, user) => {
             let key = '';
             if (groupBy === 'status') {
-                key = isActive(user) ? 'Actifs' : 'Bloqué';
+                key = isActive(user) ? 'Actifs' : 'Inactifs';
             } else if (groupBy === 'role') {
                 key = user?.role_title
             } else if (groupBy === 'month') {
@@ -1006,14 +935,7 @@ const UsersPage: React.FC = () => {
                     title="Gestion des Utilisateurs"
                     onRefresh={reGetUsers}
                     onAdd={() => {
-                        setFormData({
-                            email: '',
-                            password: '',
-                            name: '',
-                            phone: '',
-                            company: '',
-                            role: 'user' as UserRole
-                        });
+                        setFormData(emptyUser);
                         setShowAddModal(true);
                     }}
                 />
@@ -1050,11 +972,28 @@ const UsersPage: React.FC = () => {
                                 <div>
                                     <label
                                         className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
+                                        Nom
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData?.name}
+                                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                        className={
+                                            theme === 'dark'
+                                                ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                                : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                        }
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label
+                                        className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
                                         Email
                                     </label>
                                     <input
                                         type="email"
-                                        value={formData.email}
+                                        value={formData?.email}
                                         onChange={(e) => setFormData({...formData, email: e.target.value})}
                                         className={
                                             theme === 'dark'
@@ -1068,28 +1007,12 @@ const UsersPage: React.FC = () => {
                                     <div>
                                         <label
                                             className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
-                                            Téléphone
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={formData.phone}
-                                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                                            className={
-                                                theme === 'dark'
-                                                    ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
-                                                    : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
-                                            }
-                                        />
-                                    </div>
-                                    <div>
-                                        <label
-                                            className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
                                             Mot de passe
                                         </label>
                                         <div className="relative">
                                             <input
                                                 type={showPassword ? 'text' : 'password'}
-                                                value={formData.password}
+                                                value={formData?.password}
                                                 onChange={(e) => setFormData({...formData, password: e.target.value})}
                                                 className={
                                                     theme === 'dark'
@@ -1193,89 +1116,47 @@ const UsersPage: React.FC = () => {
                                         </div>
                                     );
                                 })()}
+
                                 <div>
                                     <label
                                         className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
-                                        Nom
+                                        Téléphone
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                        value={formData?.phone}
+                                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
                                         className={
                                             theme === 'dark'
                                                 ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
                                                 : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
                                         }
-                                        required
                                     />
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label
-                                            className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>Téléphone</label>
-                                        <input
-                                            type="text"
-                                            value={formData.phone}
-                                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                                            className={theme === 'dark' ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600' : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label
-                                            className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
-                                            Société
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={formData.company}
-                                            onChange={(e) => setFormData({...formData, company: e.target.value})}
-                                            className={
-                                                theme === 'dark'
-                                                    ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
-                                                    : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
-                                            }
-                                        />
-                                    </div>
-                                </div>
+
                                 <div>
                                     <label
                                         className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
                                         Rôle
                                     </label>
                                     <select
-                                        value={formData.role}
-                                        onChange={(e) => setFormData({...formData, role: e.target.value as UserRole})}
+                                        value={formData?.role_id}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            role_id: e.target.value
+                                        })}
                                         className={
                                             theme === 'dark'
                                                 ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
                                                 : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
                                         }
                                     >
-                                        {customRoles.length > 0 ? (
-                                            <>
-                                                {customRoles
-                                                    .filter((r) => r.is_system)
-                                                    .map((r) => (
-                                                        <option key={r.id} value={r.name}>
-                                                            {r.name}
-                                                        </option>
-                                                    ))}
-                                                {customRoles
-                                                    .filter((r) => !r.is_system)
-                                                    .map((r) => (
-                                                        <option key={r.id} value={r.name}>
-                                                            {r.name}
-                                                        </option>
-                                                    ))}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <option value="user">Utilisateur (par défaut)</option>
-                                                <option value="partner">Partenaire</option>
-                                                <option value="admin">Administrateur</option>
-                                            </>
-                                        )}
+                                        <option value=""></option>
+                                        {roles?.responseData?.data?.map((r: any) => (
+                                            <option key={r.id} value={r.id}>
+                                                {r.title}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
 
@@ -1297,7 +1178,7 @@ const UsersPage: React.FC = () => {
                                         type="submit"
                                         className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg"
                                     >
-                                        Enregistrer
+                                        {isAddingUser ? "Chargement..." : "Enregistrer"}
                                     </button>
                                 </div>
                             </form>
@@ -1445,7 +1326,7 @@ const UsersPage: React.FC = () => {
                 />
 
                 <div className="space-y-6" ref={tableContainerRef}>
-                    {isGettingUsers ? (
+                    {isGettingUsers || isTogglingStatusUser ? (
                         <div className="flex items-center justify-center py-16">
                             <div className="flex flex-col items-center gap-3">
                                 <div
@@ -1647,7 +1528,7 @@ const UsersPage: React.FC = () => {
                                                             {getActionItems(user)
                                                                 .map((action) => {
                                                                     if (action.label === 'Désactiver compte' || action.label === 'Activer compte') {
-                                                                        return (
+                                                                        return action?.visible ? (
                                                                             <button
                                                                                 key={action.label}
                                                                                 type="button"
@@ -1658,8 +1539,6 @@ const UsersPage: React.FC = () => {
                                                                                         : theme === 'dark'
                                                                                             ? 'bg-gray-600'
                                                                                             : 'bg-gray-300'
-                                                                                } ${
-                                                                                    userPermissions.can_toggle_status ? '' : 'opacity-40 cursor-not-allowed'
                                                                                 }`}
                                                                                 title={action.label}
                                                                             >
@@ -1669,9 +1548,9 @@ const UsersPage: React.FC = () => {
                                           }`}
                                       />
                                                                             </button>
-                                                                        )
+                                                                        ) : null
                                                                     } else {
-                                                                        return (<button
+                                                                        return action?.visible ? (<button
                                                                             key={action.label}
                                                                             type="button"
                                                                             onClick={action.onClick}
@@ -1681,7 +1560,7 @@ const UsersPage: React.FC = () => {
                                                                             title={action.label}
                                                                         >
                                                                             <action.icon className="h-4 w-4"/>
-                                                                        </button>)
+                                                                        </button>) : null
                                                                     }
                                                                 })}
                                                         </div>
@@ -1714,24 +1593,16 @@ const UsersPage: React.FC = () => {
                                     </div>
                                     <div>
                                         <h2 className={theme === 'dark' ? 'text-xl font-semibold text-white' : 'text-xl font-semibold text-gray-900'}>
-                                            {showViewModal.profile?.full_name || showViewModal.user_metadata?.name || showViewModal.email}
+                                            {showViewModal?.name}
                                         </h2>
-                                        <p className={theme === 'dark' ? 'text-gray-400 text-sm' : 'text-gray-600 text-sm'}>{showViewModal.email}</p>
+                                        <p className={theme === 'dark' ? 'text-gray-400 text-sm' : 'text-gray-600 text-sm'}>{showViewModal?.email}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => {
-                                            const currentRole = getUserMainRole(showViewModal);
                                             setSelectedUser(showViewModal);
-                                            setFormData({
-                                                email: showViewModal.email,
-                                                password: '',
-                                                name: showViewModal.profile?.full_name || showViewModal.user_metadata?.name || '',
-                                                phone: showViewModal.profile?.phone_number || '',
-                                                company: showViewModal.profile?.company || '',
-                                                role: currentRole as UserRole
-                                            });
+                                            setFormData(showViewModal);
                                             setShowEditModal(true);
                                             setShowViewModal(null);
                                         }}
@@ -1753,9 +1624,21 @@ const UsersPage: React.FC = () => {
                                 <div
                                     className={theme === 'dark' ? 'bg-gray-700/50 rounded-lg p-3' : 'bg-gray-50 rounded-lg p-3'}>
                                     <div className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Statut</div>
-                                    <div
-                                        className={theme === 'dark' ? 'text-white font-medium' : 'text-gray-900 font-medium'}>
-                                        {showViewModal.email_confirmed_at ? 'Actif' : 'Inactif'}
+                                    <div>
+                                         <span
+                                             className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium border ${
+                                                 isActive(showViewModal)
+                                                     ? 'border-emerald-500/60 bg-emerald-500/5 text-emerald-600'
+                                                     : 'border-red-500/60 bg-red-500/5 text-red-600'
+                                             }`}
+                                         >
+                                {isActive(showViewModal) ? (
+                                    <CheckCircle2 className="h-4 w-4 text-emerald-500"/>
+                                ) : (
+                                    <XCircle className="h-4 w-4 text-red-500"/>
+                                )}
+                                             <span>{isActive(showViewModal) ? 'Actif' : 'Inactif'}</span>
+                              </span>
                                     </div>
                                 </div>
                                 <div
@@ -1775,31 +1658,31 @@ const UsersPage: React.FC = () => {
                                     </div>
                                     <div
                                         className={theme === 'dark' ? 'text-white font-medium' : 'text-gray-900 font-medium'}>
-                                        {showViewModal.last_sign_in_at ? format(parseISO(showViewModal.last_sign_in_at), 'dd/MM/yyyy HH:mm', {locale: fr}) : 'Jamais'}
+                                        {showViewModal?.updated_at ? format(parseISO(showViewModal?.updated_at), 'dd/MM/yyyy HH:mm', {locale: fr}) : 'Jamais'}
                                     </div>
                                 </div>
                                 <div
                                     className={theme === 'dark' ? 'bg-gray-700/50 rounded-lg p-3' : 'bg-gray-50 rounded-lg p-3'}>
-                                    <div className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Rôles</div>
+                                    <div className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Rôle</div>
                                     <div
                                         className={theme === 'dark' ? 'text-white font-medium break-words' : 'text-gray-900 font-medium break-words'}>
-                                        {showViewModal.roles && showViewModal.roles.length > 0 ? showViewModal.roles.join(', ') : '—'}
+                                        {showViewModal.role_title}
                                     </div>
                                 </div>
-                                {showViewModal.profile && (
-                                    <div
-                                        className={theme === 'dark' ? 'md:col-span-2 bg-gray-700/50 rounded-lg p-3' : 'md:col-span-2 bg-gray-50 rounded-lg p-3'}>
-                                        <div className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Société
-                                        </div>
-                                        <div
-                                            className={theme === 'dark' ? 'text-white font-medium' : 'text-gray-900 font-medium'}>{showViewModal.profile.company || '—'}</div>
-                                        <div
-                                            className={theme === 'dark' ? 'text-gray-400 mt-2' : 'text-gray-500 mt-2'}>Téléphone
-                                        </div>
-                                        <div
-                                            className={theme === 'dark' ? 'text-white font-medium' : 'text-gray-900 font-medium'}>{showViewModal.profile.phone_number || '—'}</div>
+
+                                <div
+                                    className={theme === 'dark' ? 'md:col-span-2 bg-gray-700/50 rounded-lg p-3' : 'md:col-span-2 bg-gray-50 rounded-lg p-3'}>
+                                    <div className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Nom
+                                        Utilisateur
                                     </div>
-                                )}
+                                    <div
+                                        className={theme === 'dark' ? 'text-white font-medium' : 'text-gray-900 font-medium'}>{showViewModal?.username || '—'}</div>
+                                    <div
+                                        className={theme === 'dark' ? 'text-gray-400 mt-2' : 'text-gray-500 mt-2'}>Téléphone
+                                    </div>
+                                    <div
+                                        className={theme === 'dark' ? 'text-white font-medium' : 'text-gray-900 font-medium'}>{showViewModal?.phone || '—'}</div>
+                                </div>
                             </div>
 
                             <div className="flex justify-end mt-6">
@@ -1845,7 +1728,7 @@ const UsersPage: React.FC = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.name}
+                                        value={formData?.name}
                                         onChange={(e) => setFormData({...formData, name: e.target.value})}
                                         className={
                                             theme === 'dark'
@@ -1862,24 +1745,8 @@ const UsersPage: React.FC = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.phone}
+                                        value={formData?.phone}
                                         onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                                        className={
-                                            theme === 'dark'
-                                                ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
-                                                : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
-                                        }
-                                    />
-                                </div>
-                                <div>
-                                    <label
-                                        className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
-                                        Société
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formData.company}
-                                        onChange={(e) => setFormData({...formData, company: e.target.value})}
                                         className={
                                             theme === 'dark'
                                                 ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
@@ -1893,17 +1760,22 @@ const UsersPage: React.FC = () => {
                                         Rôle
                                     </label>
                                     <select
-                                        value={formData.role}
-                                        onChange={(e) => setFormData({...formData, role: e.target.value as UserRole})}
+                                        value={formData?.role_id}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            role_id: e.target.value as UserRole
+                                        })}
                                         className={
                                             theme === 'dark'
                                                 ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
                                                 : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
                                         }
                                     >
-                                        <option value="user">Utilisateur</option>
-                                        <option value="partner">Partenaire</option>
-                                        <option value="admin">Administrateur</option>
+                                        {roles?.responseData?.data?.map((r: any) => (
+                                            <option key={r.id} value={r.id}>
+                                                {r.title}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
 
@@ -1942,13 +1814,13 @@ const UsersPage: React.FC = () => {
                             <div className="flex items-center mb-4">
                                 <AlertTriangle className="w-6 h-6 text-orange-500 mr-3"/>
                                 <h2 className={theme === 'dark' ? 'text-xl font-semibold text-white' : 'text-xl font-semibold text-gray-900'}>
-                                    {showStatusConfirm.email_confirmed_at ? 'Désactiver le compte' : 'Activer le compte'}
+                                    {isActive(showStatusConfirm) ? 'Désactiver le compte' : 'Activer le compte'}
                                 </h2>
                             </div>
                             <p className={theme === 'dark' ? 'text-gray-300 mb-6' : 'text-gray-700 mb-6'}>
-                                {showStatusConfirm.email_confirmed_at
-                                    ? `Êtes-vous sûr de vouloir désactiver le compte de ${showStatusConfirm.profile?.full_name || showStatusConfirm.email} ? L'utilisateur ne pourra plus se connecter.`
-                                    : `Êtes-vous sûr de vouloir activer le compte de ${showStatusConfirm.profile?.full_name || showStatusConfirm.email} ? L'utilisateur pourra à nouveau se connecter.`
+                                {isActive(showStatusConfirm)
+                                    ? `Êtes-vous sûr de vouloir désactiver le compte de ${showStatusConfirm?.name || showStatusConfirm?.email} ? L'utilisateur ne pourra plus se connecter.`
+                                    : `Êtes-vous sûr de vouloir activer le compte de ${showStatusConfirm?.name || showStatusConfirm?.email} ? L'utilisateur pourra à nouveau se connecter.`
                                 }
                             </p>
                             <div className="flex justify-end space-x-3">
@@ -1966,7 +1838,7 @@ const UsersPage: React.FC = () => {
                                             : 'bg-green-600 hover:bg-green-700'
                                     }`}
                                 >
-                                    {showStatusConfirm.email_confirmed_at ? 'Désactiver' : 'Activer'}
+                                    {isActive(showStatusConfirm) ? 'Désactiver' : 'Activer'}
                                 </button>
                             </div>
                         </motion.div>
