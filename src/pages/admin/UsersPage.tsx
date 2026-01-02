@@ -2,23 +2,20 @@ import React, {useState, useEffect, useRef} from 'react';
 import {motion} from 'framer-motion';
 import {useLocation} from 'react-router-dom';
 import {
-    Users, Eye, UserCheck, Calendar, Plus, Edit, Trash2,
-    AlertTriangle, Shield, X, Crown, Star, User as UserIcon, RefreshCw, KeyRound,
+    Users, Eye, UserCheck, Edit, Trash2,
+    AlertTriangle, X, User as UserIcon, KeyRound,
     CheckCircle2, Circle, ToggleLeft, ToggleRight, XCircle
 } from 'lucide-react';
 import {supabase} from '../../lib/supabase';
 import {format, parseISO, subMonths, startOfMonth, endOfMonth} from 'date-fns';
 import {fr} from 'date-fns/locale';
-import Swal from 'sweetalert2';
 import {StatsCard} from '../../components/admin/StatsCard';
 import {FilterBar} from '../../components/admin/FilterBar';
 import {ChartPanel} from '../../components/admin/ChartPanel';
 import {ChartModal} from '../../components/admin/ChartModal';
-import {setUserRole, type UserRole} from '../../lib/admin/userRoles';
 import {
-    UseAddUser,
+    UseAddUser, UseDeleteUser,
     UseGetRoles,
-    UseGetUsers,
     UseGetUsersStats,
     UseToggleUserStatus,
     UseUpdateUser
@@ -28,51 +25,6 @@ import AppToast from "../../utils/AppToast.ts";
 import {HasPermission} from "../../utils/PermissionChecker.ts";
 import {appPermissions} from "../../constants/appPermissions.ts";
 import {appOps} from "../../constants";
-
-interface CustomRole {
-    id: string;
-    name: string;
-    slug: string;
-    description: string;
-    is_system: boolean;
-    created_at: string;
-    created_by?: string;
-}
-
-interface User {
-    id: string;
-    email: string;
-    created_at: string;
-    last_sign_in_at: string | null;
-    email_confirmed_at: string | null;
-    user_metadata: {
-        name?: string;
-    };
-    profile?: {
-        full_name?: string;
-        email?: string;
-        phone_number?: string;
-        company?: string;
-        avatar_url?: string;
-        is_active?: boolean;
-    } | null;
-    roles?: string[];
-    isAdmin?: boolean;
-    isPartner?: boolean;
-    customRoles?: string[];
-    mainRoleName?: string | null;
-}
-
-interface UserStats {
-    total: number;
-    admins: number;
-    users: number;
-    active: number;
-    inactive: number;
-    newThisMonth: number;
-    customRoles: number;
-}
-
 const emptyUser = {
     email: '',
     password: '',
@@ -105,26 +57,6 @@ const UsersPage: React.FC = () => {
         const saved = window.localStorage.getItem('admin_theme');
         return saved === 'light' ? 'light' : 'dark';
     });
-    const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [stats, setStats] = useState<UserStats>({
-        total: 0,
-        admins: 0,
-        users: 0,
-        active: 0,
-        inactive: 0,
-        newThisMonth: 0,
-        customRoles: 0
-    });
-    const [displayStats, setDisplayStats] = useState<UserStats>({
-        total: 0,
-        admins: 0,
-        users: 0,
-        active: 0,
-        inactive: 0,
-        newThisMonth: 0,
-        customRoles: 0,
-    });
 
     const currentView = location.pathname.includes('/visitors') ? 'visitors' :
         location.pathname.includes('/admins') ? 'admins' : 'all';
@@ -134,7 +66,7 @@ const UsersPage: React.FC = () => {
     const [roleFilter, setRoleFilter] = useState('');
     const [groupBy, setGroupBy] = useState('');
 
-    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [selectedUser, setSelectedUser] = useState<any>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
     const [expandedChart, setExpandedChart] = useState<{
         title: string;
@@ -145,92 +77,29 @@ const UsersPage: React.FC = () => {
     const [showStatusConfirm, setShowStatusConfirm] = useState<any | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [showRoleModal, setShowRoleModal] = useState<User | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const [canResetPasswords, setCanResetPasswords] = useState<boolean>(false);
-    const [userPermissions, setUserPermissions] = useState<{
-        can_add: boolean;
-        can_edit: boolean;
-        can_delete: boolean;
-        can_view: boolean;
-        can_reset_password: boolean;
-        can_toggle_status: boolean;
-    }>({
-        can_add: false,
-        can_edit: false,
-        can_delete: false,
-        can_view: true,
-        can_reset_password: false,
-        can_toggle_status: false,
-    });
     const [isResetRunning, setIsResetRunning] = useState(false);
     const [resetProgress, setResetProgress] = useState(0);
-
     const [formData, setFormData] = useState<any>(emptyUser);
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const [roleFormData, setRoleFormData] = useState({
-        role: 'user' as UserRole
-    });
-
     const [showViewModal, setShowViewModal] = useState<any>(null);
-    const [showResetConfirm, setShowResetConfirm] = useState<User | null>(null);
+    const [showResetConfirm, setShowResetConfirm] = useState<any>(null);
 
     const tableContainerRef = useRef<HTMLDivElement>(null);
 
-
-    const {isPending: isGettingUsers, data: users, refetch: reGetUsers} = UseGetUsers()
-    const {isPending: isGettingRoles, data: roles} = UseGetRoles({noPermission: 1})
+    const {isPending: isGettingUsers, data: users, refetch: reGetUsers} = UseGetUsersStats()
+    const {data: roles} = UseGetRoles({noPermission: 1})
     const {isPending: isAddingUser, data: addUserResult, mutate: addUser} = UseAddUser()
     const {isPending: isUpdatingUser, data: updateUserResult, mutate: updateUser} = UseUpdateUser()
+    const {isPending: isDeletingUser, data: deleteUserResult, mutate: deleteUser} = UseDeleteUser()
     const {
         isPending: isTogglingStatusUser,
         data: toggleStatusUserResult,
         mutate: toggleStatusUser
     } = UseToggleUserStatus()
-
-
-    useEffect(() => {
-        (async () => {
-            await fetchCurrentUserPermissions();
-            await fetchUsers();
-            await loadCustomRoles();
-        })();
-    }, []);
-
-    // Pendant le chargement de la liste d'utilisateurs, animer légèrement les compteurs de résumé
-    useEffect(() => {
-        if (!loading) {
-            // Une fois le chargement terminé, on fige les valeurs sur les vraies stats
-            setDisplayStats(stats);
-            return;
-        }
-
-        const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-        const jitter = (value: number, maxDelta: number, min: number, max: number) => {
-            const delta = (Math.random() * 2 - 1) * maxDelta; // [-maxDelta, +maxDelta]
-            return clamp(Math.round(value + delta), min, max);
-        };
-
-        const interval = setInterval(() => {
-            setDisplayStats(prev => ({
-                ...prev,
-                total: jitter(prev.total || 0, 15, 0, 99999),
-                admins: jitter(prev.admins || 0, 3, 0, 9999),
-                users: jitter(prev.users || 0, 10, 0, 99999),
-                active: jitter(prev.active || 0, 10, 0, 99999),
-                inactive: jitter(prev.inactive || 0, 5, 0, 99999),
-                newThisMonth: jitter(prev.newThisMonth || 0, 5, 0, 9999),
-                customRoles: jitter(prev.customRoles || 0, 3, 0, 9999),
-            }));
-        }, 900);
-
-        return () => clearInterval(interval);
-    }, [loading, stats]);
-
-    const effectiveStats = loading ? displayStats : stats;
 
     useEffect(() => {
         const handleThemeChange = () => {
@@ -249,246 +118,7 @@ const UsersPage: React.FC = () => {
         };
     }, []);
 
-    const fetchCurrentUserPermissions = async () => {
-        try {
-            const {data: auth} = await supabase.auth.getUser();
-            const currentUserId = auth?.user?.id;
-            if (!currentUserId) return;
-
-            const {data: sysRolesRes, error: sysRolesError} = await supabase
-                .from('user_roles')
-                .select('roles:roles(name)')
-                .eq('user_id', currentUserId);
-
-            if (sysRolesError) {
-                console.warn('Permission check failed (user_roles):', sysRolesError);
-                setCanResetPasswords(false);
-                return;
-            }
-
-            const allRoles = (sysRolesRes?.map((r: any) => {
-                const name = r.roles?.name as string | undefined;
-                if (!name) return null;
-                return name
-                    .toString()
-                    .trim()
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/(^-|-$)/g, '');
-            }).filter(Boolean) || []) as string[];
-            if (allRoles.length === 0) {
-                setCanResetPasswords(false);
-                return;
-            }
-
-            const {data: perms} = await supabase
-                .from('role_permissions')
-                .select('*')
-                .in('role', allRoles)
-                .eq('resource', 'users');
-
-            const aggregated = (perms || []).reduce((acc: any, p: any) => {
-                if (p.can_add) acc.can_add = true;
-                if (p.can_edit) acc.can_edit = true;
-                if (p.can_delete) acc.can_delete = true;
-                if (p.can_view) acc.can_view = true;
-                if (p.can_reset_password) acc.can_reset_password = true;
-                if (p.can_toggle_status) acc.can_toggle_status = true;
-                return acc;
-            }, {
-                can_add: false,
-                can_edit: false,
-                can_delete: false,
-                can_view: false,
-                can_reset_password: false,
-                can_toggle_status: false,
-            });
-
-            // Considérer "admin" au sens fonctionnel : rôle ayant des permissions fortes (ajouter / supprimer / reset mdp)
-
-            setUserPermissions(aggregated);
-
-            const allowedReset = aggregated.can_reset_password === true;
-            setCanResetPasswords(allowedReset);
-        } catch (e) {
-            console.warn('Permission check failed', e);
-            // En cas d'erreur de permissions, on laisse quand même la liste se charger
-            setCanResetPasswords(false);
-        }
-    };
-
-
-    const loadCustomRoles = async () => {
-        try {
-            const {data, error} = await supabase
-                .from('roles')
-                .select('*')
-                .order('is_system', {ascending: false})
-                .order('name');
-
-            if (error) {
-                console.warn('Avertissement chargement roles personnalisés:', error);
-                setCustomRoles([]);
-                return;
-            }
-
-            setCustomRoles(data ?? []);
-        } catch (err: any) {
-            console.error('Erreur chargement roles personnalisés:', err);
-            setCustomRoles([]);
-        }
-    };
-
-    const fetchUsers = async () => {
-        try {
-            setLoading(true);
-
-            const {data, error} = await supabase
-                .from('users')
-                .select('id, email, full_name, phone_number, company, avatar_url, created_at, status')
-                .order('full_name', {ascending: true})
-                .order('email', {ascending: true});
-
-            if (error) {
-                console.error('[UsersPage] Error fetching users from public.users:', error);
-                throw new Error(error.message || 'Erreur lors du chargement des utilisateurs');
-            }
-
-            const fetchedUsers: User[] = (data || []).map((u: any) => ({
-                id: u.id,
-                email: u.email,
-                created_at: u.created_at,
-                last_sign_in_at: null,
-                email_confirmed_at: u.created_at,
-                user_metadata: {
-                    name: u.full_name || ''
-                },
-                profile: {
-                    full_name: u.full_name || '',
-                    email: u.email,
-                    phone_number: u.phone_number || '',
-                    company: u.company || '',
-                    avatar_url: u.avatar_url || '',
-                    is_active: (u.status ?? 'active') === 'active',
-                },
-            }));
-
-            if (fetchedUsers.length === 0) {
-                // setUsers([]);
-                calculateStats([]);
-                return;
-            }
-
-            // Charger tous les rôles (via user_roles.role_id -> roles.name, is_system, is_admin) en une seule fois pour éviter N requêtes
-            const {data: allUserRoles, error: allUserRolesError} = await supabase
-                .from('user_roles')
-                .select('user_id, roles:roles(name, is_system, is_admin)');
-
-            if (allUserRolesError) {
-                console.warn('[UsersPage] Erreur lors de la récupération globale des rôles système:', allUserRolesError);
-            }
-
-            const rolesByUser: Record<string, {
-                slug: string;
-                name: string;
-                is_system: boolean | null;
-                is_admin: boolean | null
-            }[]> = {};
-            (allUserRoles || []).forEach((row: any) => {
-                const role = row.roles;
-                if (!role || !role.name) return;
-
-                const slug = role.name
-                    .toString()
-                    .trim()
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/(^-|-$)/g, '');
-
-                if (!rolesByUser[row.user_id]) rolesByUser[row.user_id] = [];
-                rolesByUser[row.user_id].push({
-                    slug,
-                    name: role.name,
-                    is_system: role.is_system ?? false,
-                    is_admin: role.is_admin ?? false,
-                });
-            });
-
-            const usersWithRoles: User[] = fetchedUsers.map(user => {
-                try {
-                    const userRoles = rolesByUser[user.id] || [];
-
-                    // Tout rôle marqué is_admin = true est considéré comme rôle administrateur
-                    const adminRole = userRoles.find(r => r.is_admin);
-                    const partnerRole = userRoles.find(r => r.slug === 'partner');
-
-                    const isAdmin = !!adminRole;
-                    const isPartner = !!partnerRole;
-
-                    const customRoleNames = userRoles
-                        .filter(r => !r.is_system)
-                        .map(r => r.name);
-
-                    const allRoles = userRoles.map(r => r.slug);
-
-                    const mainRoleName =
-                        adminRole?.name ||
-                        partnerRole?.name ||
-                        (customRoleNames[0] ?? null);
-
-                    return {
-                        ...user,
-                        roles: allRoles,
-                        isAdmin,
-                        isPartner,
-                        customRoles: customRoleNames,
-                        mainRoleName,
-                    };
-                } catch (err) {
-                    console.error(`[UsersPage] Erreur pour l'utilisateur ${user.id}:`, err);
-                    return {
-                        ...user,
-                        roles: [],
-                        isAdmin: false,
-                        isPartner: false,
-                        customRoles: []
-                    };
-                }
-            });
-
-            // setUsers(usersWithRoles);
-            calculateStats(usersWithRoles);
-        } catch (error: any) {
-            console.error('[UsersPage] Error fetching users:', error);
-            // setUsers([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const calculateStats = (userList: User[]) => {
-        const now = new Date();
-        const oneMonthAgo = subMonths(now, 1);
-
-        const stats: UserStats = {
-            total: userList.length,
-            // Tout rôle admin (roles.is_admin = true) est marqué isAdmin dans fetchUsers, donc admins = isAdmin
-            admins: userList.filter(u => u.isAdmin).length,
-            // Utilisateur simple : pas admin, pas partner, pas de customRoles
-            users: userList.filter(u => !u.isAdmin && !u.isPartner && (!u.customRoles || u.customRoles.length === 0)).length,
-            active: userList.filter(u => isActive(u)).length,
-            inactive: userList.filter(u => !isActive(u)).length,
-            newThisMonth: userList.filter((u: User) => {
-                const createdAt = parseISO(u.created_at);
-                return createdAt >= oneMonthAgo;
-            }).length,
-            customRoles: userList.filter(u => u.customRoles && u.customRoles.length > 0 && !u.isAdmin && !u.isPartner).length
-        };
-
-        setStats(stats);
-    };
-
-    const toggleSelectAll = (checked: boolean, visibleUsers: User[]) => {
+    const toggleSelectAll = (checked: boolean, visibleUsers: any[]) => {
         setSelectedIds(prev => {
             const next = new Set<string>(prev);
             if (checked) {
@@ -509,26 +139,20 @@ const UsersPage: React.FC = () => {
     };
 
     const bulkResetPasswords = async () => {
-        if (!canResetPasswords) return;
-        const targets = users?.responseData?.data?.filter((u: any) => selectedIds.has(u.id));
+        const targets = users?.responseData?.data?.items?.filter((u: any) => selectedIds.has(u.id));
         await handleConfirmReset(targets);
     };
 
     const bulkDelete = async () => {
-        if (!userPermissions.can_delete) return;
         for (const id of Array.from(selectedIds)) {
             await handleDeleteUser(id);
         }
         setSelectedIds(new Set());
     };
 
-    const handleConfirmReset = async (targets: User[]) => {
+    const handleConfirmReset = async (targets: any[]) => {
         if (!targets || targets.length === 0) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Erreur',
-                text: 'Aucun utilisateur sélectionné pour la réinitialisation.'
-            });
+            AppToast.error(theme === "dark", 'Aucun utilisateur sélectionné pour la réinitialisation.',)
             return;
         }
 
@@ -539,7 +163,6 @@ const UsersPage: React.FC = () => {
 
             let completed = 0;
             for (const u of targets) {
-                console.log('[MatrixReset] Processing user', u.email);
                 const {error} = await supabase.auth.resetPasswordForEmail(u.email, {
                     redirectTo: `${window.location.origin}/reset-password`,
                 });
@@ -555,24 +178,12 @@ const UsersPage: React.FC = () => {
             }
 
             setIsResetRunning(false);
-            Swal.fire({
-                icon: 'success',
-                title: 'Emails envoyés',
-                text: `Email de réinitialisation envoyé à ${targets.length} utilisateur${targets.length > 1 ? 's' : ''}`,
-                background: '#020617',
-                color: '#e5e7eb',
-            });
+            AppToast.success(theme === "dark", `Email de réinitialisation envoyé à ${targets.length} utilisateur${targets.length > 1 ? 's' : ''}`,)
             setSelectedIds(new Set());
         } catch (err: any) {
             console.error('Reset error:', err);
             setIsResetRunning(false);
-            Swal.fire({
-                icon: 'error',
-                title: 'Erreur',
-                text: err?.message || 'Erreur lors de la réinitialisation du mot de passe',
-                background: '#020617',
-                color: '#e5e7eb',
-            });
+            AppToast.error(theme === "dark", err?.message || 'Erreur lors de la réinitialisation du mot de passe')
         }
     };
 
@@ -589,6 +200,31 @@ const UsersPage: React.FC = () => {
             }
         }
     }, [addUserResult]);
+
+    useEffect(() => {
+        if (updateUserResult) {
+            if (updateUserResult?.responseData?.error) {
+                AppToast.error(theme === "dark", updateUserResult?.responseData?.message || "Erreur lors de la modification")
+            } else {
+                reGetUsers()
+                AppToast.success(theme === "dark", 'Utilisateur modifié avec succès')
+                setShowEditModal(false);
+                setSelectedUser(null);
+            }
+        }
+    }, [updateUserResult]);
+
+    useEffect(() => {
+        if (deleteUserResult) {
+            if (deleteUserResult?.responseData?.error) {
+                AppToast.error(theme === "dark", deleteUserResult?.responseData?.message || "Erreur lors de la suppression")
+            } else {
+                reGetUsers()
+                AppToast.success(theme === "dark", 'Utilisateur supprimé avec succès')
+                setShowDeleteConfirm(null);
+            }
+        }
+    }, [deleteUserResult]);
 
     useEffect(() => {
         if (toggleStatusUserResult) {
@@ -633,92 +269,25 @@ const UsersPage: React.FC = () => {
 
     const handleUpdateUser = async (e: React.FormEvent) => {
         e.preventDefault();
-
         if (!selectedUser) return;
 
-        if (!formData.name) {
-            Swal.fire({icon: 'error', title: 'Erreur', text: 'Le nom est requis'});
+        if (!formData.email || !formData.name || !formData.role_id) {
+            AppToast.error(theme === "dark", 'Veuillez remplir tous les champs requis')
             return;
         }
-
-        try {
-            const {error} = await supabase
-                .from('users')
-                .update({
-                    full_name: formData.name,
-                    phone_number: formData.phone || null,
-                    company: formData.company || null,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', selectedUser.id);
-
-            if (error) {
-                console.error('Update error:', error);
-                throw new Error('Erreur lors de la mise à jour du profil');
-            }
-
-            await setUserRole(selectedUser.id, formData.role);
-
-            Swal.fire({icon: 'success', title: 'Succès', text: 'Utilisateur modifié avec succès'});
-            setShowEditModal(false);
-            setSelectedUser(null);
-            await fetchUsers();
-        } catch (error: any) {
-            console.error('Error updating user:', error);
-            Swal.fire({icon: 'error', title: 'Erreur', text: error.message || 'Erreur lors de la modification'});
-        }
+        updateUser({
+            id: selectedUser?.id,
+            name: formData?.name,
+            email: formData?.email,
+            username: formData?.email,
+            phone: formData?.phone,
+            role_id: formData?.role_id,
+        })
     };
 
-    const handleRoleUpdate = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!showRoleModal) return;
-
-        try {
-            await setUserRole(showRoleModal.id, roleFormData.role);
-
-            Swal.fire({icon: 'success', title: 'Succès', text: 'Rôle utilisateur mis à jour avec succès'});
-            setShowRoleModal(null);
-            setRoleFormData({role: 'user' as UserRole});
-            await fetchUsers();
-        } catch (error: any) {
-            console.error('Error updating user role:', error);
-            Swal.fire({icon: 'error', title: 'Erreur', text: error.message || 'Erreur lors de la mise à jour du rôle'});
-        }
-    };
 
     const handleDeleteUser = async (userId: string) => {
-        try {
-            const {data: {session}} = await supabase.auth.getSession();
-            if (!session?.access_token) {
-                Swal.fire({icon: 'error', title: 'Erreur', text: 'Session expirée'});
-                throw new Error('Not authenticated');
-            }
-
-            const response = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users?userId=${userId}`,
-                {
-                    method: 'DELETE',
-                    headers: {
-                        Authorization: `Bearer ${session.access_token}`,
-                        'Content-Type': 'application/json',
-                    },
-                }
-            );
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Échec de la suppression');
-            }
-
-            Swal.fire({icon: 'success', title: 'Succès', text: 'Utilisateur supprimé avec succès'});
-            await fetchUsers();
-        } catch (error: any) {
-            console.error('Error deleting user:', error);
-            Swal.fire({icon: 'error', title: 'Erreur', text: error.message || 'Erreur lors de la suppression'});
-        } finally {
-            setShowDeleteConfirm(null);
-        }
+        deleteUser({id: userId})
     };
 
     const handleUpdateUserStatus = async (user: User) => {
@@ -727,9 +296,9 @@ const UsersPage: React.FC = () => {
 
     // handleResetPassword remplacé par la réinitialisation directe via handleConfirmReset et la fonction Edge admin-users.
 
-    const getActionItems = (user: User) => [
+    const getActionItems = (user: any) => [
         {
-            visible: HasPermission(appPermissions.users, appOps.update),
+            visible: HasPermission(appPermissions.users, appOps.delete),
             label: isActive(user) ? 'Désactiver compte' : 'Activer compte',
             icon: isActive(user) ? ToggleRight : ToggleLeft,
             onClick: () => {
@@ -755,25 +324,24 @@ const UsersPage: React.FC = () => {
             label: 'Modifier',
             icon: Edit,
             onClick: () => {
-                //if (!userPermissions.can_edit) return;
                 setSelectedUser(user);
                 setFormData(user);
                 setShowEditModal(true);
             },
-            color: userPermissions.can_edit ? 'text-green-400' : 'text-gray-400',
-            bgColor: userPermissions.can_edit ? 'bg-green-500/20' : 'bg-gray-700',
-            borderColor: userPermissions.can_edit ? 'border-green-500/30' : 'border-gray-600'
+            color: 'text-green-400',
+            bgColor: 'bg-green-500/20',
+            borderColor: 'border-green-500/30'
         },
         {
             visible: HasPermission(appPermissions.users, appOps.update),
             label: 'Réinitialiser mot de passe',
             icon: KeyRound,
             onClick: () => {
-                if (canResetPasswords) setShowResetConfirm(user);
+                setShowResetConfirm(user);
             },
-            color: canResetPasswords ? 'text-amber-400' : 'text-gray-400',
-            bgColor: canResetPasswords ? 'bg-amber-500/20' : 'bg-gray-700',
-            borderColor: canResetPasswords ? 'border-amber-500/30' : 'border-gray-600'
+            color: 'text-amber-400',
+            bgColor: 'bg-amber-500/20',
+            borderColor: 'border-amber-500/30'
         },
         {
             visible: HasPermission(appPermissions.users, appOps.delete),
@@ -782,30 +350,22 @@ const UsersPage: React.FC = () => {
             onClick: () => {
                 setShowDeleteConfirm(user.id);
             },
-            color: userPermissions.can_delete ? 'text-red-400' : 'text-gray-400',
-            bgColor: userPermissions.can_delete ? 'bg-red-500/20' : 'bg-gray-700',
-            borderColor: userPermissions.can_delete ? 'border-red-500/30' : 'border-gray-600'
+            color: 'text-red-400',
+            bgColor: 'bg-red-500/20',
+            borderColor: 'border-red-500/30'
         }
     ];
 
-    const filteredUsers = users?.responseData?.data?.filter((user: any) => {
-        const profileName = user.profile?.full_name || user.user_metadata?.name || '';
-        const email = user.email || '';
-        const company = user.profile?.company || '';
-
-        const matchesSearch = profileName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            company.toLowerCase().includes(searchTerm.toLowerCase());
+    const filteredUsers = users?.responseData?.data?.items?.filter((user: any) => {
+        const matchesSearch = user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user?.phone?.toLowerCase().includes(searchTerm.toLowerCase());
 
         const matchesStatus = !statusFilter ||
-            (statusFilter === 'active' && user.email_confirmed_at) ||
-            (statusFilter === 'pending' && !user.email_confirmed_at);
+            (statusFilter === 'active' && isActive(user)) ||
+            (statusFilter === 'pending' && !isActive(user));
 
-        const matchesRole = !roleFilter ||
-            (roleFilter === 'admin' && user.isAdmin) ||
-            (roleFilter === 'partner' && user.isPartner) ||
-            (roleFilter === 'user' && !user.isAdmin && !user.isPartner && (!user.customRoles || user.customRoles.length === 0)) ||
-            (roleFilter === 'custom' && user.customRoles && user.customRoles.length > 0);
+        const matchesRole = !roleFilter || (roleFilter?.toString() === user?.role_id?.toString())
 
         const matchesView = currentView === 'all' ||
             (currentView === 'visitors' && !user.isAdmin) ||
@@ -830,7 +390,7 @@ const UsersPage: React.FC = () => {
             if (!acc[key]) acc[key] = [];
             acc[key].push(user);
             return acc;
-        }, {} as Record<string, User[]>);
+        }, {} as Record<string, any[]>);
     };
 
     const generateChartData = () => {
@@ -842,7 +402,7 @@ const UsersPage: React.FC = () => {
             const monthStart = startOfMonth(currentMonth);
             const monthEnd = endOfMonth(currentMonth);
 
-            const monthlyUsers = users?.responseData?.data?.filter((user: any) => {
+            const monthlyUsers = users?.responseData?.data?.items?.filter((user: any) => {
                 const createdAt = parseISO(user.created_at);
                 return createdAt >= monthStart && createdAt <= monthEnd;
             });
@@ -860,7 +420,7 @@ const UsersPage: React.FC = () => {
     const getRoleDistribution = () => {
         const counts: Record<string, number> = {};
 
-        users?.responseData?.data?.forEach((u: any) => {
+        users?.responseData?.data?.items?.forEach((u: any) => {
             const roleName = u.role_title && u.role_title.trim().length > 0
                 ? u.role_title
                 : 'Sans rôle';
@@ -871,8 +431,8 @@ const UsersPage: React.FC = () => {
     };
 
     const getStatusDistribution = () => {
-        const active = users?.responseData?.data?.filter(u => isActive(u)).length;
-        const inactive = users?.responseData?.data?.length - active;
+        const active = users?.responseData?.data?.items?.filter(u => isActive(u)).length;
+        const inactive = users?.responseData?.data?.items?.length - active;
 
         return [
             {name: 'Actifs', value: active},
@@ -928,12 +488,10 @@ const UsersPage: React.FC = () => {
             <div className={`sticky top-[0px] z-20 ${
                 theme === 'dark' ? 'bg-[#111827]' : 'bg-white'
             }`}>
-
-
                 <AdminPageHeader
                     Icon={<Users className={`w-6 h-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}/>}
                     title="Gestion des Utilisateurs"
-                    onRefresh={reGetUsers}
+                    onRefresh={() => reGetUsers()}
                     onAdd={() => {
                         setFormData(emptyUser);
                         setShowAddModal(true);
@@ -1186,34 +744,18 @@ const UsersPage: React.FC = () => {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <StatsCard
                         title="Total user"
-                        value={effectiveStats.total}
+                        value={users?.responseData?.data?.items?.length}
                         icon={Users}
                         className="bg-gradient-to-br from-blue-600 to-blue-700"
                         iconClassName="text-white"
                         titleClassName="text-white"
                     />
                     <StatsCard
-                        title="Admin"
-                        value={effectiveStats.admins}
-                        icon={Shield}
-                        className="bg-gradient-to-br from-purple-600 to-purple-700"
-                        iconClassName="text-white"
-                        titleClassName="text-white"
-                    />
-                    <StatsCard
-                        title="Utilisateurs"
-                        value={effectiveStats.users}
-                        icon={UserIcon}
-                        className="bg-gradient-to-br from-green-600 to-green-700"
-                        iconClassName="text-white"
-                        titleClassName="text-white"
-                    />
-                    <StatsCard
                         title="Actifs"
-                        value={effectiveStats.active}
+                        value={users?.responseData?.data?.totals?.active}
                         icon={UserCheck}
                         className="bg-gradient-to-br from-emerald-600 to-emerald-700"
                         iconClassName="text-white"
@@ -1221,17 +763,9 @@ const UsersPage: React.FC = () => {
                     />
                     <StatsCard
                         title="Inactifs"
-                        value={effectiveStats.inactive}
+                        value={users?.responseData?.data?.totals?.blocked}
                         icon={AlertTriangle}
                         className="bg-gradient-to-br from-red-600 to-red-700"
-                        iconClassName="text-white"
-                        titleClassName="text-white"
-                    />
-                    <StatsCard
-                        title="Nouveaux"
-                        value={effectiveStats.newThisMonth}
-                        icon={Calendar}
-                        className="bg-gradient-to-br from-orange-600 to-orange-700 text-white"
                         iconClassName="text-white"
                         titleClassName="text-white"
                     />
@@ -1253,30 +787,20 @@ const UsersPage: React.FC = () => {
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={bulkResetPasswords}
-                                disabled={!canResetPasswords}
                                 className={`px-3 py-2 rounded-lg border ${
-                                    canResetPasswords
-                                        ? theme === 'dark'
-                                            ? 'bg-amber-500/20 border-amber-500/30 text-amber-400'
-                                            : 'bg-amber-50 border-amber-300 text-amber-700'
-                                        : theme === 'dark'
-                                            ? 'bg-gray-700 border-gray-600 text-gray-400 cursor-not-allowed'
-                                            : 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
+                                    theme === 'dark'
+                                        ? 'bg-amber-500/20 border-amber-500/30 text-amber-400'
+                                        : 'bg-amber-50 border-amber-300 text-amber-700'
                                 }`}
                             >
                                 Réinitialiser mots de passe
                             </button>
                             <button
                                 onClick={bulkDelete}
-                                disabled={!userPermissions.can_delete}
                                 className={`px-3 py-2 rounded-lg border ${
-                                    userPermissions.can_delete
-                                        ? theme === 'dark'
-                                            ? 'bg-red-500/20 border-red-500/30 text-red-400'
-                                            : 'bg-red-50 border-red-300 text-red-700'
-                                        : theme === 'dark'
-                                            ? 'bg-gray-700 border-gray-600 text-gray-400 cursor-not-allowed'
-                                            : 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
+                                    theme === 'dark'
+                                        ? 'bg-red-500/20 border-red-500/30 text-red-400'
+                                        : 'bg-red-50 border-red-300 text-red-700'
                                 }`}
                             >
                                 Supprimer
@@ -1301,12 +825,9 @@ const UsersPage: React.FC = () => {
                         {
                             label: 'Filtrer par rôle',
                             value: roleFilter,
-                            options: [
-                                {label: 'Administrateurs', value: 'admin'},
-                                {label: 'Partenaires', value: 'partner'},
-                                {label: 'Rôles personnalisés', value: 'custom'},
-                                {label: 'Utilisateurs', value: 'user'}
-                            ],
+                            options: roles?.responseData?.data ? roles?.responseData?.data?.map((item: any) => {
+                                return {label: item?.title, value: item?.id}
+                            }) : [],
                             onChange: setRoleFilter
                         }
                     ]}
@@ -1741,6 +1262,22 @@ const UsersPage: React.FC = () => {
                                 <div>
                                     <label
                                         className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
+                                        Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={formData?.email}
+                                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                        className={
+                                            theme === 'dark'
+                                                ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                                : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                        }
+                                    />
+                                </div>
+                                <div>
+                                    <label
+                                        className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
                                         Téléphone
                                     </label>
                                     <input
@@ -1763,7 +1300,7 @@ const UsersPage: React.FC = () => {
                                         value={formData?.role_id}
                                         onChange={(e) => setFormData({
                                             ...formData,
-                                            role_id: e.target.value as UserRole
+                                            role_id: e.target.value
                                         })}
                                         className={
                                             theme === 'dark'
@@ -1794,7 +1331,7 @@ const UsersPage: React.FC = () => {
                                         type="submit"
                                         className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg"
                                     >
-                                        Enregistrer
+                                        {isUpdatingUser ? "Chargement..." : "Enregistrer"}
                                     </button>
                                 </div>
                             </form>
@@ -1883,101 +1420,6 @@ const UsersPage: React.FC = () => {
                     </div>
                 )}
 
-                {/* 🔹 MODALE : Attribution de rôle - CENTRÉ */}
-                {showRoleModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <motion.div
-                            initial={{opacity: 0, scale: 0.95}}
-                            animate={{opacity: 1, scale: 1}}
-                            exit={{opacity: 0, scale: 0.95}}
-                            className={theme === 'dark' ? 'bg-gray-800 rounded-lg p-6 w-full max-w-md' : 'bg-white rounded-lg p-6 w-full max-w-md border border-gray-200'}
-                        >
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className={theme === 'dark' ? 'text-xl font-semibold text-white' : 'text-xl font-semibold text-gray-900'}>Attribuer
-                                    un rôle</h2>
-                                <button
-                                    onClick={() => setShowRoleModal(null)}
-                                    className={theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}
-                                >
-                                    <X className="w-6 h-6"/>
-                                </button>
-                            </div>
-                            <form onSubmit={handleRoleUpdate}>
-                                <div className="space-y-4">
-                                    <div>
-                                        <label
-                                            className={theme === 'dark' ? 'block text-sm font-medium text-gray-300 mb-2' : 'block text-sm font-medium text-gray-700 mb-2'}>
-                                            Utilisateur
-                                        </label>
-                                        <p className={theme === 'dark' ? 'text-white bg-gray-700 rounded-lg px-4 py-2' : 'text-gray-900 bg-gray-100 rounded-lg px-4 py-2'}>
-                                            {showRoleModal.profile?.full_name || showRoleModal.user_metadata?.name || showRoleModal.email}
-                                        </p>
-                                    </div>
-
-                                    {/* Le retrait du rôle admin se fait désormais via la gestion des rôles, pas depuis cette modale. */}
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                                            Rôles personnalisés <span className="text-red-500">*</span>
-                                        </label>
-                                        <div className="space-y-2 max-h-60 overflow-y-auto">
-                                            {customRoles.length > 0 ? (
-                                                customRoles.map((customRole) => (
-                                                    <label key={customRole.id}
-                                                           className={theme === 'dark' ? 'flex items-center p-3 bg-gray-700 rounded-lg hover:bg-gray-600 cursor-pointer' : 'flex items-center p-3 bg-gray-100 rounded-lg hover:bg-gray-200 cursor-pointer'}>
-                                                        <input
-                                                            type="radio"
-                                                            name="role"
-                                                            value={customRole.name}
-                                                            checked={roleFormData.role === customRole.name}
-                                                            onChange={(e) => setRoleFormData({role: e.target.value as UserRole})}
-                                                            className="mr-3"
-                                                        />
-                                                        <div
-                                                            className={theme === 'dark' ? 'flex items-center text-white' : 'flex items-center text-gray-900'}>
-                                                            <Crown className="w-4 h-4 mr-2 text-purple-400"/>
-                                                            <div>
-                                                                <div className="font-medium">{customRole.name}</div>
-                                                                {customRole.description && (
-                                                                    <div
-                                                                        className={theme === 'dark' ? 'text-xs text-gray-400' : 'text-xs text-gray-500'}>{customRole.description}</div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </label>
-                                                ))
-                                            ) : (
-                                                <div
-                                                    className={theme === 'dark' ? 'text-center py-4 text-gray-400' : 'text-center py-4 text-gray-500'}>
-                                                    <Crown className="w-8 h-8 mx-auto mb-2 opacity-50"/>
-                                                    <p>Aucun rôle personnalisé disponible</p>
-                                                    <p className="text-sm">Créez d'abord des rôles personnalisés</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="mt-6 flex justify-end space-x-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowRoleModal(null)}
-                                        className={theme === 'dark' ? 'px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600' : 'px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200'}
-                                    >
-                                        Annuler
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-                                        disabled={customRoles.length === 0}
-                                    >
-                                        Attribuer le rôle
-                                    </button>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-
                 {/* 🔹 MODALE : Confirmation suppression - CENTRÉ */}
                 {showDeleteConfirm && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -2006,7 +1448,7 @@ const UsersPage: React.FC = () => {
                                     onClick={() => handleDeleteUser(showDeleteConfirm)}
                                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                                 >
-                                    Supprimer
+                                    {isDeletingUser ? "Chargement..." : "Supprimer"}
                                 </button>
                             </div>
                         </motion.div>

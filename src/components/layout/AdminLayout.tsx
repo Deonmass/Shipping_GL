@@ -283,12 +283,6 @@ const AdminLayout: React.FC = () => {
         {key: appPermissions.dashboard, label: 'Dashboard', path: '/admin/dashboard', keywords: ['accueil', 'home']},
         {key: appPermissions.users, label: 'Utilisateurs', path: '/admin/users', keywords: ['users', 'comptes']},
         {
-            key: appPermissions.users_assign_roles,
-            label: 'Attribuer rôle',
-            path: '/admin/users/assign-roles',
-            keywords: ['rôles', 'permissions']
-        },
-        {
             key: appPermissions.users_permissions,
             label: 'Permissions des rôles',
             path: '/admin/users/permissions',
@@ -330,12 +324,6 @@ const AdminLayout: React.FC = () => {
 
     const userItems = [
         {key: appPermissions.users, path: '/admin/users', icon: Users, label: 'Utilisateurs'},
-        {
-            key: appPermissions.users_assign_roles,
-            path: '/admin/users/assign-roles',
-            icon: Shield,
-            label: 'Attribuer rôle'
-        },
         {
             key: appPermissions.users_permissions,
             path: '/admin/users/permissions',
