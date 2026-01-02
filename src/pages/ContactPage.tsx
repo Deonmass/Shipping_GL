@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { MapPin, Mail, FileText, DollarSign, Info, X, MessageCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import {offices} from "../constants";
+import {UseGetOpenOffices} from "../services";
 
 const ContactPage: React.FC = () => {
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showContactModal, setShowContactModal] = useState<string | null>(null);
+  const {data: offices, isLoading: isGettingOffices} = UseGetOpenOffices()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -247,8 +248,10 @@ const ContactPage: React.FC = () => {
               </p>
             </motion.div>
 
+            {isGettingOffices ? <div>Chargement ...</div> : null}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4">
-              {offices.map((office, index) => (
+              {offices?.responseData?.data?.length && offices?.responseData?.data?.map((office: any, index: number) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
@@ -260,16 +263,16 @@ const ContactPage: React.FC = () => {
                   <div className="absolute top-4 left-4">
                     <MapPin className="w-6 h-6 text-red-600" />
                   </div>
-                  {office.isHeadquarters && (
+                  {office.is_hq?.toString() === "1" && (
                     <div className="absolute top-4 right-4 bg-red-50 text-red-700 text-xs font-medium px-2 py-1 rounded-full">
                       Siège Social
                     </div>
                   )}
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4 mt-8">{office.city}</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4 mt-8">{office.title}</h3>
                   <div className="space-y-2">
-                    {office.address.map((line, i) => (
-                      <p key={i} className="text-gray-600 text-sm">{line}</p>
-                    ))}
+                    <p className="text-gray-600 text-sm">{office?.address_line_1}</p>
+                    <p className="text-gray-600 text-sm">{office?.address_line_2}</p>
+                    <p className="text-gray-600 text-sm">{office?.address_line_3}</p>
                   </div>
                 </motion.div>
               ))}
