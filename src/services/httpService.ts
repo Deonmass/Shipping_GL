@@ -2,6 +2,7 @@ import axios, {type AxiosInstance, type AxiosRequestConfig, type AxiosResponse} 
 import {localStorageKeys} from "../constants";
 import { ResponseBodyType } from '../types';
 import { AppStorage } from '../utils';
+import AppToast from "../utils/AppToast.ts";
 
 
 const REACT_APP_BASE_URL = import.meta.env.VITE_API_URL
@@ -122,7 +123,7 @@ axiosInstance.interceptors.response.use(
         const message =
             error.toString().replace('Axios', '').replace('Error:', '') || '';
         if (!navigator?.onLine) {
-            //AppToast.warning('Problème de connexion. Vérifiez SVP');
+            AppToast.warning(true,'Problème de connexion. Vérifiez SVP');
         }
         if (!error || !error?.response || error == 'AxiosError: Network Error') {
             //console.log(error);
@@ -132,7 +133,7 @@ axiosInstance.interceptors.response.use(
         if (error?.response?.status?.toString() === "419" && error.response.data.message && error.response.data.message.includes("connexion a expiré")) {
             console.log("Please, session expired login again.")
             AppStorage.clearAll()
-            window.location.href = "/login"
+            window.location.href = "/admin-login"
             return false
         }
         return Promise.resolve({

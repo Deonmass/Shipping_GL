@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
-import { AuthProvider } from './contexts/AuthContext';
+import {useEffect} from 'react';
+import {Routes, Route, useLocation} from 'react-router-dom';
+import {AnimatePresence} from 'framer-motion';
+import {AuthProvider} from './contexts/AuthContext';
+import AdminContextProvider from "./contexts/AdminContext";
 
 // Components
 import Layout from './components/layout/Layout';
@@ -47,76 +48,78 @@ import MenuVisibilityPage from './pages/admin/MenuVisibilityPage';
 import OfficesPage from "./pages/admin/OfficesPage.tsx";
 
 function App() {
-  const location = useLocation();
-  
-  // Scroll to top on route change
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
+    const location = useLocation();
 
-  return (
-    <AuthProvider>
-      <AnimatePresence mode="wait">
-        <Routes location={location}>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<HomePage />} />
-            <Route path="services" element={<ServicesPage />} />
-            <Route path="partenaires" element={<PartnersPage />} />
-            <Route path="actualites" element={<NewsPage />} />
-            <Route path="a-propos" element={<AboutPage />} />
-            <Route path="login" element={<LoginPage />} />
-            <Route path="admin-login" element={<AdminLoginPage />} />
-            <Route path="register" element={<RegisterPage />} />
-            <Route path="devenir-partenaire" element={<PartnershipPage />} />
-            <Route path="profil" element={<ProfilePage />} />
-            <Route path="engagement" element={<EngagementPage />} />
-            <Route path="contact" element={<ContactPage />} />
-            <Route path="recrutement" element={<RecruitmentPage />}>
-              <Route index element={null} />
-              <Route path="offres" element={null} />
-              <Route path="cv" element={null} />
-            </Route>
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-          
-          {/* Admin Routes - Protected */}
-          <Route path="/admin" element={
-            <ProtectedRoute requireAdmin={true}>
-              <AdminLayout />
-            </ProtectedRoute>
-          }>
-            <Route path="dashboard" element={<AdminDashboardPage />} />
-            <Route path="users">
-              <Route index element={<AdminUsersPage />} />
-              <Route path="visitors" element={<AdminUsersPage />} />
-              <Route path="admins" element={<AdminUsersPage />} />
-              <Route path="assign-roles" element={<AssignRolesPage />} />
-              <Route path="permissions" element={<RolePermissionsPage />} />
-            </Route>
-            <Route path="partners" element={<AdminPartnersPage />} />
-            <Route path="posts" element={<PostsPage />} />
-            <Route path="services" element={<AdminServicesPage />} />
-            <Route path="quote-requests" element={<AdminQuoteRequestsPage />} />
-            <Route path="candidatures" element={<CandidaturePage />} />
-            <Route path="offres-emploi" element={<JobOfferPage />} />
-            <Route path="likes" element={<LikesPage />} />
-            <Route path="comments" element={<CommentsPage />} />
-            <Route path="events" element={<EventsPage />} />
-            <Route path="categories" element={<CategoriesPage />} />
-            <Route path="newsletter" element={<NewsletterPage />} />
-            <Route path="reports" element={<AdminReportsPage />} />
-            <Route path="settings" element={<AdminSettingsPage />} />
-            <Route path="notifications" element={<NotificationsPage />} />
-            <Route path="menu-visibility" element={<MenuVisibilityPage />} />
+    // Scroll to top on route change
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [location.pathname]);
 
-            <Route path="offices" element={<OfficesPage />} />
+    return (
+        <AdminContextProvider>
+            {/*<AuthProvider>*/}
+            <AnimatePresence mode="wait">
+                <Routes location={location}>
+                    <Route path="/" element={<Layout/>}>
+                        <Route index element={<HomePage/>}/>
+                        <Route path="services" element={<ServicesPage/>}/>
+                        <Route path="partenaires" element={<PartnersPage/>}/>
+                        <Route path="actualites" element={<NewsPage/>}/>
+                        <Route path="a-propos" element={<AboutPage/>}/>
+                        <Route path="login" element={<LoginPage/>}/>
+                        <Route path="admin-login" element={<AdminLoginPage/>}/>
+                        <Route path="register" element={<RegisterPage/>}/>
+                        <Route path="devenir-partenaire" element={<PartnershipPage/>}/>
+                        <Route path="profil" element={<ProfilePage/>}/>
+                        <Route path="engagement" element={<EngagementPage/>}/>
+                        <Route path="contact" element={<ContactPage/>}/>
+                        <Route path="recrutement" element={<RecruitmentPage/>}>
+                            <Route index element={null}/>
+                            <Route path="offres" element={null}/>
+                            <Route path="cv" element={null}/>
+                        </Route>
+                        <Route path="*" element={<NotFoundPage/>}/>
+                    </Route>
 
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
-      </AnimatePresence>
-    </AuthProvider>
-  );
+                    {/* Admin Routes - Protected */}
+                    <Route path="/admin" element={
+                        <ProtectedRoute requireAdmin={true}>
+                            <AdminLayout/>
+                        </ProtectedRoute>
+                    }>
+                        <Route path="dashboard" element={<AdminDashboardPage/>}/>
+                        <Route path="users">
+                            <Route index element={<AdminUsersPage/>}/>
+                            <Route path="visitors" element={<AdminUsersPage/>}/>
+                            <Route path="admins" element={<AdminUsersPage/>}/>
+                            <Route path="assign-roles" element={<AssignRolesPage/>}/>
+                            <Route path="permissions" element={<RolePermissionsPage/>}/>
+                        </Route>
+                        <Route path="partners" element={<AdminPartnersPage/>}/>
+                        <Route path="posts" element={<PostsPage/>}/>
+                        <Route path="services" element={<AdminServicesPage/>}/>
+                        <Route path="quote-requests" element={<AdminQuoteRequestsPage/>}/>
+                        <Route path="candidatures" element={<CandidaturePage/>}/>
+                        <Route path="offres-emploi" element={<JobOfferPage/>}/>
+                        <Route path="likes" element={<LikesPage/>}/>
+                        <Route path="comments" element={<CommentsPage/>}/>
+                        <Route path="events" element={<EventsPage/>}/>
+                        <Route path="categories" element={<CategoriesPage/>}/>
+                        <Route path="newsletter" element={<NewsletterPage/>}/>
+                        <Route path="reports" element={<AdminReportsPage/>}/>
+                        <Route path="settings" element={<AdminSettingsPage/>}/>
+                        <Route path="notifications" element={<NotificationsPage/>}/>
+                        <Route path="menu-visibility" element={<MenuVisibilityPage/>}/>
+
+                        <Route path="offices" element={<OfficesPage/>}/>
+
+                        <Route path="*" element={<NotFoundPage/>}/>
+                    </Route>
+                </Routes>
+            </AnimatePresence>
+            {/*</AuthProvider>*/}
+        </AdminContextProvider>
+    );
 }
 
 export default App;
