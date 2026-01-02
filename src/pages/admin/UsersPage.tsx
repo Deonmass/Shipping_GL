@@ -492,10 +492,10 @@ const UsersPage: React.FC = () => {
                     Icon={<Users className={`w-6 h-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}/>}
                     title="Gestion des Utilisateurs"
                     onRefresh={() => reGetUsers()}
-                    onAdd={() => {
+                    onAdd={HasPermission(appPermissions.users, appOps.create) ? () => {
                         setFormData(emptyUser);
                         setShowAddModal(true);
-                    }}
+                    } : undefined}
                 />
 
 
