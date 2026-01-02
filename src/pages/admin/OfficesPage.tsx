@@ -40,6 +40,7 @@ const OfficesPage = () => {
     const [formData, setFormData] = useState<any>(emptyItem);
     const [showAddModal, setShowAddModal] = useState<boolean>(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<any>();
+    const [showEditModal, setShowEditModal] = useState<boolean>(false);
     const [showViewModal, setShowViewModal] = useState<any>(null);
 
     const {
@@ -99,8 +100,21 @@ const OfficesPage = () => {
         })
     }
 
-    const onEdit = (item: any) => {
-        console.log(item)
+    const handleUpdateItem =  async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!formData?.id) return
+        if (!formData.title) {
+            AppToast.error(theme === "dark", 'Veuillez remplir tous les champs requis')
+            return;
+        }
+        updateItem({
+            id: formData.id,
+            description: formData.description,
+            address_line_1: formData.address_line_1,
+            address_line_2: formData.address_line_2,
+            address_line_3: formData.address_line_3,
+            is_hq: formData.is_hq,
+        })
     }
 
     const onDelete = (item: any) => {
@@ -121,7 +135,6 @@ const OfficesPage = () => {
             address_line_3: formData.address_line_3,
             is_hq: formData.is_hq,
         })
-        console.log("item", formData)
     }
 
 
@@ -266,7 +279,10 @@ const OfficesPage = () => {
                                         <Eye className="w-5 h-5"/>
                                     </button>
                                     <button
-                                        onClick={() => onEdit(item)}
+                                        onClick={() => {
+                                            setShowEditModal(true);
+                                            setFormData(item);
+                                        }}
                                         className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition border ${
                                             isDark
                                                 ? 'border-green-500/40 bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:border-green-500/60'
@@ -572,6 +588,151 @@ const OfficesPage = () => {
                                 {isDeleting || isUpdating ? "Chargement..." : "Valider"}
                             </button>
                         </div>
+                    </motion.div>
+                </div>
+            )}
+
+            {showEditModal && formData?.id && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <motion.div
+                        initial={{opacity: 0, scale: 0.95}}
+                        animate={{opacity: 1, scale: 1}}
+                        exit={{opacity: 0, scale: 0.95}}
+                        className={theme === 'dark' ? 'bg-gray-800 rounded-lg p-6 w-full max-w-lg border border-gray-700' : 'bg-white rounded-lg p-6 w-full max-w-lg border border-gray-200'}
+                    >
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className={theme === 'dark' ? 'text-xl font-semibold text-white' : 'text-xl font-semibold text-gray-900'}>Modifier
+                                le Bureau</h2>
+                            <button
+                                onClick={() => {
+                                    setShowEditModal(false);
+                                    setFormData(emptyItem);
+                                }}
+                                className={theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}
+                                aria-label="Fermer"
+                            >
+                                <X className="w-6 h-6"/>
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdateItem} className="space-y-4">
+                            <div>
+                                <label
+                                    className={isDark ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
+                                    Nom / Ville
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData?.title}
+                                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                                    className={
+                                        isDark
+                                            ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                            : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                    }
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
+                                    Adresse
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData?.address_line_1}
+                                    placeholder="1e ligne"
+                                    onChange={(e) => setFormData({...formData, address_line_1: e.target.value})}
+                                    className={
+                                        theme === 'dark'
+                                            ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                            : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                    }
+                                />
+                                <input
+                                    type="text"
+                                    value={formData?.address_line_2}
+                                    placeholder="2e ligne"
+                                    onChange={(e) => setFormData({...formData, address_line_2: e.target.value})}
+                                    className={
+                                        theme === 'dark'
+                                            ? 'w-full my-2 bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                            : 'w-full my-2 bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                    }
+                                />
+                                <input
+                                    type="text"
+                                    value={formData?.address_line_3}
+                                    placeholder="3e ligne"
+                                    onChange={(e) => setFormData({...formData, address_line_3: e.target.value})}
+                                    className={
+                                        theme === 'dark'
+                                            ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                            : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
+                                    Description
+                                </label>
+                                <textarea
+                                    value={formData?.description}
+                                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                    className={
+                                        theme === 'dark'
+                                            ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                            : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
+                                    HQ ?
+                                </label>
+                                <select
+                                    value={formData?.is_hq}
+                                    onChange={(e) => setFormData({
+                                        ...formData,
+                                        is_hq: e.target.value
+                                    })}
+                                    className={
+                                        theme === 'dark'
+                                            ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                            : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                    }
+                                >
+                                    <option value="0">NON</option>
+                                    <option value="1">OUI</option>
+                                </select>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowEditModal(false);
+                                        setFormData(emptyItem);
+                                    }}
+                                    className={
+                                        theme === 'dark'
+                                            ? 'px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg'
+                                            : 'px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg'
+                                    }
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg"
+                                >
+                                    {isAdding ? "Chargement..." : "Enregistrer"}
+                                </button>
+                            </div>
+                        </form>
                     </motion.div>
                 </div>
             )}
