@@ -12,7 +12,11 @@ export const UseGetUsers = (options?: GetQueryParams) => UseGetQuery({
     options: options,
     endpoint: endpoints.users,
 })
-
+export const UseGetUsersStats = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "UsersStats",
+    options: options,
+    endpoint: `${endpoints.users}-stats`,
+})
 export const UseGetUserDetail = (id: string, options?: GetQueryParams) => UseGetDetailQuery({
     id: id,
     identifier: "User",

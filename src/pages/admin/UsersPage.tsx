@@ -791,7 +791,7 @@ const UsersPage: React.FC = () => {
       label: 'Modifier',
       icon: Edit,
       onClick: () => {
-        if (!userPermissions.can_edit) return;
+        //if (!userPermissions.can_edit) return;
         setSelectedUser(user);
         const userRole = getUserMainRole(user);
         setFormData({
@@ -1015,7 +1015,7 @@ const UsersPage: React.FC = () => {
               setFormData({ email: '', password: '', name: '', phone: '', company: '', role: 'user' as UserRole });
               setShowAddModal(true);
             }}
-            disabled={!(userPermissions.can_add && isCurrentAdmin)}
+            // disabled={!(userPermissions.can_add && isCurrentAdmin)}
             className="btn bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-5 h-5 mr-2" />
