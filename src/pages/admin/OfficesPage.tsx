@@ -1,10 +1,20 @@
 import React, {useEffect, useState} from "react";
-import {Building2, Edit, Eye, Trash2, CheckCircle, XCircle, X, CheckCircle2, Circle} from "lucide-react";
+import {
+    Building2,
+    Edit,
+    Eye,
+    Trash2,
+    CheckCircle,
+    XCircle,
+    X,
+    CheckCircle2,
+    AlertTriangle
+} from "lucide-react";
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
 import {useOutletContext} from "react-router-dom";
-import {format} from "date-fns";
+import {format, parseISO} from "date-fns";
 import {fr} from "date-fns/locale";
-import {UseAddOffice, UseGetOffices, UseUpdateOffice} from "../../services";
+import {UseAddOffice, UseDeleteOffice, UseGetOffices, UseUpdateOffice} from "../../services";
 import {motion} from "framer-motion";
 import AppToast from "../../utils/AppToast.ts";
 import {HasPermission} from "../../utils/PermissionChecker.ts";
@@ -20,12 +30,17 @@ const emptyItem = {
     is_hq: "",
 }
 
+const isActive = (u: any) =>
+    u?.status?.toString() === "1"
+
 const OfficesPage = () => {
     const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
     const isDark = theme === 'dark';
 
     const [formData, setFormData] = useState<any>(emptyItem);
     const [showAddModal, setShowAddModal] = useState<boolean>(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<any>();
+    const [showViewModal, setShowViewModal] = useState<any>(null);
 
     const {
         isLoading: isGettingOffices,
@@ -35,6 +50,7 @@ const OfficesPage = () => {
     } = UseGetOffices()
     const {isPending: isAdding, data: addResult, mutate: addItem} = UseAddOffice()
     const {isPending: isUpdating, data: updateResult, mutate: updateItem} = UseUpdateOffice()
+    const {isPending: isDeleting, data: deleteResult, mutate: deleteItem} = UseDeleteOffice()
 
 
     useEffect(() => {
@@ -50,12 +66,37 @@ const OfficesPage = () => {
         }
     }, [addResult]);
 
+    useEffect(() => {
+        if (updateResult) {
+            if (updateResult?.responseData?.error) {
+                AppToast.error(theme === "dark", updateResult?.responseData?.message || "Erreur lors de la mise a jour")
+            } else {
+                reGetOffices()
+                AppToast.success(theme === "dark", 'Bureau mis a jour avec succès')
+                setShowAddModal(false);
+                setFormData(emptyItem);
+            }
+        }
+    }, [updateResult]);
+
+    useEffect(() => {
+        if (deleteResult) {
+            if (deleteResult?.responseData?.error) {
+                AppToast.error(theme === "dark", deleteResult?.responseData?.message || "Erreur lors de la suppression")
+            } else {
+                reGetOffices()
+                AppToast.success(theme === "dark", 'Bureau supprimé avec succès')
+                setShowDeleteConfirm(null);
+            }
+        }
+    }, [deleteResult]);
+
 
     const handleToggleVisibility = (item: any) => {
-        console.log(item)
-    }
-    const onSelectItem = (item: any) => {
-        console.log(item)
+        updateItem({
+            id: item.id,
+            status: isActive(item) ? "0" : "1"
+        })
     }
 
     const onEdit = (item: any) => {
@@ -63,7 +104,7 @@ const OfficesPage = () => {
     }
 
     const onDelete = (item: any) => {
-        console.log(item)
+        deleteItem({id: item.id,})
     }
 
     const handleAddItem = async (e: React.FormEvent) => {
@@ -201,12 +242,12 @@ const OfficesPage = () => {
                                 <button
                                     onClick={() => handleToggleVisibility(item)}
                                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                        item.is_visible ? 'bg-primary-600' : 'bg-gray-600'
+                                        isActive(item) ? 'bg-primary-600' : 'bg-gray-600'
                                     }`}
                                 >
                     <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            item.is_visible ? 'translate-x-6' : 'translate-x-1'
+                            isActive(item) ? 'translate-x-6' : 'translate-x-1'
                         }`}
                     />
                                 </button>
@@ -214,7 +255,7 @@ const OfficesPage = () => {
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div className="flex items-center justify-end gap-2">
                                     <button
-                                        onClick={() => onSelectItem(item)}
+                                        onClick={() => setShowViewModal(item)}
                                         className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition border ${
                                             isDark
                                                 ? 'border-blue-500/40 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 hover:border-blue-500/60'
@@ -236,7 +277,7 @@ const OfficesPage = () => {
                                         <Edit className="w-5 h-5"/>
                                     </button>
                                     <button
-                                        onClick={() => onDelete(item)}
+                                        onClick={() => setShowDeleteConfirm(item)}
                                         className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition border ${
                                             isDark
                                                 ? 'border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:border-red-500/60'
@@ -399,6 +440,138 @@ const OfficesPage = () => {
                                 </button>
                             </div>
                         </form>
+                    </motion.div>
+                </div>
+            )}
+
+            {showViewModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <motion.div
+                        initial={{opacity: 0, scale: 0.95}}
+                        animate={{opacity: 1, scale: 1}}
+                        exit={{opacity: 0, scale: 0.95}}
+                        className={theme === 'dark' ? 'bg-gray-800 rounded-lg p-6 w-full max-w-lg border border-gray-700' : 'bg-white rounded-lg p-6 w-full max-w-lg border border-gray-200'}
+                    >
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center space-x-3">
+                                <div
+                                    className="w-10 h-10 bg-primary-500/20 rounded-full flex items-center justify-center">
+                                    <Building2 className="w-5 h-5 text-primary-400"/>
+                                </div>
+                                <div>
+                                    <h2 className={theme === 'dark' ? 'text-xl font-semibold text-white' : 'text-xl font-semibold text-gray-900'}>
+                                        {showViewModal?.title}
+                                    </h2>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setShowViewModal(null)}
+                                    className={theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}
+                                    aria-label="Fermer"
+                                >
+                                    <X className="w-6 h-6"/>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div
+                                className={theme === 'dark' ? 'bg-gray-700/50 rounded-lg p-3' : 'bg-gray-50 rounded-lg p-3'}>
+                                <div className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Statut</div>
+                                <div>
+                                         <span
+                                             className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium border ${
+                                                 isActive(showViewModal)
+                                                     ? 'border-emerald-500/60 bg-emerald-500/5 text-emerald-600'
+                                                     : 'border-red-500/60 bg-red-500/5 text-red-600'
+                                             }`}
+                                         >
+                                {isActive(showViewModal) ? (
+                                    <CheckCircle2 className="h-4 w-4 text-emerald-500"/>
+                                ) : (
+                                    <XCircle className="h-4 w-4 text-red-500"/>
+                                )}
+                                             <span>{isActive(showViewModal) ? 'Visible' : 'Masqué'}</span>
+                              </span>
+                                </div>
+                            </div>
+                            <div
+                                className={theme === 'dark' ? 'bg-gray-700/50 rounded-lg p-3' : 'bg-gray-50 rounded-lg p-3'}>
+                                <div className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Date de
+                                    création
+                                </div>
+                                <div
+                                    className={theme === 'dark' ? 'text-white font-medium' : 'text-gray-900 font-medium'}>
+                                    {showViewModal.created_at ? format(parseISO(showViewModal.created_at), 'dd/MM/yyyy HH:mm', {locale: fr}) : '—'}
+                                </div>
+                            </div>
+                            <div
+                                className={theme === 'dark' ? 'md:col-span-2 bg-gray-700/50 rounded-lg p-3' : 'md:col-span-2 bg-gray-50 rounded-lg p-3'}>
+                                <div className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Nom
+                                    Addresse
+                                </div>
+                                <div
+                                    className={theme === 'dark' ? 'text-white font-medium' : 'text-gray-900 font-medium'}>
+                                    {showViewModal?.address_line_1 || '—'} <br/>
+                                    {showViewModal?.address_line_2 || '—'} <br/>
+                                    {showViewModal?.address_line_3 || '—'}
+                                </div>
+                                <div
+                                    className={theme === 'dark' ? 'text-gray-400 mt-2' : 'text-gray-500 mt-2'}>Description
+                                </div>
+                                <div
+                                    className={theme === 'dark' ? 'text-white font-medium' : 'text-gray-900 font-medium'}>{showViewModal?.description || '—'}</div>
+                                <div
+                                    className={theme === 'dark' ? 'text-gray-400 mt-2' : 'text-gray-500 mt-2'}>HQ
+                                </div>
+                                <div
+                                    className={theme === 'dark' ? 'text-white font-medium' : 'text-gray-900 font-medium'}>{showViewModal?.is_hq?.toString() === "1" ? "Oui" : 'Non'}</div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end mt-6">
+                            <button
+                                onClick={() => setShowViewModal(null)}
+                                className={theme === 'dark' ? 'px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600' : 'px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200'}
+                            >
+                                Fermer
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
+
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <motion.div
+                        initial={{opacity: 0, scale: 0.95}}
+                        animate={{opacity: 1, scale: 1}}
+                        exit={{opacity: 0, scale: 0.95}}
+                        className={theme === 'dark' ? 'bg-gray-800 rounded-lg p-6 w-full max-w-md' : 'bg-white rounded-lg p-6 w-full max-w-md border border-gray-200'}
+                    >
+                        <div className="flex items-center mb-4">
+                            <AlertTriangle className="w-6 h-6 text-red-500 mr-3"/>
+                            <h2 className={theme === 'dark' ? 'text-xl font-semibold text-white' : 'text-xl font-semibold text-gray-900'}>Attention</h2>
+                        </div>
+                        <p className={theme === 'dark' ? 'text-gray-300 mb-6' : 'text-gray-700 mb-6'}>
+                            Êtes-vous sûr de vouloir éxécuter cette action ?
+                        </p>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={() => setShowDeleteConfirm(null)}
+                                className={theme === 'dark' ? 'px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600' : 'px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200'}
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                onClick={() => onDelete(showDeleteConfirm)}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                            >
+                                {isDeleting || isUpdating ? "Chargement..." : "Valider"}
+                            </button>
+                        </div>
                     </motion.div>
                 </div>
             )}
