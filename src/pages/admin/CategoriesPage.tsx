@@ -620,7 +620,7 @@ const CategoriesPage: React.FC = () => {
                                     type="submit"
                                     className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
                                 >
-                                    {isAdding || isUpdating ? "Chargement" : "Valider"}
+                                    {isAdding || isUpdating ? "Chargement ..." : "Valider"}
                                 </button>
                             </div>
                         </form>
