@@ -8,6 +8,7 @@ const urls =  {
     offices: '/api/offices',
     appPermissions: '/api/app-permissions',
     rolesPermissions: '/api/role-default-permissions',
+    categories: '/api/categories',
 }
 
 export default urls
