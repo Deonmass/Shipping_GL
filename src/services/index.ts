@@ -28,3 +28,12 @@ export {
     UseUpdateOffice,
     UseGetOpenOffices
 } from "./queries/OfficesQueries.ts"
+
+export {
+    UseAddCategory,
+    UseGetCategoryDetail,
+    UseDeleteCategory,
+    UseGetCategories,
+    UseGetOpenCategories,
+    UseUpdateCategory
+} from "./queries/CategoriesQueries.ts"
