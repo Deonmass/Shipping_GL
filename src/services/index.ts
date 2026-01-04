@@ -37,3 +37,12 @@ export {
     UseGetOpenCategories,
     UseUpdateCategory
 } from "./queries/CategoriesQueries.ts"
+
+export {
+    UseGetPartnerDetail,
+    UseAddPartner,
+    UseDeletePartner,
+    UseGetPartners,
+    UseUpdatePartner,
+    UseGetOpenPartners,
+} from "./queries/PartnersQueries.ts"

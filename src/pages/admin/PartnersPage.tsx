@@ -17,24 +17,20 @@ import { ChartModal } from '../../components/admin/ChartModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { useOutletContext } from 'react-router-dom';
 import * as XLSX from 'xlsx';
+import {UseGetPartners} from "../../services";
 
 interface Partner {
-  id: string;
-  user_id?: string;
-  company_name: string;
+  id?: string;
+  title: string;
   description?: string;
   logo_url?: string;
   category_id?: string;
+  category_name?: string;
   website?: string;
   phone?: string;
   email?: string;
   status: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  partner_categories?: {
-    name: string;
-  };
+  created_at?: string;
 }
 
 interface PartnerCategory {
@@ -66,7 +62,7 @@ interface PartnerStats {
 interface PartnerImportRow {
   id: number;
   values: {
-    company_name: string;
+    title: string;
     category_name: string;
     email: string;
     phone: string;
@@ -79,10 +75,12 @@ interface PartnerImportRow {
   errors: string[];
 }
 
+const isActive = (u: any) =>
+    u?.status?.toString() === "1"
+
 const PartnersPage: React.FC = () => {
   const { theme } = useOutletContext<{ theme: 'dark' | 'light' }>();
   const isDark = theme === 'dark';
-  const [partners, setPartners] = useState<Partner[]>([]);
   const [categories, setCategories] = useState<PartnerCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
@@ -109,7 +107,6 @@ const PartnersPage: React.FC = () => {
     rejected: 0,
     newThisMonth: 0,
   });
-  const { user } = useAuth();
   const [formData, setFormData] = useState<PartnerFormData>({
     company_name: '',
     description: '',
@@ -127,10 +124,9 @@ const PartnersPage: React.FC = () => {
   const [importProgress, setImportProgress] = useState(0);
   const [importInserting, setImportInserting] = useState(false);
 
-  useEffect(() => {
-    fetchPartners();
-    fetchCategories();
-  }, [user]);
+
+  const {isPending: isGettingPartners, data: partners, refetch: reGetPartners} = UseGetPartners()
+
 
   // Animation douce des compteurs pendant le chargement
   useEffect(() => {
@@ -160,48 +156,6 @@ const PartnersPage: React.FC = () => {
 
   const effectiveStats = loading ? displayStats : stats;
 
-  const fetchPartners = async () => {
-    try {
-      setLoading(true);
-
-      let query = supabase
-        .from('partners')
-        .select(`
-          *,
-          partner_categories(name)
-        `)
-        .order('created_at', { ascending: false });
-
-      // Adapter le périmètre des données en fonction des rôles
-      if (user) {
-        const { data: roleRows, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id);
-
-        if (!rolesError) {
-          const roles = (roleRows || []).map((r: any) => r.role as string);
-          const isAdmin = roles.includes('admin');
-
-          // Règle: admin voit tous les partenaires; autres rôles ne voient que ceux liés à leur user_id
-          if (!isAdmin) {
-            query = query.eq('user_id', user.id);
-          }
-        }
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setPartners(data || []);
-      calculateStats(data || []);
-    } catch (error: any) {
-      console.error('Error fetching partners:', error);
-      toast.error('Erreur lors du chargement des partenaires');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const calculateStats = (partnerList: Partner[]) => {
     const now = new Date();
@@ -221,20 +175,6 @@ const PartnersPage: React.FC = () => {
     setStats(stats);
   };
 
-  const fetchCategories = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('partner_categories')
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-      setCategories(data || []);
-    } catch (error: any) {
-      console.error('Error fetching categories:', error);
-    }
-  };
-
   const handleView = (partner: Partner) => {
     setSelectedPartner(partner);
   };
@@ -242,7 +182,7 @@ const PartnersPage: React.FC = () => {
   const handleEdit = (partner: Partner) => {
     setEditingPartner(partner);
     setFormData({
-      company_name: partner.company_name,
+      title: partner.title,
       description: partner.description || '',
       logo_url: partner.logo_url || '',
       category_id: partner.category_id || '',
@@ -380,36 +320,12 @@ const PartnersPage: React.FC = () => {
     setShowStatusConfirm(null);
   };
 
-  const getContextMenuItems = (partner: Partner): ContextMenuItem[] => [
-    {
-      label: 'Voir détails',
-      icon: Eye,
-      onClick: () => handleView(partner)
-    },
-    {
-      label: 'Modifier',
-      icon: Edit,
-      onClick: () => handleEdit(partner)
-    },
-    {
-      label: partner.is_active ? 'Désactiver' : 'Activer',
-      icon: partner.is_active ? ToggleLeft : ToggleRight,
-      onClick: () => setShowActivateConfirm({ partner, action: partner.is_active ? 'deactivate' : 'activate' }),
-      variant: partner.is_active ? 'warning' : 'success'
-    },
-    {
-      label: 'Supprimer',
-      icon: Trash2,
-      onClick: () => setShowDeleteConfirm(partner.id),
-      variant: 'danger'
-    }
-  ];
 
-  const filteredPartners = partners.filter(partner => {
-    const matchesSearch = partner.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (partner.partner_categories?.name && partner.partner_categories.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      partner.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      partner.phone?.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredPartners = partners?.responseData?.data?.items.filter((partner: any) => {
+    const matchesSearch = partner.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      partner?.category_name?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+      partner?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      partner?.phone?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = !statusFilter || partner.status === statusFilter;
     const matchesCategory = !categoryFilter || partner.category_id === categoryFilter;
@@ -424,10 +340,10 @@ const PartnersPage: React.FC = () => {
       let key = '';
 
       if (groupBy === 'status') {
-        key = partner.status === 'approved' ? 'Approuvés' :
-              partner.status === 'pending' ? 'En attente' : 'Rejetés';
+        key = partner?.status?.toString() === '1' ? 'Approuvés' :
+              partner?.status?.toString() === '0' ? 'En attente' : 'Rejetés';
       } else if (groupBy === 'category') {
-        key = partner.partner_categories?.name || 'Sans catégorie';
+        key = partner?.category_name || 'Sans catégorie';
       } else if (groupBy === 'month') {
         key = format(parseISO(partner.created_at), 'MMMM yyyy', { locale: fr });
       }
@@ -471,7 +387,7 @@ const PartnersPage: React.FC = () => {
   const getCategoryDistribution = () => {
     const distribution: Record<string, number> = {};
     partners.forEach(partner => {
-      const categoryName = partner.partner_categories?.name || 'Sans catégorie';
+      const categoryName = partner?.category_name || 'Sans catégorie';
       distribution[categoryName] = (distribution[categoryName] || 0) + 1;
     });
     return Object.entries(distribution).map(([name, value]) => ({ name, value }));
@@ -488,7 +404,7 @@ const PartnersPage: React.FC = () => {
   const handleDownloadTemplate = () => {
     try {
       const headers = [
-        'company_name',
+        'title',
         'category_name',
         'email',
         'phone',
@@ -526,7 +442,7 @@ const PartnersPage: React.FC = () => {
   const validateImportRow = (values: PartnerImportRow['values']): string[] => {
     const errors: string[] = [];
 
-    if (!values.company_name || !values.company_name.trim()) {
+    if (!values.title || !values.title.trim()) {
       errors.push('Le nom de l\'entreprise est requis');
     }
 
@@ -720,7 +636,7 @@ const PartnersPage: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (isGettingPartners) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
@@ -732,6 +648,7 @@ const PartnersPage: React.FC = () => {
 
   return (
     <div>
+
       <div className="flex items-center justify-between mb-6 mt-[60px]">
         <h1
           className={`text-2xl font-bold flex items-center gap-3 ${

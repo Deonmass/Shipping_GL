@@ -1,5 +1,6 @@
 const urls =  {
     openOffices: '/open/offices',
+    openPartners: '/open/partners',
 
     login: '/login',
     logout: '/api/logout',
@@ -9,6 +10,7 @@ const urls =  {
     appPermissions: '/api/app-permissions',
     rolesPermissions: '/api/role-default-permissions',
     categories: '/api/categories',
+    partners: '/api/partners',
 }
 
 export default urls
