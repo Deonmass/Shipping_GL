@@ -100,7 +100,7 @@ const OfficesPage = () => {
         })
     }
 
-    const handleUpdateItem =  async (e: React.FormEvent) => {
+    const handleUpdateItem = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData?.id) return
         if (!formData.title) {
@@ -252,7 +252,7 @@ const OfficesPage = () => {
                                     <XCircle className="text-red-600"/>}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <button
+                                {HasPermission(appPermissions.offices, appOps.update) ? <button
                                     onClick={() => handleToggleVisibility(item)}
                                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                                         isActive(item) ? 'bg-primary-600' : 'bg-gray-600'
@@ -263,7 +263,7 @@ const OfficesPage = () => {
                             isActive(item) ? 'translate-x-6' : 'translate-x-1'
                         }`}
                     />
-                                </button>
+                                </button> : null}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div className="flex items-center justify-end gap-2">
@@ -278,7 +278,7 @@ const OfficesPage = () => {
                                     >
                                         <Eye className="w-5 h-5"/>
                                     </button>
-                                    <button
+                                    {HasPermission(appPermissions.offices, appOps.update) ? <button
                                         onClick={() => {
                                             setShowEditModal(true);
                                             setFormData(item);
@@ -291,8 +291,8 @@ const OfficesPage = () => {
                                         title="Modifier"
                                     >
                                         <Edit className="w-5 h-5"/>
-                                    </button>
-                                    <button
+                                    </button> : null}
+                                    {HasPermission(appPermissions.offices, appOps.delete) ? <button
                                         onClick={() => setShowDeleteConfirm(item)}
                                         className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition border ${
                                             isDark
@@ -302,7 +302,7 @@ const OfficesPage = () => {
                                         title="Supprimer"
                                     >
                                         <Trash2 className="w-5 h-5"/>
-                                    </button>
+                                    </button> : null}
                                 </div>
                             </td>
                         </tr>

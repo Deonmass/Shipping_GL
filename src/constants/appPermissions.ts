@@ -8,8 +8,8 @@ export const appPermissions = {
     roles: "6",
     appPermissions: "7",
     categories: "8",
+    partners: "9",
 
-    partners: "00",
     services: "00",
     menu_visibility: "00",
     quote_requests: "00",

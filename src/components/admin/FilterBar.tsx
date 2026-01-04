@@ -67,7 +67,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             }`}
           >
             <option value="">{filter.label}</option>
-            {filter.options.map((option) => (
+            {filter?.options?.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
