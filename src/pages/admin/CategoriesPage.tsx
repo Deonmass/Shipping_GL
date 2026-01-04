@@ -38,7 +38,11 @@ const CategoriesPage: React.FC = () => {
     const [showFormModal, setShowFormModal] = useState<"add" | "edit" | null>(null);
     const [formData, setFormData] = useState<Category>(emptyItem);
 
-    const {isPending: isGettingCategories, data: categories, refetch: reGetCategories} = UseGetCategories({format: "stats"})
+    const {
+        isPending: isGettingCategories,
+        data: categories,
+        refetch: reGetCategories
+    } = UseGetCategories({format: "stats"})
     const {isPending: isAdding, data: addResult, mutate: addCategory} = UseAddCategory()
     const {isPending: isUpdating, data: updateResult, mutate: updateCategory} = UseUpdateCategory()
     const {isPending: isDeleting, data: deleteResult, mutate: deleteCategory} = UseDeleteCategory()
@@ -97,14 +101,14 @@ const CategoriesPage: React.FC = () => {
             AppToast.error(theme === "dark", 'Veuillez remplir tous les champs requis')
             return;
         }
-        if(showFormModal === "add"){
+        if (showFormModal === "add") {
             addCategory({
                 name: formData.name,
                 slug: formData.slug,
                 description: formData.description,
                 type: formData.type || null
             })
-        }else{
+        } else {
             if (!formData.id) {
                 AppToast.error(theme === "dark", 'Aucun ID passé')
                 return;
@@ -338,7 +342,7 @@ const CategoriesPage: React.FC = () => {
                                     >
                                         <Eye className="w-4 h-4"/>
                                     </button>
-                                    <button
+                                    {HasPermission(appPermissions.categories, appOps.update) ? <button
                                         onClick={() => {
                                             setShowFormModal("edit")
                                             setFormData(category)
@@ -347,14 +351,14 @@ const CategoriesPage: React.FC = () => {
                                         title="Modifier"
                                     >
                                         <Edit className="w-4 h-4"/>
-                                    </button>
-                                    <button
+                                    </button> : null}
+                                    {HasPermission(appPermissions.categories, appOps.delete) ? <button
                                         onClick={() => setShowDeleteConfirm(category.id)}
                                         className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-700 bg-red-900/20 text-red-400 hover:bg-red-900/30 transition"
                                         title="Supprimer"
                                     >
                                         <Trash2 className="w-4 h-4"/>
-                                    </button>
+                                    </button> : null}
                                 </div>
                             </td>
                         </tr>
