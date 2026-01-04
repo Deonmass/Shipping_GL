@@ -180,11 +180,11 @@ const AdminLayout: React.FC = () => {
         try {
             LogoutUser({id: connectedUser?.id})
             removeAuthData()
-            AppToast.success( true,'Déconnexion réussie');
+            AppToast.success(true, 'Déconnexion réussie');
             navigate('/admin-login');
         } catch (error: any) {
             console.error('Error logging out:', error);
-            AppToast.error(true,'Erreur lors de la déconnexion');
+            AppToast.error(true, 'Erreur lors de la déconnexion');
         }
     };
 
@@ -211,14 +211,7 @@ const AdminLayout: React.FC = () => {
             keywords: ['services', 'service']
         },
         {
-            key: appPermissions.menu_visibility,
-            path: '/admin/menu-visibility',
-            icon: Menu,
-            label: 'Visibilité du menu',
-            keywords: ['menu', 'visibilité', 'navigation']
-        },
-        {
-            key: appPermissions.quote_requests,
+            key: appPermissions.devis,
             path: '/admin/quote-requests',
             icon: Mail,
             label: 'Demandes de devis',

@@ -46,3 +46,12 @@ export {
     UseUpdatePartner,
     UseGetOpenPartners,
 } from "./queries/PartnersQueries.ts"
+
+export {
+    UseGetServiceDetail,
+    UseAddService,
+    UseDeleteService,
+    UseGetOpenServices,
+    UseGetServices,
+    UseUpdateService,
+} from "./queries/ServicesQueries.ts"

@@ -101,10 +101,10 @@ const parseRequestData = (data: string) => {
 
 async function response(response: AxiosResponse<ResponseBodyType>): Promise<any> {
     if (response?.config?.method?.toLowerCase() === "get" && response?.data?.error) {
-        console.log(response?.data?.message);
+        AppToast.error(true, response?.data?.message || "Erreur lors de la requete");
     }
     if(typeof response.data !== "object") {
-        console.log("Oups! Erreur inattendue. Réessayez SVP.")
+        AppToast.error(true,"Oups! Erreur inattendue. Réessayez SVP.")
         return false
     }
     return Promise.resolve({

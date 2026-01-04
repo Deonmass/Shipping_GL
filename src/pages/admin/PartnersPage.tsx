@@ -3,9 +3,8 @@ import {motion} from 'framer-motion';
 import {
     Eye, Edit, Trash2, X, AlertCircle,
     Building2, CheckCircle, Clock, BarChart3,
-    Upload, XCircle
+     XCircle
 } from 'lucide-react';
-import toast from 'react-hot-toast';
 import {format, parseISO, subMonths, startOfMonth, endOfMonth} from 'date-fns';
 import {fr} from 'date-fns/locale';
 import {StatsCard} from '../../components/admin/StatsCard';
@@ -13,7 +12,6 @@ import {FilterBar} from '../../components/admin/FilterBar';
 import {ChartPanel} from '../../components/admin/ChartPanel';
 import {ChartModal} from '../../components/admin/ChartModal';
 import {useOutletContext} from 'react-router-dom';
-import * as XLSX from 'xlsx';
 import {UseAddPartner, UseDeletePartner, UseGetCategories, UseGetPartners, UseUpdatePartner} from "../../services";
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
 import {HasPermission} from "../../utils/PermissionChecker.ts";
@@ -45,22 +43,6 @@ interface PartnerFormData {
     phone: string;
     email: string;
     status: string;
-}
-
-interface PartnerImportRow {
-    id: number;
-    values: {
-        title: string;
-        category_name: string;
-        email: string;
-        phone: string;
-        website: string;
-        status: string;
-        is_active: string; // "TRUE" / "FALSE" ou vide
-        description: string;
-        logo_url: string;
-    };
-    errors: string[];
 }
 
 const emptyItem: PartnerFormData = {
@@ -95,12 +77,6 @@ const PartnersPage: React.FC = () => {
     const [showFormModal, setShowFormModal] = useState<"add" | "edit" | null>(null);
     const [formData, setFormData] = useState<PartnerFormData>(emptyItem);
     const [showStatusConfirm, setShowStatusConfirm] = useState<PartnerFormData | null>(null);
-    const [showImportModal, setShowImportModal] = useState(false);
-    const [importRows, setImportRows] = useState<PartnerImportRow[]>([]);
-    const [importFileName, setImportFileName] = useState<string | null>(null);
-    const [importProgress, setImportProgress] = useState(0);
-    const [importInserting, setImportInserting] = useState(false);
-
 
     const {isPending: isGettingPartners, data: partners, refetch: reGetPartners} = UseGetPartners({format: "stats"})
     const {data: categories} = UseGetCategories({type: "partner", noPermission: 1})
@@ -160,7 +136,7 @@ const PartnersPage: React.FC = () => {
         e.preventDefault();
 
         if (!formData.title.trim()) {
-            toast.error('Le nom de l\'entreprise est requis');
+            AppToast.error(isDark, 'Le nom de l\'entreprise est requis');
             return;
         }
         const body = {
@@ -190,7 +166,7 @@ const PartnersPage: React.FC = () => {
 
     const handleChangeStatus = async (partner: any) => {
         if (!partner?.id) {
-            toast.error("Une erreur s'est produite ! Reesaayez svp.");
+            AppToast.error(isDark, "Une erreur s'est produite ! Reesaayez svp.");
             return;
         }
         updatePartner({
@@ -277,112 +253,6 @@ const PartnersPage: React.FC = () => {
         setStatusFilter('');
         setCategoryFilter('');
         setGroupBy('');
-    };
-
-
-    const validateImportRow = (values: PartnerImportRow['values']): string[] => {
-        const errors: string[] = [];
-
-        if (!values.title || !values.title.trim()) {
-            errors.push('Le nom de l\'entreprise est requis');
-        }
-
-        if (values.status && !['pending', 'approved', 'rejected'].includes(values.status.trim())) {
-            errors.push('Statut invalide (utiliser pending / approved / rejected)');
-        }
-
-        if (values.is_active && !['TRUE', 'FALSE'].includes(values.is_active.trim().toUpperCase())) {
-            errors.push('is_active doit être TRUE ou FALSE');
-        }
-
-        if (!values.category_name) {
-            errors.push(`Selectionnez une Catégorie inconnue`);
-        }
-
-        return errors;
-    };
-
-    const parseImportFile = async (file: File) => {
-        try {
-            const buffer = await file.arrayBuffer();
-            const workbook = XLSX.read(buffer, {type: 'array'});
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-
-            const rows: any[][] = XLSX.utils.sheet_to_json(sheet, {header: 1});
-            if (rows.length < 2) {
-                toast.error('Le fichier est vide ou ne contient pas de données');
-                return;
-            }
-
-            const headerRow = rows[0].map((h) => String(h || '').trim());
-            const requiredHeader = 'company_name';
-            if (!headerRow.includes(requiredHeader)) {
-                toast.error('La colonne "company_name" est requise dans le modèle');
-                return;
-            }
-
-            const idx = (name: string) => headerRow.indexOf(name);
-
-            const newRows: PartnerImportRow[] = [];
-
-            for (let i = 1; i < rows.length; i++) {
-                const row = rows[i] || [];
-                const values: PartnerImportRow['values'] = {
-                    company_name: String(row[idx('company_name')] ?? '').trim(),
-                    category_name: idx('category_name') >= 0 ? String(row[idx('category_name')] ?? '').trim() : '',
-                    email: idx('email') >= 0 ? String(row[idx('email')] ?? '').trim() : '',
-                    phone: idx('phone') >= 0 ? String(row[idx('phone')] ?? '').trim() : '',
-                    website: idx('website') >= 0 ? String(row[idx('website')] ?? '').trim() : '',
-                    status: idx('status') >= 0 ? String(row[idx('status')] ?? '').trim() : 'pending',
-                    is_active: idx('is_active') >= 0 ? String(row[idx('is_active')] ?? '').trim().toUpperCase() : 'TRUE',
-                    description: idx('description') >= 0 ? String(row[idx('description')] ?? '').trim() : '',
-                    logo_url: idx('logo_url') >= 0 ? String(row[idx('logo_url')] ?? '').trim() : ''
-                };
-
-                // Ignorer les lignes complètement vides
-                const isEmptyRow = Object.values(values).every((v) => !v || !String(v).trim());
-                if (isEmptyRow) continue;
-
-                const errors = validateImportRow(values);
-                newRows.push({
-                    id: i,
-                    values,
-                    errors
-                });
-            }
-
-            if (!newRows.length) {
-                toast.error('Aucune ligne valide trouvée dans le fichier');
-                return;
-            }
-
-            setImportRows(newRows);
-            setImportProgress(0);
-            setImportInserting(false);
-            toast.success(`${newRows.length} ligne(s) chargée(s) depuis le fichier`);
-        } catch (e) {
-            console.error('Error parsing import file:', e);
-            toast.error('Erreur lors de la lecture du fichier Excel');
-        }
-    };
-
-    const handleImportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        setImportFileName(file.name);
-        await parseImportFile(file);
-    };
-
-    const handleImportCellChange = (rowId: number, field: keyof PartnerImportRow['values'], value: string) => {
-        setImportRows((prev) => {
-            return prev.map((row) => {
-                if (row.id !== rowId) return row;
-                const newValues = {...row.values, [field]: value};
-                const errors = validateImportRow(newValues);
-                return {...row, values: newValues, errors};
-            });
-        });
     };
 
 
@@ -793,226 +663,6 @@ const PartnersPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-
-            {showImportModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <motion.div
-                        initial={{opacity: 0, scale: 0.95}}
-                        animate={{opacity: 1, scale: 1}}
-                        exit={{opacity: 0, scale: 0.95}}
-                        className={`rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto border ${
-                            isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200 shadow-lg'
-                        }`}
-                    >
-                        <div
-                            className={`px-6 py-4 border-b flex items-center justify-between sticky top-0 z-10 ${
-                                isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-slate-50'
-                            }`}
-                        >
-                            <div>
-                                <h2
-                                    className={`text-lg font-semibold ${
-                                        isDark ? 'text-white' : 'text-gray-900'
-                                    }`}
-                                >
-                                    Importer des partenaires depuis Excel
-                                </h2>
-                                <p
-                                    className={`text-xs mt-1 ${
-                                        isDark ? 'text-gray-400' : 'text-gray-600'
-                                    }`}
-                                >
-                                    Sélectionnez le modèle Excel téléchargé, corrigez les éventuelles erreurs puis
-                                    lancez l&apos;import. En cas d&apos;échec, seules les lignes non insérées resteront
-                                    affichées.
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setShowImportModal(false)}
-                                className={
-                                    isDark
-                                        ? 'text-gray-400 hover:text-white'
-                                        : 'text-gray-500 hover:text-gray-900'
-                                }
-                            >
-                                <X className="w-6 h-6"/>
-                            </button>
-                        </div>
-
-                        <div className="p-6 space-y-4">
-                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                    <label
-                                        className={`inline-flex items-center px-3 py-2 rounded-lg text-xs font-medium cursor-pointer border ${
-                                            isDark
-                                                ? 'border-gray-600 bg-gray-800 text-gray-100 hover:bg-gray-700'
-                                                : 'border-gray-300 bg-white text-gray-800 hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        <Upload className="w-4 h-4 mr-1.5"/>
-                                        Choisir un fichier Excel
-                                        <input
-                                            type="file"
-                                            accept=".xlsx,.xls,.csv"
-                                            onChange={handleImportFileChange}
-                                            className="hidden"
-                                        />
-                                    </label>
-                                    {importFileName && (
-                                        <span
-                                            className={`text-xs ${
-                                                isDark ? 'text-gray-300' : 'text-gray-700'
-                                            }`}
-                                        >
-                      Fichier sélectionné : <span className="font-medium">{importFileName}</span>
-                    </span>
-                                    )}
-                                </div>
-
-                                {importInserting && (
-                                    <span
-                                        className={`text-xs flex items-center gap-2 ${
-                                            isDark ? 'text-gray-300' : 'text-gray-700'
-                                        }`}
-                                    >
-                    <span
-                        className="inline-flex h-3 w-3 rounded-full border-2 border-primary-500 border-t-transparent animate-spin"/>
-                    Import en cours...
-                  </span>
-                                )}
-                            </div>
-
-                            {importRows.length > 0 && (
-                                <>
-                                    <div className="mt-2">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <p
-                                                className={`text-xs ${
-                                                    isDark ? 'text-gray-300' : 'text-gray-700'
-                                                }`}
-                                            >
-                                                {importRows.length} ligne(s) chargée(s). Les lignes avec erreurs sont
-                                                surlignées en rouge.
-                                            </p>
-                                            {importProgress > 0 && (
-                                                <div className="flex items-center gap-2">
-                                                    <div
-                                                        className="w-40 h-2 bg-gray-700/40 rounded-full overflow-hidden">
-                                                        <div
-                                                            className="h-full bg-primary-500 transition-all"
-                                                            style={{width: `${importProgress}%`}}
-                                                        />
-                                                    </div>
-                                                    <span className="text-xs text-gray-400">{importProgress}%</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="overflow-x-auto border rounded-lg max-h-[45vh]">
-                                            <table className="min-w-full text-xs">
-                                                <thead className={isDark ? 'bg-gray-800' : 'bg-gray-100'}>
-                                                <tr>
-                                                    <th className="px-3 py-2 text-left font-semibold">#</th>
-                                                    <th className="px-3 py-2 text-left font-semibold">company_name *
-                                                    </th>
-                                                    <th className="px-3 py-2 text-left font-semibold">category_name</th>
-                                                    <th className="px-3 py-2 text-left font-semibold">email</th>
-                                                    <th className="px-3 py-2 text-left font-semibold">phone</th>
-                                                    <th className="px-3 py-2 text-left font-semibold">website</th>
-                                                    <th className="px-3 py-2 text-left font-semibold">status</th>
-                                                    <th className="px-3 py-2 text-left font-semibold">is_active</th>
-                                                    <th className="px-3 py-2 text-left font-semibold">description</th>
-                                                    <th className="px-3 py-2 text-left font-semibold">logo_url</th>
-                                                    <th className="px-3 py-2 text-left font-semibold">Erreurs</th>
-                                                </tr>
-                                                </thead>
-                                                <tbody
-                                                    className={isDark ? 'divide-y divide-gray-800' : 'divide-y divide-gray-100'}>
-                                                {importRows.map((row, idx) => (
-                                                    <tr
-                                                        key={row.id}
-                                                        className={row.errors.length ? (isDark ? 'bg-red-900/20' : 'bg-red-50') : ''}
-                                                    >
-                                                        <td className="px-3 py-1 align-top text-gray-400">{idx + 1}</td>
-                                                        {(['company_name', 'category_name', 'email', 'phone', 'website', 'status', 'is_active', 'description', 'logo_url'] as (keyof PartnerImportRow['values'])[]).map((field) => (
-                                                            <td key={field}
-                                                                className="px-3 py-1 align-top min-w-[120px]">
-                                                                <input
-                                                                    type="text"
-                                                                    value={row.values[field] ?? ''}
-                                                                    onChange={(e) => handleImportCellChange(row.id, field, e.target.value)}
-                                                                    className={`w-full rounded border px-2 py-1 text-xs focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
-                                                                        isDark
-                                                                            ? 'bg-gray-900 border-gray-700 text-white'
-                                                                            : 'bg-white border-gray-300 text-gray-900'
-                                                                    }`}
-                                                                />
-                                                            </td>
-                                                        ))}
-                                                        <td className="px-3 py-1 align-top min-w-[180px]">
-                                                            {row.errors.length ? (
-                                                                <ul className="text-[11px] text-red-400 list-disc pl-4 space-y-0.5">
-                                                                    {row.errors.map((err, i) => (
-                                                                        <li key={i}>{err}</li>
-                                                                    ))}
-                                                                </ul>
-                                                            ) : (
-                                                                <span className="text-[11px] text-emerald-400">OK</span>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-end gap-3 mt-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowImportModal(false)}
-                                            className={`px-4 py-2 rounded-lg text-xs font-medium ${
-                                                isDark
-                                                    ? 'bg-gray-800 text-gray-100 hover:bg-gray-700'
-                                                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                                            }`}
-                                        >
-                                            Fermer
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={handleStartImport}
-                                            disabled={importInserting}
-                                            className={`px-4 py-2 rounded-lg text-xs font-medium flex items-center gap-2 ${
-                                                importInserting
-                                                    ? 'bg-primary-500/70 text-white cursor-not-allowed'
-                                                    : 'bg-primary-600 hover:bg-primary-700 text-white'
-                                            }`}
-                                        >
-                                            {importInserting && (
-                                                <span
-                                                    className="inline-flex h-3 w-3 rounded-full border-2 border-white border-t-transparent animate-spin"/>
-                                            )}
-                                            Lancer l&apos;import
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-
-                            {importRows.length === 0 && (
-                                <p
-                                    className={`text-xs mt-4 ${
-                                        isDark ? 'text-gray-400' : 'text-gray-600'
-                                    }`}
-                                >
-                                    Aucun contenu chargé pour le moment. Sélectionnez un fichier Excel généré à partir
-                                    du modèle pour commencer.
-                                </p>
-                            )}
-                        </div>
-                    </motion.div>
-                </div>
-            )}
 
             {selectedPartner && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
