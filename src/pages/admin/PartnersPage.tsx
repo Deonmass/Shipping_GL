@@ -279,43 +279,6 @@ const PartnersPage: React.FC = () => {
         setGroupBy('');
     };
 
-    const handleDownloadTemplate = () => {
-        try {
-            const headers = [
-                'title',
-                'category_name',
-                'email',
-                'phone',
-                'website',
-                'status',
-                'is_active',
-                'description',
-                'logo_url'
-            ];
-
-            const exampleRow = [
-                'Exemple SA',
-                'Transport Routier',
-                'contact@exemple.com',
-                '+243 000 000 000',
-                'https://www.exemple.com',
-                'pending',
-                'TRUE',
-                'Partenaire logistique de référence.',
-                'https://www.exemple.com/logo.png'
-            ];
-
-            const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow]);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'modele_partenaire');
-
-            XLSX.writeFile(wb, 'modele_import_partenaires.xlsx');
-            toast.success('Modèle Excel téléchargé');
-        } catch (e) {
-            console.error('Error generating Excel template:', e);
-            toast.error('Impossible de générer le modèle Excel');
-        }
-    };
 
     const validateImportRow = (values: PartnerImportRow['values']): string[] => {
         const errors: string[] = [];
@@ -443,7 +406,6 @@ const PartnersPage: React.FC = () => {
                     }`}
                 />}
                 title="Gestion des partenaires"
-                onExport={handleDownloadTemplate}
                 onRefresh={() => reGetPartners()}
                 onAdd={HasPermission(appPermissions.partners, appOps.create) ? () => {
                     setFormData(emptyItem);
