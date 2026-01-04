@@ -252,7 +252,7 @@ const OfficesPage = () => {
                                     <XCircle className="text-red-600"/>}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <button
+                                {HasPermission(appPermissions.offices, appOps.update) ? <button
                                     onClick={() => handleToggleVisibility(item)}
                                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                                         isActive(item) ? 'bg-primary-600' : 'bg-gray-600'
@@ -263,7 +263,7 @@ const OfficesPage = () => {
                             isActive(item) ? 'translate-x-6' : 'translate-x-1'
                         }`}
                     />
-                                </button>
+                                </button> : null}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div className="flex items-center justify-end gap-2">

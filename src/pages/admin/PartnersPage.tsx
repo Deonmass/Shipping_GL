@@ -3,7 +3,7 @@ import {motion} from 'framer-motion';
 import {
     Eye, Edit, Trash2, X, AlertCircle,
     Building2, CheckCircle, Clock, ToggleLeft, ToggleRight, BarChart3,
-    Upload
+    Upload, XCircle
 } from 'lucide-react';
 import {supabase} from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -89,17 +89,12 @@ const isActive = (u: any) =>
 const PartnersPage: React.FC = () => {
     const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
     const isDark = theme === 'dark';
-    const [loading, setLoading] = useState(true);
     const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [groupBy, setGroupBy] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
-    const [showActivateConfirm, setShowActivateConfirm] = useState<{
-        partner: Partner;
-        action: 'activate' | 'deactivate'
-    } | null>(null);
     const [expandedChart, setExpandedChart] = useState<{
         title: string;
         type: 'line' | 'pie';
@@ -107,26 +102,8 @@ const PartnersPage: React.FC = () => {
         dataKeys?: any[]
     } | null>(null);
     const [showFormModal, setShowFormModal] = useState<"add" | "edit" | null>(null);
-    const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
-    const [stats, setStats] = useState<PartnerStats>({
-        total: 0,
-        approved: 0,
-        pending: 0,
-        rejected: 0,
-        newThisMonth: 0
-    });
-    const [displayStats, setDisplayStats] = useState<PartnerStats>({
-        total: 0,
-        approved: 0,
-        pending: 0,
-        rejected: 0,
-        newThisMonth: 0,
-    });
     const [formData, setFormData] = useState<PartnerFormData>(emptyItem);
-    const [showStatusConfirm, setShowStatusConfirm] = useState<{
-        partner: Partner;
-        targetStatus: 'approved'
-    } | null>(null);
+    const [showStatusConfirm, setShowStatusConfirm] = useState<PartnerFormData | null>(null);
     const [showImportModal, setShowImportModal] = useState(false);
     const [importRows, setImportRows] = useState<PartnerImportRow[]>([]);
     const [importFileName, setImportFileName] = useState<string | null>(null);
@@ -134,7 +111,7 @@ const PartnersPage: React.FC = () => {
     const [importInserting, setImportInserting] = useState(false);
 
 
-    const {isPending: isGettingPartners, data: partners, refetch: reGetPartners} = UseGetPartners()
+    const {isPending: isGettingPartners, data: partners, refetch: reGetPartners} = UseGetPartners({format: "stats"})
     const {data: categories} = UseGetCategories({type: "partner", noPermission: 1})
     const {data: addResult, isPending: isAdding, mutate: addPartner} = UseAddPartner()
     const {data: updateResult, isPending: isUpdating, mutate: updatePartner} = UseUpdatePartner()
@@ -160,9 +137,10 @@ const PartnersPage: React.FC = () => {
                 AppToast.error(theme === "dark", updateResult?.responseData?.message || "Erreur lors de la modification")
             } else {
                 reGetPartners()
-                AppToast.success(theme === "dark", 'Utilisateur modifié avec succès')
+                AppToast.success(theme === "dark", 'Partenaire mis a jour avec succès')
                 setShowFormModal(null);
                 setFormData(emptyItem);
+                setShowStatusConfirm(null);
             }
         }
     }, [updateResult]);
@@ -173,53 +151,14 @@ const PartnersPage: React.FC = () => {
                 AppToast.error(theme === "dark", deleteResult?.responseData?.message || "Erreur lors de la suppression")
             } else {
                 reGetPartners()
-                AppToast.success(theme === "dark", 'Utilisateur supprimé avec succès')
+                AppToast.success(theme === "dark", 'Partenaire supprimé avec succès')
                 setShowDeleteConfirm(null);
             }
         }
     }, [deleteResult]);
 
-    // Animation douce des compteurs pendant le chargement
-    useEffect(() => {
-
-        const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-        const jitter = (value: number, maxDelta: number, min: number, max: number) => {
-            const delta = (Math.random() * 2 - 1) * maxDelta;
-            return clamp(Math.round(value + delta), min, max);
-        };
-
-        const interval = setInterval(() => {
-            setDisplayStats(prev => ({
-                total: jitter(prev.total || 0, 20, 0, 999999),
-                approved: jitter(prev.approved || 0, 8, 0, 99999),
-                pending: jitter(prev.pending || 0, 5, 0, 99999),
-                rejected: jitter(prev.rejected || 0, 3, 0, 99999),
-                newThisMonth: jitter(prev.newThisMonth || 0, 5, 0, 99999),
-            }));
-        }, 900);
-
-        return () => clearInterval(interval);
-    }, [loading, stats]);
-
-    const effectiveStats = loading ? displayStats : stats;
-
     const handleView = (partner: Partner) => {
         setSelectedPartner(partner);
-    };
-
-    const handleEdit = (partner: Partner) => {
-        setEditingPartner(partner);
-        setFormData({
-            title: partner.title,
-            description: partner.description || '',
-            logo_url: partner.logo_url || '',
-            category_id: partner.category_id || '',
-            website: partner.website || '',
-            phone: partner.phone || '',
-            email: partner.email || '',
-            status: partner.status
-        });
-        setShowFormModal("edit");
     };
 
     const handleFormChange = (field: keyof PartnerFormData, value: string) => {
@@ -237,9 +176,10 @@ const PartnersPage: React.FC = () => {
             title: formData.title,
             description: formData.description,
             website: formData.website,
+            email: formData.email,
             phone: formData.phone,
             logo_url: formData.logo_url,
-            status: formData.status,
+            status: formData.status || "0",
             category_id: formData.category_id,
         }
 
@@ -254,57 +194,18 @@ const PartnersPage: React.FC = () => {
     };
 
     const handleDelete = async (id: string) => {
-        try {
-            const {error} = await supabase
-                .from('partners')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
-
-            toast.success('Partenaire supprimé avec succès');
-            fetchPartners();
-        } catch (error: any) {
-            console.error('Error deleting partner:', error);
-            toast.error(error.message || 'Erreur lors de la suppression');
-        }
-        setShowDeleteConfirm(null);
+        deletePartner({id});
     };
 
-    const handleToggleActive = async (partner: Partner, activate: boolean) => {
-        try {
-            const {error} = await supabase
-                .from('partners')
-                .update({is_active: activate})
-                .eq('id', partner.id);
-
-            if (error) throw error;
-
-            toast.success(activate ? 'Partenaire activé avec succès' : 'Partenaire désactivé avec succès');
-            fetchPartners();
-        } catch (error: any) {
-            console.error('Error toggling partner active status:', error);
-            toast.error(error.message || 'Erreur lors du changement de statut');
+    const handleChangeStatus = async (partner: any) => {
+        if (!partner?.id) {
+            toast.error("Une erreur s'est produite ! Reesaayez svp.");
+            return;
         }
-        setShowActivateConfirm(null);
-    };
-
-    const handleChangeStatus = async (partner: Partner, newStatus: 'approved') => {
-        try {
-            const {error} = await supabase
-                .from('partners')
-                .update({status: newStatus})
-                .eq('id', partner.id);
-
-            if (error) throw error;
-
-            toast.success('Statut du partenaire mis à jour');
-            fetchPartners();
-        } catch (error: any) {
-            console.error('Error changing partner status:', error);
-            toast.error(error.message || 'Erreur lors du changement de statut');
-        }
-        setShowStatusConfirm(null);
+        updatePartner({
+            id: partner?.id,
+            status: isActive(partner) ? "0" : "1",
+        })
     };
 
 
@@ -366,9 +267,8 @@ const PartnersPage: React.FC = () => {
     };
 
     const getStatusDistribution = () => [
-        {name: 'Approuvés', value: stats.approved},
-        {name: 'En attente', value: stats.pending},
-        {name: 'Rejetés', value: stats.rejected}
+        {name: 'Approuvés', value: partners?.responseData?.data?.totals?.active},
+        {name: 'En attente', value: partners?.responseData?.data?.totals?.inactive},
     ];
 
     const getCategoryDistribution = () => {
@@ -565,7 +465,6 @@ const PartnersPage: React.FC = () => {
                     title="Total partenaires"
                     value={partners?.responseData?.data?.items?.length || "0"}
                     icon={Building2}
-                    trend={{value: effectiveStats.newThisMonth, label: ' ce mois'}}
                     className="bg-gradient-to-br from-sky-600 to-sky-700"
                     iconClassName="text-white"
                     titleClassName="text-white"
@@ -782,7 +681,7 @@ const PartnersPage: React.FC = () => {
                               }
                               onDoubleClick={() => {
                                   if (!isActive(partner)) {
-                                      setShowStatusConfirm({partner, targetStatus: 'approved'});
+                                      setShowStatusConfirm(partner);
                                   }
                               }}
                           >
@@ -798,10 +697,7 @@ const PartnersPage: React.FC = () => {
                                                     }`}
                                                     title="Double-cliquez pour changer l'état actif/inactif"
                                                     onDoubleClick={() =>
-                                                        setShowActivateConfirm({
-                                                            partner,
-                                                            action: isActive(partner) ? 'deactivate' : 'activate'
-                                                        })
+                                                        setShowStatusConfirm(partner)
                                                     }
                                                 >
                             {isActive(partner) ? 'Actif' : 'Inactif'}
@@ -817,12 +713,8 @@ const PartnersPage: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex items-center justify-end gap-2">
-                                                {/* Toggle en premier */}
-                                                <button
-                                                    onClick={() => setShowActivateConfirm({
-                                                        partner,
-                                                        action: isActive(partner) ? 'deactivate' : 'activate'
-                                                    })}
+                                                {HasPermission(appPermissions.partners, appOps.update) ? <button
+                                                    onClick={() => setShowStatusConfirm(partner)}
                                                     className={`relative inline-flex items-center h-5 w-9 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${
                                                         isActive(partner)
                                                             ? 'bg-red-600'
@@ -837,7 +729,7 @@ const PartnersPage: React.FC = () => {
                                     isActive(partner) ? 'translate-x-4' : 'translate-x-1'
                                 }`}
                             />
-                                                </button>
+                                                </button> : null}
 
                                                 {/* Voir */}
                                                 <button
@@ -869,7 +761,7 @@ const PartnersPage: React.FC = () => {
                                                 </button> : null}
 
                                                 {/* Supprimer */}
-                                                <button
+                                                {HasPermission(appPermissions.partners, appOps.delete) ? <button
                                                     onClick={() => setShowDeleteConfirm(partner.id)}
                                                     className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition border ${
                                                         isDark
@@ -879,7 +771,7 @@ const PartnersPage: React.FC = () => {
                                                     title="Supprimer"
                                                 >
                                                     <Trash2 className="w-4 h-4"/>
-                                                </button>
+                                                </button> : null}
                                             </div>
                                         </td>
                                     </tr>
@@ -1247,7 +1139,7 @@ const PartnersPage: React.FC = () => {
                                     Statut
                                 </label>
                                 <p className="text-white">
-                                    {selectedPartner.status === 'approved' ? 'Approuvé' : selectedPartner.status === 'pending' ? 'En attente' : 'Rejeté'}
+                                    {isActive(selectedPartner) ? 'Approuvé' : 'En attente'}
                                 </p>
                             </div>
                             <div className="col-span-2">
@@ -1259,13 +1151,6 @@ const PartnersPage: React.FC = () => {
                         </div>
 
                         <div className="mt-6 flex justify-end space-x-3">
-                            <button
-                                onClick={() => handleEdit(selectedPartner)}
-                                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center text-sm font-medium"
-                            >
-                                <Edit className="w-4 h-4 mr-2"/>
-                                Modifier
-                            </button>
                             <button
                                 onClick={() => setSelectedPartner(null)}
                                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -1532,13 +1417,14 @@ const PartnersPage: React.FC = () => {
                         }`}
                     >
                         <div className="flex items-center mb-4">
-                            <CheckCircle className="w-6 h-6 text-green-500 mr-2"/>
+                            {isActive(showStatusConfirm) ? <XCircle className="w-6 h-6 text-red-500 mr-2"/> :
+                                <CheckCircle className="w-6 h-6 text-green-500 mr-2"/>}
                             <h3
                                 className={`text-lg font-semibold ${
                                     isDark ? 'text-white' : 'text-gray-900'
                                 }`}
                             >
-                                Approuver ce partenaire
+                                {isActive(showStatusConfirm) ? "Desactiver ce partenaire" : "Approuver ce partenaire"}
                             </h3>
                         </div>
                         <p
@@ -1546,11 +1432,10 @@ const PartnersPage: React.FC = () => {
                                 isDark ? 'text-gray-300' : 'text-gray-700'
                             }`}
                         >
-                            Voulez-vous vraiment passer le statut du partenaire
-                            {showStatusConfirm.partner && (
-                                <span className="font-semibold"> {showStatusConfirm.partner.title} </span>
+                            Voulez-vous vraiment changer le statut ce partenaire :
+                            {showStatusConfirm && (
+                                <span className="font-semibold"> {showStatusConfirm.title} </span>
                             )}
-                            de "En attente" à "Approuvé" ?
                         </p>
                         <div className="flex justify-end space-x-3">
                             <button
@@ -1564,71 +1449,10 @@ const PartnersPage: React.FC = () => {
                                 Annuler
                             </button>
                             <button
-                                onClick={() => showStatusConfirm && handleChangeStatus(showStatusConfirm.partner, showStatusConfirm.targetStatus)}
+                                onClick={() => handleChangeStatus(showStatusConfirm)}
                                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
                             >
-                                Approuver
-                            </button>
-                        </div>
-                    </motion.div>
-                </div>
-            )}
-
-            {showActivateConfirm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <motion.div
-                        initial={{opacity: 0, scale: 0.95}}
-                        animate={{opacity: 1, scale: 1}}
-                        exit={{opacity: 0, scale: 0.95}}
-                        className={`rounded-lg p-6 max-w-md w-full mx-4 border ${
-                            isDark
-                                ? 'bg-gray-800 border-gray-700'
-                                : 'bg-white border-gray-200 shadow-lg'
-                        }`}
-                    >
-                        <div className="flex items-center mb-4">
-                            {showActivateConfirm.action === 'activate' ? (
-                                <ToggleRight className="w-6 h-6 text-green-500 mr-2"/>
-                            ) : (
-                                <ToggleLeft className="w-6 h-6 text-yellow-500 mr-2"/>
-                            )}
-                            <h3
-                                className={`text-lg font-semibold ${
-                                    isDark ? 'text-white' : 'text-gray-900'
-                                }`}
-                            >
-                                {showActivateConfirm.action === 'activate' ? 'Activer' : 'Désactiver'} le partenaire
-                            </h3>
-                        </div>
-                        <p
-                            className={`mb-6 ${
-                                isDark ? 'text-gray-300' : 'text-gray-700'
-                            }`}
-                        >
-                            {showActivateConfirm.action === 'activate'
-                                ? 'Êtes-vous sûr de vouloir activer ce partenaire ? Il sera visible sur le site client.'
-                                : 'Êtes-vous sûr de vouloir désactiver ce partenaire ? Il sera masqué du site client mais les données seront conservées.'}
-                        </p>
-                        <div className="flex justify-end space-x-3">
-                            <button
-                                onClick={() => setShowActivateConfirm(null)}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                    isDark
-                                        ? 'bg-gray-700 text-white hover:bg-gray-600'
-                                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                                }`}
-                            >
-                                Annuler
-                            </button>
-                            <button
-                                onClick={() => handleToggleActive(showActivateConfirm.partner, showActivateConfirm.action === 'activate')}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium text-white ${
-                                    showActivateConfirm.action === 'activate'
-                                        ? 'bg-green-600 hover:bg-green-700'
-                                        : 'bg-yellow-600 hover:bg-yellow-700'
-                                }`}
-                            >
-                                Confirmer
+                                {isUpdating ? "Chargement ... " : "Valider"}
                             </button>
                         </div>
                     </motion.div>
@@ -1679,7 +1503,7 @@ const PartnersPage: React.FC = () => {
                                 onClick={() => handleDelete(showDeleteConfirm)}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
                             >
-                                Supprimer
+                                {isDeleting ? "Chargement ..." : "Supprimer"}
                             </button>
                         </div>
                     </motion.div>
