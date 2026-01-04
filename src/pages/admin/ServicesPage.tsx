@@ -314,7 +314,7 @@ const AdminServicesPage: React.FC = () => {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : rows.length === 0 ? (
+                            ) : !rows?.length ? (
                                 <tr>
                                     <td colSpan={4} className="px-6 py-8 text-center text-sm">
                       <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>
@@ -323,7 +323,7 @@ const AdminServicesPage: React.FC = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                rows.map((service) => (
+                                rows?.map((service) => (
                                     <tr
                                         key={service.id}
                                         className={isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'}
