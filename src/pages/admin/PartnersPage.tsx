@@ -156,25 +156,6 @@ const PartnersPage: React.FC = () => {
 
   const effectiveStats = loading ? displayStats : stats;
 
-
-  const calculateStats = (partnerList: Partner[]) => {
-    const now = new Date();
-    const oneMonthAgo = subMonths(now, 1);
-
-    const stats: PartnerStats = {
-      total: partnerList.length,
-      approved: partnerList.filter(p => p.status === 'approved').length,
-      pending: partnerList.filter(p => p.status === 'pending').length,
-      rejected: partnerList.filter(p => p.status === 'rejected').length,
-      newThisMonth: partnerList.filter(p => {
-        const createdAt = parseISO(p.created_at);
-        return createdAt >= oneMonthAgo;
-      }).length
-    };
-
-    setStats(stats);
-  };
-
   const handleView = (partner: Partner) => {
     setSelectedPartner(partner);
   };
@@ -321,7 +302,7 @@ const PartnersPage: React.FC = () => {
   };
 
 
-  const filteredPartners = partners?.responseData?.data?.items.filter((partner: any) => {
+  const filteredPartners = partners?.responseData?.data?.items?.filter((partner: any) => {
     const matchesSearch = partner.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       partner?.category_name?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
       partner?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -363,15 +344,15 @@ const PartnersPage: React.FC = () => {
       const monthStart = startOfMonth(currentMonth);
       const monthEnd = endOfMonth(currentMonth);
 
-      const monthlyPartners = partners.filter(partner => {
+      const monthlyPartners = partners?.responseData?.data?.items?.filter(partner => {
         const createdAt = parseISO(partner.created_at);
         return createdAt >= monthStart && createdAt <= monthEnd;
       });
 
       monthlyData.push({
         name: format(currentMonth, 'MMM', { locale: fr }),
-        total: monthlyPartners.length,
-        approuvés: monthlyPartners.filter(p => p.status === 'approved').length
+        total: monthlyPartners?.length,
+        approuvés: monthlyPartners?.filter(p => p.status === 'approved').length
       });
     }
 
@@ -386,7 +367,7 @@ const PartnersPage: React.FC = () => {
 
   const getCategoryDistribution = () => {
     const distribution: Record<string, number> = {};
-    partners.forEach(partner => {
+    partners?.responseData?.data?.items?.forEach((partner: any) => {
       const categoryName = partner?.category_name || 'Sans catégorie';
       distribution[categoryName] = (distribution[categoryName] || 0) + 1;
     });
@@ -589,7 +570,7 @@ const PartnersPage: React.FC = () => {
           .from('partners')
           .insert([
             {
-              company_name: values.company_name,
+              title: values.title,
               description: values.description,
               logo_url: values.logo_url,
               category_id: category ? category.id : null,
@@ -664,7 +645,6 @@ const PartnersPage: React.FC = () => {
         </h1>
         <div className="flex items-center gap-2">
           <button
-            onClick={fetchPartners}
             className={`px-3 py-2 rounded-lg flex items-center text-xs font-medium border shadow-sm ${
               isDark
                 ? 'border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700'
@@ -868,7 +848,7 @@ const PartnersPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className={isDark ? 'divide-y divide-gray-700' : 'divide-y divide-gray-100'}>
-                  {groupPartners.map((partner) => (
+                  {groupPartners?.map((partner: any) => (
                     <tr
                       key={partner.id}
                       className={isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'}
@@ -878,7 +858,7 @@ const PartnersPage: React.FC = () => {
                           {partner.logo_url ? (
                             <img
                               src={partner.logo_url}
-                              alt={partner.company_name}
+                              alt={partner.title}
                               className="h-10 w-10 mr-3 object-contain rounded-md bg-white"
                             />
                           ) : (
@@ -1370,13 +1350,13 @@ const PartnersPage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-400 mb-1">
                   Nom de l'entreprise
                 </label>
-                <p className="text-white">{selectedPartner.company_name}</p>
+                <p className="text-white">{selectedPartner.title}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">
                   Catégorie
                 </label>
-                <p className="text-white">{selectedPartner.partner_categories?.name || '-'}</p>
+                <p className="text-white">{selectedPartner.category_name || '-'}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">
@@ -1703,7 +1683,7 @@ const PartnersPage: React.FC = () => {
             >
               Voulez-vous vraiment passer le statut du partenaire
               {showStatusConfirm.partner && (
-                <span className="font-semibold"> {showStatusConfirm.partner.company_name} </span>
+                <span className="font-semibold"> {showStatusConfirm.partner.title} </span>
               )}
               de "En attente" à "Approuvé" ?
             </p>
