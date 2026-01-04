@@ -2,10 +2,9 @@ import React, {useState, useEffect} from 'react';
 import {motion} from 'framer-motion';
 import {
     Eye, Edit, Trash2, X, AlertCircle,
-    Building2, CheckCircle, Clock, ToggleLeft, ToggleRight, BarChart3,
+    Building2, CheckCircle, Clock, BarChart3,
     Upload, XCircle
 } from 'lucide-react';
-import {supabase} from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import {format, parseISO, subMonths, startOfMonth, endOfMonth} from 'date-fns';
 import {fr} from 'date-fns/locale';
@@ -46,14 +45,6 @@ interface PartnerFormData {
     phone: string;
     email: string;
     status: string;
-}
-
-interface PartnerStats {
-    total: number;
-    approved: number;
-    pending: number;
-    rejected: number;
-    newThisMonth: number;
 }
 
 interface PartnerImportRow {
