@@ -206,8 +206,8 @@ const PartnersPage: React.FC = () => {
             partner?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             partner?.phone?.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesStatus = !statusFilter || partner.status === statusFilter;
-        const matchesCategory = !categoryFilter || partner.category_id === categoryFilter;
+        const matchesStatus = !statusFilter || partner?.status?.toString() === `${statusFilter}`;
+        const matchesCategory = !categoryFilter || partner?.category_id?.toString() === `${categoryFilter}`;
 
         return matchesSearch && matchesStatus && matchesCategory;
     });
