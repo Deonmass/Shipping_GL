@@ -4,24 +4,18 @@ import {
     Eye,
     Edit,
     Trash2,
-    Plus,
     X,
     AlertCircle,
     FileText,
-    Calendar,
     CheckCircle,
     FileEdit,
-    RefreshCw,
-    Power,
     BarChart3,
-    Star,
-    Building2, ToggleRight, ToggleLeft
+    Star, ToggleRight, ToggleLeft, XCircle
 } from 'lucide-react';
 import {supabase} from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import {format, subMonths} from 'date-fns';
 import {fr} from 'date-fns/locale';
-import {useAuth} from '../../contexts/AuthContext';
 import {StatsCard} from '../../components/admin/StatsCard';
 import {ChartPanel} from '../../components/admin/ChartPanel';
 import {FilterBar} from '../../components/admin/FilterBar';
@@ -71,7 +65,6 @@ const isPinned = (u: any) =>
 const PostsPage: React.FC = () => {
     const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
     const isDark = theme === 'dark';
-    const [loading, setLoading] = useState(true);
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
@@ -79,28 +72,15 @@ const PostsPage: React.FC = () => {
     const [groupBy, setGroupBy] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
     const [showFormModal, setShowFormModal] = useState<"add" | "edit" | null>(null);
-    const [editingPost, setEditingPost] = useState<Post | null>(null);
+    const [showStatusConfirm, setShowStatusConfirm] = useState<Post | null>(null);
     const [formData, setFormData] = useState<Post>(emptyItem);
-    const [stats, setStats] = useState<any>({
-        total: 0,
-        published: 0,
-        drafts: 0,
-        thisMonth: 0
-    });
-    const [displayStats, setDisplayStats] = useState<any>({
-        total: 0,
-        published: 0,
-        drafts: 0,
-        thisMonth: 0,
-    });
+
     const [expandedChart, setExpandedChart] = useState<{
         title: string;
         type: 'line' | 'bar' | 'pie';
         data: any[];
         dataKeys?: { key: string; name: string; color: string }[];
     } | null>(null);
-    const {user} = useAuth();
-
 
     const {data: categories} = UseGetCategories({noPermission: 1, type: "news"})
     const {data: posts, isPending: isGettingPosts, refetch: reGetPosts} = UseGetPosts({format: "stats"})
@@ -131,7 +111,7 @@ const PostsPage: React.FC = () => {
                 AppToast.success(isDark, 'Post mis a jour avec succès')
                 setShowFormModal(null);
                 setFormData(emptyItem);
-                //setShowStatusConfirm(null);
+                setShowStatusConfirm(null);
             }
         }
     }, [updateResult]);
@@ -156,7 +136,7 @@ const PostsPage: React.FC = () => {
             const d = subMonths(now, i);
             const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
             const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
-            const count = posts?.responseData?.data?.item?.filter(p => {
+            const count = posts?.responseData?.data?.items?.filter(p => {
                 const dt = p.event_date ? new Date(p.event_date) : new Date(p.created_at);
                 return dt >= monthStart && dt <= monthEnd;
             }).length;
@@ -172,51 +152,8 @@ const PostsPage: React.FC = () => {
         ];
     }, [posts]);
 
-    // Animation douce des compteurs pendant le chargement
-    useEffect(() => {
-        if (!loading) {
-            setDisplayStats(stats);
-            return;
-        }
 
-        const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-        const jitter = (value: number, maxDelta: number, min: number, max: number) => {
-            const delta = (Math.random() * 2 - 1) * maxDelta;
-            return clamp(Math.round(value + delta), min, max);
-        };
-
-        const interval = setInterval(() => {
-            setDisplayStats(prev => ({
-                total: jitter(prev.total || 0, 20, 0, 999999),
-                published: jitter(prev.published || 0, 10, 0, 999999),
-                drafts: jitter(prev.drafts || 0, 6, 0, 999999),
-                thisMonth: jitter(prev.thisMonth || 0, 6, 0, 999999),
-            }));
-        }, 900);
-
-        return () => clearInterval(interval);
-    }, [loading, stats]);
-
-    const effectiveStats = loading ? displayStats : stats;
-
-    const calculateStats = (postList: Post[]) => {
-        const now = new Date();
-        const oneMonthAgo = subMonths(now, 1);
-
-        const thisMonth = postList.filter(p => {
-            const eventDate = p.event_date ? new Date(p.event_date) : new Date(p.created_at);
-            return eventDate >= oneMonthAgo;
-        }).length;
-
-        setStats({
-            total: postList.length,
-            published: postList.filter(p => p.is_published).length,
-            drafts: postList.filter(p => !p.is_published).length,
-            thisMonth
-        });
-    };
-
-    const handleFormChange = (field: keyof PostFormData, value: any) => {
+    const handleFormChange = (field: keyof Post, value: any) => {
         setFormData(prev => ({...prev, [field]: value}));
     };
 
@@ -274,21 +211,15 @@ const PostsPage: React.FC = () => {
         }
     };
 
-    const handleToggleActive = async (post: Post) => {
-        try {
-            const {error} = await supabase
-                .from('news_posts')
-                .update({is_active: !post.is_active})
-                .eq('id', post.id);
-
-            if (error) throw error;
-
-            toast.success(post.is_active ? 'Post désactivé avec succès' : 'Post activé avec succès');
-            fetchPosts();
-        } catch (error: any) {
-            console.error('Error toggling post active status:', error);
-            toast.error(error.message || 'Erreur lors de la modification');
+    const handleChangeStatus = async (post: any) => {
+        if (!post?.id) {
+            AppToast.error(isDark, "Une erreur s'est produite ! Reessayez svp.");
+            return;
         }
+        updatePost({
+            id: post?.id,
+            status: isActive(post) ? "0" : "1",
+        })
     };
 
     const filteredPosts = posts?.responseData?.data?.items?.filter(post => {
@@ -338,7 +269,7 @@ const PostsPage: React.FC = () => {
             label: isActive(item) ? 'Désactiver' : 'Activer',
             icon: isActive(item) ? ToggleRight : ToggleLeft,
             onClick: () => {
-                // setShowStatusConfirm(item);
+                setShowStatusConfirm(item);
             },
             color: (isActive(item) ? 'text-emerald-400' : 'text-red-400'),
             bgColor: '',
@@ -1051,6 +982,62 @@ const PostsPage: React.FC = () => {
                     </motion.div>
                 </div>
             )}
+
+            {showStatusConfirm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <motion.div
+                        initial={{opacity: 0, scale: 0.95}}
+                        animate={{opacity: 1, scale: 1}}
+                        exit={{opacity: 0, scale: 0.95}}
+                        className={`rounded-lg p-6 max-w-md w-full mx-4 border ${
+                            isDark
+                                ? 'bg-gray-800 border-gray-700'
+                                : 'bg-white border-gray-200 shadow-lg'
+                        }`}
+                    >
+                        <div className="flex items-center mb-4">
+                            {isActive(showStatusConfirm) ? <XCircle className="w-6 h-6 text-red-500 mr-2"/> :
+                                <CheckCircle className="w-6 h-6 text-green-500 mr-2"/>}
+                            <h3
+                                className={`text-lg font-semibold ${
+                                    isDark ? 'text-white' : 'text-gray-900'
+                                }`}
+                            >
+                                {isActive(showStatusConfirm) ? "Desactiver ce Post" : "Approuver ce Post"}
+                            </h3>
+                        </div>
+                        <p
+                            className={`mb-6 ${
+                                isDark ? 'text-gray-300' : 'text-gray-700'
+                            }`}
+                        >
+                            Voulez-vous vraiment changer le statut ce Post :
+                            {showStatusConfirm && (
+                                <span className="font-semibold"> {showStatusConfirm.title} </span>
+                            )}
+                        </p>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={() => setShowStatusConfirm(null)}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                    isDark
+                                        ? 'bg-gray-700 text-white hover:bg-gray-600'
+                                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                }`}
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                onClick={() => handleChangeStatus(showStatusConfirm)}
+                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                            >
+                                {isUpdating ? "Chargement ... " : "Valider"}
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
         </div>
     );
 };
