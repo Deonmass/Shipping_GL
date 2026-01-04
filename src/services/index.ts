@@ -55,3 +55,12 @@ export {
     UseGetServices,
     UseUpdateService,
 } from "./queries/ServicesQueries.ts"
+
+export {
+    UseGetPostDetail,
+    UseAddPost,
+    UseDeletePost,
+    UseGetPosts,
+    UseUpdatePost,
+    UseGetOpenPosts,
+} from "./queries/PostsQueries.ts"
