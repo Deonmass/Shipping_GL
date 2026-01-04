@@ -12,8 +12,6 @@ import {
     BarChart3,
     Star, ToggleRight, ToggleLeft, XCircle
 } from 'lucide-react';
-import {supabase} from '../../lib/supabase';
-import toast from 'react-hot-toast';
 import {format, subMonths} from 'date-fns';
 import {fr} from 'date-fns/locale';
 import {StatsCard} from '../../components/admin/StatsCard';
