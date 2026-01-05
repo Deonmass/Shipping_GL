@@ -51,7 +51,6 @@ const TeamsPage: React.FC = () => {
     const [selectedPartner, setSelectedPartner] = useState<TeamFormData | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState('');
     const [groupBy, setGroupBy] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
     const [expandedChart, setExpandedChart] = useState<{
@@ -160,14 +159,11 @@ const TeamsPage: React.FC = () => {
 
     const filteredPartners = partners?.responseData?.data?.items?.filter((partner: any) => {
         const matchesSearch = partner.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            partner?.category_name?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
-            partner?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            partner?.phone?.toLowerCase().includes(searchTerm.toLowerCase());
+            partner?.name?.toLowerCase().includes(searchTerm.toLowerCase());
 
         const matchesStatus = !statusFilter || partner?.status?.toString() === `${statusFilter}`;
-        const matchesCategory = !categoryFilter || partner?.category_id?.toString() === `${categoryFilter}`;
 
-        return matchesSearch && matchesStatus && matchesCategory;
+        return matchesSearch && matchesStatus;
     });
 
     const groupedPartners = () => {
@@ -218,7 +214,7 @@ const TeamsPage: React.FC = () => {
         {name: 'En attente', value: partners?.responseData?.data?.totals?.inactive},
     ];
 
-    const activeFiltersCount = [statusFilter, categoryFilter, groupBy].filter(Boolean).length;
+    const activeFiltersCount = [statusFilter, groupBy].filter(Boolean).length;
 
     const clearFilters = () => {
         setStatusFilter('');
