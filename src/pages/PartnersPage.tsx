@@ -15,7 +15,7 @@ interface Partner {
   email: string;
   status: string;
   category_id: string;
-  company_name: string;
+  category_name: string;
 }
 
 interface PartnerCategory {
@@ -159,7 +159,7 @@ const PartnersPage: React.FC = () => {
                               </div>
                             )}
                           </div>
-                          <h3 className="text-xl font-semibold text-gray-900 mb-4">{partner.company_name}</h3>
+                          <h3 className="text-xl font-semibold text-gray-900 mb-4">{partner.title}</h3>
                           <p className="text-gray-600 text-justify mb-4">{partner.description || 'Partenaire de confiance'}</p>
                           <div className="text-sm text-gray-500">
                             {partner.email && (
@@ -202,7 +202,7 @@ const PartnersPage: React.FC = () => {
                   <div className="flex flex-wrap justify-center gap-2 md:gap-3 lg:gap-4">
                     {partnersByCategory
                       .flatMap(group => group.partners)
-                      .map((partner, index) => {
+                      .map((partner) => {
                         // Générateur de tailles aléatoires
                         const sizes = [
                           'w-24 h-16', 'w-28 h-20', 'w-32 h-16', 'w-20 h-16',
@@ -238,7 +238,7 @@ const PartnersPage: React.FC = () => {
                                   alt={partner.title}
                                   className="max-h-full max-w-full object-contain"
                                   onError={(e) => {
-                                    e.currentTarget.src = 'https://via.placeholder.com/180x60?text=' + partner.company_name;
+                                    e.currentTarget.src = 'https://via.placeholder.com/180x60?text=' + partner.title;
                                   }}
                                 />
                               ) : (
