@@ -76,7 +76,7 @@ const TeamsPage: React.FC = () => {
                 AppToast.error(theme === "dark", addResult?.responseData?.message || "Erreur lors de l'enregistrement")
             } else {
                 reGetPartners()
-                AppToast.success(theme === "dark", 'Partenaire ajouté avec succès')
+                AppToast.success(theme === "dark", 'Membre ajouté avec succès')
                 setShowFormModal(null);
                 setFormData(emptyItem);
             }
@@ -89,7 +89,7 @@ const TeamsPage: React.FC = () => {
                 AppToast.error(theme === "dark", updateResult?.responseData?.message || "Erreur lors de la modification")
             } else {
                 reGetPartners()
-                AppToast.success(theme === "dark", 'Partenaire mis a jour avec succès')
+                AppToast.success(theme === "dark", 'Membre mis a jour avec succès')
                 setShowFormModal(null);
                 setFormData(emptyItem);
                 setShowStatusConfirm(null);
@@ -103,7 +103,7 @@ const TeamsPage: React.FC = () => {
                 AppToast.error(theme === "dark", deleteResult?.responseData?.message || "Erreur lors de la suppression")
             } else {
                 reGetPartners()
-                AppToast.success(theme === "dark", 'Partenaire supprimé avec succès')
+                AppToast.success(theme === "dark", 'Membre supprimé avec succès')
                 setShowDeleteConfirm(null);
             }
         }
@@ -410,12 +410,18 @@ const TeamsPage: React.FC = () => {
                                                         isDark ? 'text-white' : 'text-gray-900'
                                                     }`}
                                                 >
-                                                    {partner.title}
+                                                    {partner.name}
                                                 </div>
                                             </div>
                                         </td>
 
-
+                                        <td
+                                            className={`px-6 py-4 whitespace-nowrap text-sm ${
+                                                isDark ? 'text-gray-300' : 'text-gray-600'
+                                            }`}
+                                        >
+                                            {partner.title}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex flex-col gap-1">
                                                 <span
