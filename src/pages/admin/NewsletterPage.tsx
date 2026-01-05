@@ -263,7 +263,7 @@ const NewsletterPage: React.FC = () => {
                     </tr>
                     </thead>
                     <tbody className={isDark ? 'divide-y divide-gray-700' : 'divide-y divide-gray-100'}>
-                    {filteredSubscribers.map((subscriber: any) => (
+                    {filteredSubscribers?.map((subscriber: any) => (
                         <tr
                             key={subscriber.id}
                             className={`${
