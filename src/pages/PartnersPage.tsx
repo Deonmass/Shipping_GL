@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { CheckCircle, Loader } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import {UseGetOpenCategories, UseGetOpenPartners} from "../services";
 
 interface Partner {
   id: string;
-  company_name: string;
+  title: string;
   description: string;
   logo_url: string;
   website: string;
@@ -15,6 +15,7 @@ interface Partner {
   email: string;
   status: string;
   category_id: string;
+  company_name: string;
 }
 
 interface PartnerCategory {
@@ -32,59 +33,29 @@ interface PartnersByCategory {
 const PartnersPage: React.FC = () => {
   const { t } = useTranslation();
   const [partnersByCategory, setPartnersByCategory] = useState<PartnersByCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const {data: partners, isLoading: isGettingPartners} = UseGetOpenPartners()
+  const {data: categories, isLoading: isGettingCategories} = UseGetOpenCategories({type: "partner"})
 
   useEffect(() => {
     document.title = t('partners.title') + ' - SHIPPING GL';
     fetchPartners();
-  }, [t]);
+  }, [partners, categories]);
 
   const fetchPartners = async () => {
     try {
-      setLoading(true);
-
-      const { data: categories, error: categoriesError } = await supabase
-        .from('partner_categories')
-        .select('*')
-        .order('name');
-
-      if (categoriesError) {
-        console.error('Categories error:', categoriesError);
-        throw categoriesError;
-      }
-
-      console.log('Categories loaded:', categories?.length || 0);
-
-      const { data: partners, error: partnersError } = await supabase
-        .from('partners')
-        .select('*')
-        .eq('status', 'approved')
-        .eq('is_active', true)
-        .order('company_name');
-
-      if (partnersError) {
-        console.error('Partners error:', partnersError);
-        throw partnersError;
-      }
-
-      console.log('Partners loaded:', partners?.length || 0);
-
-      const grouped = (categories || []).map(category => ({
+      const grouped = categories?.responseData?.data?.map((category: any) => ({
         category,
-        partners: (partners || []).filter(p => p.category_id === category.id)
-      })).filter(group => group.partners.length > 0);
+        partners: partners?.responseData?.data?.filter((p: any) => p.category_id === category.id)
+      })).filter((group: any) => group.partners.length > 0);
 
-      console.log('Grouped partners:', grouped.length, 'categories with partners');
       setPartnersByCategory(grouped);
     } catch (error: any) {
-      console.error('Error fetching partners:', error);
       toast.error(`Erreur lors du chargement des partenaires: ${error.message || 'Erreur inconnue'}`);
-    } finally {
-      setLoading(false);
     }
   };
 
-  if (loading) {
+  if (isGettingPartners || isGettingCategories) {
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -141,19 +112,19 @@ const PartnersPage: React.FC = () => {
 
       <section className="py-16 bg-gray-50">
         <div className="container-custom">
-          {partnersByCategory.length === 0 ? (
+          {!partnersByCategory?.length ? (
             <div className="text-center py-12">
               <p className="text-gray-600 text-lg">Aucun partenaire disponible pour le moment.</p>
             </div>
           ) : (
             <>
-              {partnersByCategory.map((group) => (
+              {partnersByCategory?.map((group) => (
                 <div key={group.category.id} className="mb-16 last:mb-0">
                   <h2 className="text-2xl font-bold text-gray-900 mb-8 pb-2 border-b-2 border-primary-200">
                     {group.category.name}
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {group.partners.map((partner, partnerIndex) => (
+                    {group?.partners?.map((partner, partnerIndex) => (
                       <motion.div
                         key={partner.id}
                         initial={{ opacity: 0, y: 20 }}
@@ -179,15 +150,12 @@ const PartnersPage: React.FC = () => {
                             {partner.logo_url ? (
                               <img
                                 src={partner.logo_url}
-                                alt={partner.company_name}
+                                alt={partner?.title}
                                 className="max-h-full max-w-full object-contain"
-                                onError={(e) => {
-                                  e.currentTarget.src = 'https://via.placeholder.com/200x80?text=' + partner.company_name;
-                                }}
                               />
                             ) : (
                               <div className="text-2xl font-bold text-gray-400">
-                                {partner.company_name}
+                                {partner?.title}
                               </div>
                             )}
                           </div>
@@ -267,7 +235,7 @@ const PartnersPage: React.FC = () => {
                               {partner.logo_url ? (
                                 <img
                                   src={partner.logo_url}
-                                  alt={partner.company_name}
+                                  alt={partner.title}
                                   className="max-h-full max-w-full object-contain"
                                   onError={(e) => {
                                     e.currentTarget.src = 'https://via.placeholder.com/180x60?text=' + partner.company_name;
@@ -275,7 +243,7 @@ const PartnersPage: React.FC = () => {
                                 />
                               ) : (
                                 <span className="text-[10px] font-semibold text-gray-500 text-center px-1 line-clamp-2">
-                                  {partner.company_name}
+                                  {partner.title}
                                 </span>
                               )}
                             </div>
