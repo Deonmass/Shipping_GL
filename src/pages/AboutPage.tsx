@@ -4,56 +4,12 @@ import { motion } from 'framer-motion';
 import { MapPin, CheckCircle, X, FileText, DollarSign, Info, Mail, Send, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { UseGetOpenOffices } from '../services';
+import {UseGetOpenOffices, UseGetOpenTeams} from '../services';
 
-const teamMembers = [
-  {
-    name: "Wim Verwilt",
-    title: "Président Directeur général",
-    image: "https://i.postimg.cc/851YkcFS/wim.jpg",
-    description: "Avec plus de 15 ans d'expérience dans la logistique internationale, Wim dirige SHIPPING GL avec vision et expertise. Il supervise les opérations stratégiques et le développement des partenariats en Afrique."
-  },
-  {
-    name: "Lola Kibondo",
-    title: "Directrice générale",
-    image: "https://i.postimg.cc/8P3pd85D/lola.png",
-    description: "Lola apporte une expertise précieuse en gestion opérationnelle et développement commercial. Elle coordonne les activités quotidiennes et assure la qualité de service exceptionnelle de SHIPPING GL."
-  },
-  {
-    name: "Philippe Shisha",
-    title: "Directeur des Opérations",
-    image: "https://i.postimg.cc/kXDMtM7f/ops.png",
-    description: "Philippe supervise toutes les opérations logistiques dans l'ouest de la RDC, incluant Kinshasa et Matadi. Son expertise garantit des livraisons efficaces et sécurisées."
-  },
-  {
-    name: "Adelaïde Mukazi",
-    title: "Directrice Régionale, RDC Est",
-    image: "https://i.postimg.cc/xdd5rbYM/adelaide.png",
-    description: "Adelaïde gère les opérations dans l'est de la RDC depuis Goma. Elle coordonne les corridors commerciaux vers l'Afrique de l'Est et assure la liaison avec nos partenaires régionaux."
-  },
-  {
-    name: "Maurice Longo",
-    title: "Directeur Administrative et Financier",
-    image: "https://i.postimg.cc/P5NxDtMT/maurice.jpg",
-    description: ""
-  },
-  {
-    name: "Larissa Simbi",
-    title: "Directrice Régionale, RDC Sud",
-    image: "https://i.postimg.cc/NFjsDBmG/larisa-copy.png",
-    description: "Larissa supervise les opérations dans le sud de la RDC depuis Lubumbashi. Elle gère le corridor Sud vers l'Afrique australe et les opérations minières."
-  },
-  /*{
-    name: "Zed Mfuanani",
-    title: "Manager Commercial, Ouest RDC",
-    image: "https://i.postimg.cc/Px9fR9jn/zed.jpg",
-    description: "Zed est responsable de l'élaboration des devis personnalisés et du suivi commercial. Il assure la satisfaction client et développe de nouvelles opportunités d'affaires."
-  },*/
-];
 
 const AboutPage: React.FC = () => {
   const { t } = useTranslation();
-  const [selectedMember, setSelectedMember] = useState<typeof teamMembers[0] | null>(null);
+  const [selectedMember, setSelectedMember] = useState<any>(null);
   const [selectedValue, setSelectedValue] = useState<string | null>(null);
   const [showContactModal, setShowContactModal] = useState<string | null>(null);
   const [contactForm, setContactForm] = useState({
@@ -63,6 +19,7 @@ const AboutPage: React.FC = () => {
   });
 
   const {isLoading: isGettingOffices, data: offices} = UseGetOpenOffices()
+  const {isLoading: isGettingTeams, data: teams} = UseGetOpenTeams()
 
   const contactServices = [
     {
@@ -172,7 +129,8 @@ const AboutPage: React.FC = () => {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
-            {teamMembers.map((member, index) => (
+            {isGettingTeams ? <div>Chargment ...</div>: null}
+            {teams?.responseData?.data.map((member: any, index: number) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
@@ -185,7 +143,7 @@ const AboutPage: React.FC = () => {
                 <div className="relative mb-4 mx-auto">
                   <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-white shadow-lg mx-auto group-hover:shadow-xl transition-shadow">
                     <img
-                      src={member.image}
+                      src={member.image_url}
                       alt={member.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -555,7 +513,7 @@ const AboutPage: React.FC = () => {
             <div className="text-center">
               <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-primary-100 mx-auto mb-4">
                 <img
-                  src={selectedMember.image}
+                  src={selectedMember.image_url}
                   alt={selectedMember.name}
                   className="w-full h-full object-cover"
                 />
