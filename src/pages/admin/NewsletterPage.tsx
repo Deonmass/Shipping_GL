@@ -20,6 +20,7 @@ import {ChartModal} from '../../components/admin/ChartModal';
 import * as XLSX from 'xlsx';
 import {useOutletContext} from 'react-router-dom';
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
+import {UseGetNewsletters} from "../../services";
 
 interface Subscriber {
     id: string;
@@ -36,25 +37,15 @@ interface SubscriberStats {
     thisMonth: number;
 }
 
+const isActive = (u: any) =>
+    u?.status?.toString() === "1"
+
+
 const NewsletterPage: React.FC = () => {
     const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
     const isDark = theme === 'dark';
-    const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
-    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
-    const [stats, setStats] = useState<SubscriberStats>({
-        total: 0,
-        active: 0,
-        unsubscribed: 0,
-        thisMonth: 0
-    });
-    const [displayStats, setDisplayStats] = useState<SubscriberStats>({
-        total: 0,
-        active: 0,
-        unsubscribed: 0,
-        thisMonth: 0,
-    });
     const [expandedChart, setExpandedChart] = useState<{
         title: string;
         type: 'line' | 'bar' | 'pie';
@@ -62,75 +53,12 @@ const NewsletterPage: React.FC = () => {
         dataKeys?: { key: string; name: string; color: string }[];
     } | null>(null);
 
-    useEffect(() => {
-        fetchSubscribers();
-    }, []);
+    const {
+        data: newsletters,
+        isPending: isGettingNewsletters,
+        refetch: reGetNewsletters
+    } = UseGetNewsletters({format: "stats"})
 
-    // Animation douce des compteurs pendant le chargement
-    useEffect(() => {
-        if (!loading) {
-            setDisplayStats(stats);
-            return;
-        }
-
-        const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-        const jitter = (value: number, maxDelta: number, min: number, max: number) => {
-            const delta = (Math.random() * 2 - 1) * maxDelta;
-            return clamp(Math.round(value + delta), min, max);
-        };
-
-        const interval = setInterval(() => {
-            setDisplayStats(prev => ({
-                total: jitter(prev.total || 0, 20, 0, 999999),
-                active: jitter(prev.active || 0, 10, 0, 999999),
-                unsubscribed: jitter(prev.unsubscribed || 0, 5, 0, 999999),
-                thisMonth: jitter(prev.thisMonth || 0, 5, 0, 99999),
-            }));
-        }, 900);
-
-        return () => clearInterval(interval);
-    }, [loading, stats]);
-
-    const effectiveStats = loading ? displayStats : stats;
-
-    const calculateStats = (subscriberList: Subscriber[]) => {
-        const now = new Date();
-        const oneMonthAgo = subMonths(now, 1);
-
-        const active = subscriberList.filter(s => s.status === 'active').length;
-        const unsubscribed = subscriberList.filter(s => s.status === 'unsubscribed').length;
-        const thisMonth = subscriberList.filter(s => {
-            const subscribedAt = new Date(s.subscribed_at);
-            return subscribedAt >= oneMonthAgo;
-        }).length;
-
-        setStats({
-            total: subscriberList.length,
-            active,
-            unsubscribed,
-            thisMonth
-        });
-    };
-
-    const fetchSubscribers = async () => {
-        try {
-            setLoading(true);
-            const {data, error} = await supabase
-                .from('newsletter_subscribers')
-                .select('*')
-                .order('subscribed_at', {ascending: false});
-
-            if (error) throw error;
-
-            setSubscribers(data || []);
-            calculateStats(data || []);
-        } catch (error: any) {
-            console.error('Error fetching subscribers:', error);
-            toast.error('Erreur lors du chargement des abonnés');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleDelete = async (id: string) => {
         try {
@@ -177,10 +105,10 @@ const NewsletterPage: React.FC = () => {
     };
 
     const handleExportToExcel = () => {
-        const exportData = subscribers.map(sub => ({
+        const exportData = newsletters?.responseData?.data?.items?.map(sub => ({
             'Email': sub.email,
-            'Statut': sub.status === 'active' ? 'Actif' : 'Désabonné',
-            'Date d\'inscription': format(new Date(sub.subscribed_at), 'dd/MM/yyyy HH:mm', {locale: fr}),
+            'Statut': isActive(sub) ? 'Actif' : 'Désabonné',
+            'Date d\'inscription': format(new Date(sub.created_at), 'dd/MM/yyyy HH:mm', {locale: fr}),
             'Date de désabonnement': sub.unsubscribed_at
                 ? format(new Date(sub.unsubscribed_at), 'dd/MM/yyyy HH:mm', {locale: fr})
                 : '-'
@@ -196,7 +124,7 @@ const NewsletterPage: React.FC = () => {
         toast.success('Export Excel réussi');
     };
 
-    const filteredSubscribers = subscribers.filter(subscriber =>
+    const filteredSubscribers = newsletters?.responseData?.data?.items?.filter(subscriber =>
         subscriber.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -209,11 +137,11 @@ const NewsletterPage: React.FC = () => {
             const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
             const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
-            const inscriptions = subscribers.filter(s => {
-                const dt = new Date(s.subscribed_at);
+            const inscriptions = newsletters?.responseData?.data?.items?.filter(s => {
+                const dt = new Date(s.created_at);
                 return dt >= monthStart && dt <= monthEnd;
             }).length;
-            const desabonnements = subscribers.filter(s => {
+            const desabonnements = newsletters?.responseData?.data?.items?.filter(s => {
                 if (!s.unsubscribed_at) return false;
                 const dt = new Date(s.unsubscribed_at);
                 return dt >= monthStart && dt <= monthEnd;
@@ -225,18 +153,16 @@ const NewsletterPage: React.FC = () => {
             });
         }
         return data;
-    }, [subscribers]);
+    }, [newsletters]);
 
     const statusDistribution = React.useMemo(() => {
-        const active = subscribers.filter(s => s.status === 'active').length;
-        const unsub = subscribers.length - active;
         return [
-            {name: 'Actifs', value: active},
-            {name: 'Désabonnés', value: unsub}
+            {name: 'Actifs', value: newsletters?.responseData?.data?.totals?.active},
+            {name: 'Désabonnés', value: newsletters?.responseData?.data?.totals?.inactive}
         ];
-    }, [subscribers]);
+    }, [newsletters]);
 
-    if (loading) {
+    if (isGettingNewsletters) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div
@@ -251,13 +177,13 @@ const NewsletterPage: React.FC = () => {
                 title="Gestion Newsletter"
                 Icon={<Mail className={`w-7 h-7 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}/>}
                 onExport={handleExportToExcel}
-                onRefresh={fetchSubscribers}
+                onRefresh={reGetNewsletters}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                 <StatsCard
                     title="Total abonnés"
-                    value={effectiveStats.total}
+                    value={newsletters?.responseData?.data?.items?.length || "0"}
                     icon={Mail}
                     className="bg-gradient-to-br from-sky-600 to-sky-700"
                     iconClassName="text-white"
@@ -265,29 +191,17 @@ const NewsletterPage: React.FC = () => {
                 />
                 <StatsCard
                     title="Actifs"
-                    value={effectiveStats.active}
+                    value={newsletters?.responseData?.data?.totals?.active || "0"}
                     icon={UserCheck}
-                    trend={{
-                        value: Math.round((effectiveStats.active / Math.max(effectiveStats.total, 1)) * 100),
-                        label: '%'
-                    }}
                     className="bg-gradient-to-br from-emerald-600 to-emerald-700"
                     iconClassName="text-white"
                     titleClassName="text-white"
                 />
                 <StatsCard
                     title="Désabonnés"
-                    value={effectiveStats.unsubscribed}
+                    value={newsletters?.responseData?.data?.totals?.inactive || "0"}
                     icon={UserX}
                     className="bg-gradient-to-br from-rose-600 to-rose-700"
-                    iconClassName="text-white"
-                    titleClassName="text-white"
-                />
-                <StatsCard
-                    title="Ce mois"
-                    value={effectiveStats.thisMonth}
-                    icon={Calendar}
-                    className="bg-gradient-to-br from-indigo-600 to-indigo-700"
                     iconClassName="text-white"
                     titleClassName="text-white"
                 />
@@ -360,7 +274,7 @@ const NewsletterPage: React.FC = () => {
                     </tr>
                     </thead>
                     <tbody className={isDark ? 'divide-y divide-gray-700' : 'divide-y divide-gray-100'}>
-                    {filteredSubscribers.map((subscriber) => (
+                    {filteredSubscribers.map((subscriber: any) => (
                         <tr
                             key={subscriber.id}
                             className={`${
@@ -387,12 +301,12 @@ const NewsletterPage: React.FC = () => {
                                 <button
                                     onClick={() => handleToggleStatus(subscriber)}
                                     className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                        subscriber.status === 'active'
+                                        isActive(subscriber)
                                             ? 'bg-green-100 text-green-800 hover:bg-green-200'
                                             : 'bg-red-100 text-red-800 hover:bg-red-200'
                                     }`}
                                 >
-                                    {subscriber.status === 'active' ? 'Actif' : 'Désabonné'}
+                                    {isActive(subscriber) ? 'Actif' : 'Désabonné'}
                                 </button>
                             </td>
                             <td
@@ -400,7 +314,7 @@ const NewsletterPage: React.FC = () => {
                                     isDark ? 'text-gray-300' : 'text-gray-600'
                                 }`}
                             >
-                                {format(new Date(subscriber.subscribed_at), 'dd/MM/yyyy HH:mm', {locale: fr})}
+                                {format(new Date(subscriber.created_at), 'dd/MM/yyyy HH:mm', {locale: fr})}
                             </td>
                             <td
                                 className={`px-6 py-4 whitespace-nowrap text-sm ${

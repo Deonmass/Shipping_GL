@@ -50,3 +50,20 @@ export const UseAddEvent = () => UsePostFormDataQuery(endpoints.events, "addEven
 export const UseUpdateEvent = () => UseUpdateFormDataQuery(endpoints.events, "updateEvent")
 export const UseDeleteEvent = () => UseUpdateQuery(`${endpoints.events}-delete`, "deleteEvent")
 
+
+export const UseGetNewsletters = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "Newsletters",
+    options: options,
+    endpoint: endpoints.newsletters,
+})
+export const UseGetNewsletterDetail = (id: string, options?: GetQueryParams) => UseGetDetailQuery({
+    id: id,
+    identifier: "Newsletter",
+    options: options,
+    endpoint: endpoints.newsletters,
+})
+export const UseAddNewsletter = () => UsePostFormDataQuery(endpoints.newsletters, "addNewsletter")
+export const UseUpdateNewsletter = () => UseUpdateFormDataQuery(endpoints.newsletters, "updateNewsletter")
+export const UseDeleteNewsletter = () => UseUpdateQuery(`${endpoints.newsletters}-delete`, "deleteNewsletter")
+
+export const UseOpenAddNewsletter = () => UsePostFormDataQuery(endpoints.openNewsletters, "openAddNewsletter")

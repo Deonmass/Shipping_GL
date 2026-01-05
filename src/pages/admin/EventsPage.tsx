@@ -5,20 +5,14 @@ import {
     EyeOff,
     Edit,
     Trash2,
-    Plus,
     X,
     AlertCircle,
     Search,
-    RefreshCw,
-    Power,
     Calendar,
     CalendarX,
     CalendarRange,
-    Clock,
-    TrendingUp, FileText, ToggleRight, ToggleLeft
+    TrendingUp, ToggleRight, ToggleLeft
 } from 'lucide-react';
-import {supabase} from '../../lib/supabase';
-import toast from 'react-hot-toast';
 import {format, subMonths, startOfMonth, endOfMonth} from 'date-fns';
 import {fr} from 'date-fns/locale';
 import {EventCountdown} from '../../components/admin/EventCountdown';

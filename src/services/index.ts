@@ -69,4 +69,10 @@ export {
     UseAddEvent,
     UseDeleteEvent,
     UseUpdateEvent,
+    UseGetNewsletterDetail,
+    UseOpenAddNewsletter,
+    UseGetNewsletters,
+    UseAddNewsletter,
+    UseUpdateNewsletter,
+    UseDeleteNewsletter
 } from "./queries/PostsQueries.ts"
