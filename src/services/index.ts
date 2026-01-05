@@ -45,6 +45,12 @@ export {
     UseGetPartners,
     UseUpdatePartner,
     UseGetOpenPartners,
+    UseGetTeamDetail,
+    UseGetOpenTeams,
+    UseGetTeams,
+    UseAddTeam,
+    UseDeleteTeam,
+    UseUpdateTeam,
 } from "./queries/PartnersQueries.ts"
 
 export {

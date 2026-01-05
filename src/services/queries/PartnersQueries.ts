@@ -28,3 +28,24 @@ export const UseGetPartnerDetail = (id: string, options?: GetQueryParams) => Use
 export const UseAddPartner = () => UsePostFormDataQuery(endpoints.partners, "addPartner")
 export const UseUpdatePartner = () => UseUpdateFormDataQuery(endpoints.partners, "updatePartner")
 export const UseDeletePartner = () => UseUpdateQuery(`${endpoints.partners}-delete`, "deletePartner")
+
+export const UseGetOpenTeams = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "OpenTeams",
+    options: options,
+    endpoint: endpoints.openTeams,
+})
+
+export const UseGetTeams = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "Teams",
+    options: options,
+    endpoint: endpoints.teams,
+})
+export const UseGetTeamDetail = (id: string, options?: GetQueryParams) => UseGetDetailQuery({
+    id: id,
+    identifier: "Team",
+    options: options,
+    endpoint: endpoints.teams,
+})
+export const UseAddTeam = () => UsePostFormDataQuery(endpoints.teams, "addTeam")
+export const UseUpdateTeam = () => UseUpdateFormDataQuery(endpoints.teams, "updateTeam")
+export const UseDeleteTeam = () => UseUpdateQuery(`${endpoints.teams}-delete`, "deleteTeam")

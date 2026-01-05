@@ -46,6 +46,7 @@ import CandidaturePage from './pages/admin/CandidaturePage';
 import JobOfferPage from './pages/admin/JobOfferPage';
 import MenuVisibilityPage from './pages/admin/MenuVisibilityPage';
 import OfficesPage from "./pages/admin/OfficesPage.tsx";
+import TeamsPage from "./pages/admin/TeamsPage.tsx";
 
 function App() {
     const location = useLocation();
@@ -95,6 +96,7 @@ function App() {
                             <Route path="assign-roles" element={<AssignRolesPage/>}/>
                             <Route path="permissions" element={<RolePermissionsPage/>}/>
                         </Route>
+                        <Route path="team" element={<TeamsPage/>}/>
                         <Route path="partners" element={<AdminPartnersPage/>}/>
                         <Route path="posts" element={<PostsPage/>}/>
                         <Route path="services" element={<AdminServicesPage/>}/>

@@ -6,6 +6,7 @@ const urls =  {
     openEvents: '/open/events',
     openNewsletters: '/open/newsletters',
     openJobOffers: '/open/job-offers',
+    openTeams: '/open/teams',
 
     login: '/login',
     logout: '/api/logout',
@@ -23,6 +24,7 @@ const urls =  {
     events: '/api/events',
     newsletters: '/api/newsletters',
     jobOffers: '/api/job-offers',
+    teams: '/api/teams',
 }
 
 export default urls

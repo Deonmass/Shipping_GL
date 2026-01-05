@@ -253,6 +253,7 @@ const AdminLayout: React.FC = () => {
             label: 'Newsletter',
             keywords: ['email', 'newsletter']
         },
+        {key: appPermissions.team, path: '/admin/team', icon: Users, label: 'Equipe Dirigeante', keywords: ['equipe', 'membre']},
         {key: appPermissions.offices, path: '/admin/offices', icon: Building2, label: 'Bureaux', keywords: ['bureaux']}
     ];
 
