@@ -2,7 +2,7 @@ import React, {useState, useEffect} from 'react';
 import {Link, useLocation, Outlet, useNavigate} from 'react-router-dom';
 import {
     BarChart3, Users, FileText, Settings,
-    Bell, Search, LogOut, Handshake,
+    Bell, Search, LogOut, Handshake, ClipboardEditIcon,
     MessageSquare, Heart, Calendar, Tags, TrendingUp, ChevronDown, ChevronRight,
     Mail, Shield, Menu, CheckCircle2, Sun, Moon, User, Home, X, RefreshCcw, Wrench, Building2
 } from 'lucide-react';
@@ -209,6 +209,13 @@ const AdminLayout: React.FC = () => {
             icon: Wrench,
             label: 'Services',
             keywords: ['services', 'service']
+        },
+        {
+            key: appPermissions.jobOffers,
+            path: '/admin/offres-emploi',
+            icon: ClipboardEditIcon,
+            label: "Offres d'emploi",
+            keywords: ['offres', 'emploi', "recrutement"]
         },
         {
             key: appPermissions.devis,

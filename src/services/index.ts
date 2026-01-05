@@ -63,4 +63,10 @@ export {
     UseGetPosts,
     UseUpdatePost,
     UseGetOpenPosts,
+    UseGetEventDetail,
+    UseGetEvents,
+    UseGetOpenEvents,
+    UseAddEvent,
+    UseDeleteEvent,
+    UseUpdateEvent,
 } from "./queries/PostsQueries.ts"

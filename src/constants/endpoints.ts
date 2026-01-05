@@ -3,6 +3,7 @@ const urls =  {
     openPartners: '/open/partners',
     openServices: '/open/services',
     openPosts: '/open/posts',
+    openEvents: '/open/events',
 
     login: '/login',
     logout: '/api/logout',
@@ -17,6 +18,7 @@ const urls =  {
     posts: '/api/posts',
     postLikes: '/api/post-likes',
     postComments: '/api/post-comments',
+    events: '/api/events',
 }
 
 export default urls

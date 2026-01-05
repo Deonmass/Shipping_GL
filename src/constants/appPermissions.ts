@@ -16,6 +16,7 @@ export const appPermissions = {
     team: "14",
     post_likes: "15",
     db_logs: "16",
+    jobOffers: "17",
 
 
     menu_visibility: "00",

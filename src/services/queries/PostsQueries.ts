@@ -28,3 +28,25 @@ export const UseGetPostDetail = (id: string, options?: GetQueryParams) => UseGet
 export const UseAddPost = () => UsePostFormDataQuery(endpoints.posts, "addPost")
 export const UseUpdatePost = () => UseUpdateFormDataQuery(endpoints.posts, "updatePost")
 export const UseDeletePost = () => UseUpdateQuery(`${endpoints.posts}-delete`, "deletePost")
+
+export const UseGetOpenEvents = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "OpenEvents",
+    options: options,
+    endpoint: endpoints.openEvents,
+})
+
+export const UseGetEvents = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "Events",
+    options: options,
+    endpoint: endpoints.events,
+})
+export const UseGetEventDetail = (id: string, options?: GetQueryParams) => UseGetDetailQuery({
+    id: id,
+    identifier: "Event",
+    options: options,
+    endpoint: endpoints.events,
+})
+export const UseAddEvent = () => UsePostFormDataQuery(endpoints.events, "addEvent")
+export const UseUpdateEvent = () => UseUpdateFormDataQuery(endpoints.events, "updateEvent")
+export const UseDeleteEvent = () => UseUpdateQuery(`${endpoints.events}-delete`, "deleteEvent")
+
