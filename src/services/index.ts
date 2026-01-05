@@ -76,3 +76,12 @@ export {
     UseUpdateNewsletter,
     UseDeleteNewsletter
 } from "./queries/PostsQueries.ts"
+
+export {
+    UseGetJobOfferDetail,
+    UseAddJobOffer,
+    UseDeleteJobOffer,
+    UseGetJobOffers,
+    UseGetOpenJobOffers,
+    UseUpdateJobOffer
+} from "./queries/JobOffersQueries.ts"
