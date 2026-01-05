@@ -7,12 +7,10 @@ import {
     Search,
     UserCheck,
     UserX,
-    Calendar,
     BarChart3
 } from 'lucide-react';
-import {supabase} from '../../lib/supabase';
 import toast from 'react-hot-toast';
-import {format, subMonths} from 'date-fns';
+import {format} from 'date-fns';
 import {fr} from 'date-fns/locale';
 import {StatsCard} from '../../components/admin/StatsCard';
 import {ChartPanel} from '../../components/admin/ChartPanel';
@@ -20,22 +18,20 @@ import {ChartModal} from '../../components/admin/ChartModal';
 import * as XLSX from 'xlsx';
 import {useOutletContext} from 'react-router-dom';
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
-import {UseGetNewsletters} from "../../services";
+import {UseDeleteNewsletter, UseGetNewsletters, UseUpdateNewsletter} from "../../services";
+import AppToast from "../../utils/AppToast.ts";
+import {HasPermission} from "../../utils/PermissionChecker.ts";
+import {appPermissions} from "../../constants/appPermissions.ts";
+import {appOps} from "../../constants";
 
 interface Subscriber {
     id: string;
     email: string;
     status: string;
-    subscribed_at: string;
+    created_at: string;
     unsubscribed_at?: string;
 }
 
-interface SubscriberStats {
-    total: number;
-    active: number;
-    unsubscribed: number;
-    thisMonth: number;
-}
 
 const isActive = (u: any) =>
     u?.status?.toString() === "1"
@@ -58,50 +54,43 @@ const NewsletterPage: React.FC = () => {
         isPending: isGettingNewsletters,
         refetch: reGetNewsletters
     } = UseGetNewsletters({format: "stats"})
+    const {isPending: isDeleting, mutate: deleteNewsletter, data: deleteResult} = UseDeleteNewsletter()
+    const {isPending: isUpdating, mutate: updateNewsletter, data: updateResult} = UseUpdateNewsletter()
 
 
-    const handleDelete = async (id: string) => {
-        try {
-            const {error} = await supabase
-                .from('newsletter_subscribers')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
-
-            toast.success('Abonné supprimé avec succès');
-            fetchSubscribers();
-        } catch (error: any) {
-            console.error('Error deleting subscriber:', error);
-            toast.error(error.message || 'Erreur lors de la suppression');
+    useEffect(() => {
+        if (deleteResult) {
+            if (deleteResult?.responseData?.error) {
+                AppToast.error(theme === "dark", deleteResult?.responseData?.message || "Erreur lors de la suppression")
+            } else {
+                reGetNewsletters()
+                AppToast.success(theme === "dark", 'Abonné supprimé avec succès')
+                setShowDeleteConfirm(null);
+            }
         }
-        setShowDeleteConfirm(null);
-    };
+    }, [deleteResult]);
+
+    useEffect(() => {
+        if (updateResult) {
+            if (updateResult?.responseData?.error) {
+                AppToast.error(theme === "dark", updateResult?.responseData?.message || "Erreur lors de la modification")
+            } else {
+                reGetNewsletters()
+                AppToast.success(theme === "dark", 'Abonné mis a jour avec succès')
+            }
+        }
+    }, [updateResult]);
 
     const handleToggleStatus = async (subscriber: Subscriber) => {
-        try {
-            const newStatus = subscriber.status === 'active' ? 'unsubscribed' : 'active';
-            const updateData: any = {status: newStatus};
-
-            if (newStatus === 'unsubscribed') {
-                updateData.unsubscribed_at = new Date().toISOString();
-            } else {
-                updateData.unsubscribed_at = null;
-            }
-
-            const {error} = await supabase
-                .from('newsletter_subscribers')
-                .update(updateData)
-                .eq('id', subscriber.id);
-
-            if (error) throw error;
-
-            toast.success(newStatus === 'active' ? 'Abonné réactivé' : 'Abonné désabonné');
-            fetchSubscribers();
-        } catch (error: any) {
-            console.error('Error toggling status:', error);
-            toast.error(error.message || 'Erreur lors de la modification');
+        if (!subscriber?.id) {
+            AppToast.error(isDark, "Une erreur s'est produite.");
+            return;
         }
+        updateNewsletter({
+            id: subscriber?.id,
+            status: isActive(subscriber) ? "0" : "1",
+            unsubscribed_at: isActive(subscriber) ? format(new Date(), 'yyyy/MM/dd HH:mm:ss') : null
+        });
     };
 
     const handleExportToExcel = () => {
@@ -306,7 +295,7 @@ const NewsletterPage: React.FC = () => {
                                             : 'bg-red-100 text-red-800 hover:bg-red-200'
                                     }`}
                                 >
-                                    {isActive(subscriber) ? 'Actif' : 'Désabonné'}
+                                    {isUpdating ? "..." : isActive(subscriber) ? 'Actif' : 'Désabonné'}
                                 </button>
                             </td>
                             <td
@@ -327,7 +316,7 @@ const NewsletterPage: React.FC = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div className="flex items-center justify-end gap-2">
-                                    <button
+                                    {HasPermission(appPermissions.newsletter, appOps.delete) ? <button
                                         onClick={() => setShowDeleteConfirm(subscriber.id)}
                                         className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition border ${
                                             isDark
@@ -337,7 +326,7 @@ const NewsletterPage: React.FC = () => {
                                         title="Supprimer"
                                     >
                                         <Trash2 className="w-4 h-4"/>
-                                    </button>
+                                    </button> : null}
                                 </div>
                             </td>
                         </tr>
@@ -437,10 +426,10 @@ const NewsletterPage: React.FC = () => {
                                 Annuler
                             </button>
                             <button
-                                onClick={() => handleDelete(showDeleteConfirm)}
+                                onClick={() => deleteNewsletter({id: showDeleteConfirm})}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
                             >
-                                Supprimer
+                                {isDeleting ? "Chargement ... " : "Supprimer"}
                             </button>
                         </div>
                     </motion.div>
