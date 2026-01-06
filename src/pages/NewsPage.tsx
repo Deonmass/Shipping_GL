@@ -276,6 +276,7 @@ const NewsPage: React.FC = () => {
 
                         <div className="lg:col-span-6">
                             <FilterBar
+                                categories={categories?.responseData?.data || []}
                                 searchTerm={searchTerm}
                                 onSearchChange={setSearchTerm}
                                 onCategorySelect={setSelectedCategory}
