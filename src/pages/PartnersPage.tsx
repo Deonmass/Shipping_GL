@@ -44,14 +44,16 @@ const PartnersPage: React.FC = () => {
 
   const fetchPartners = async () => {
     try {
-      const grouped = categories?.responseData?.data?.map((category: any) => ({
-        category,
-        partners: partners?.responseData?.data?.filter((p: any) => p.category_id === category.id)
-      })).filter((group: any) => group.partners.length > 0);
+      if(partners?.responseData?.data?.length){
+        const grouped = categories?.responseData?.data?.map((category: any) => ({
+          category,
+          partners: partners?.responseData?.data?.filter((p: any) => p.category_id === category.id)
+        })).filter((group: any) => group.partners.length > 0);
 
-      setPartnersByCategory(grouped);
+        setPartnersByCategory(grouped);
+      }
     } catch (error: any) {
-      toast.error(`Erreur lors du chargement des partenaires: ${error.message || 'Erreur inconnue'}`);
+       toast.error(`Erreur lors du chargement des partenaires: ${error.message || 'Erreur inconnue'}`);
     }
   };
 
