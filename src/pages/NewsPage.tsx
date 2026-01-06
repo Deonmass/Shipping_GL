@@ -6,11 +6,10 @@ import {useAuth} from '../contexts/AuthContext';
 import {toast} from 'react-hot-toast';
 import {supabase} from '../lib/supabase';
 import LeftSidebar from '../components/news/LeftSidebar';
-import PostComposer from '../components/news/PostComposer';
 import PostCard from '../components/news/PostCard';
 import RightSidebar from '../components/news/RightSidebar';
 import FilterBar from '../components/news/FilterBar';
-import {UseGetOpenCategories, UseGetOpenPosts} from "../services";
+import {UseGetOpenCategories, UseGetOpenEvents, UseGetOpenPosts} from "../services";
 
 interface Post {
     id: string;
@@ -19,7 +18,7 @@ interface Post {
     short_description: string;
     image_url?: string;
     image_urls?: string[];
-    category: string;
+    category_id: string;
     author_name: string;
     author_avatar?: string;
     created_at: string;
@@ -40,7 +39,6 @@ interface Event {
 const NewsPage: React.FC = () => {
     const {t, i18n} = useTranslation();
     const {user} = useAuth();
-    const [events, setEvents] = useState<Event[]>([]);
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -52,40 +50,17 @@ const NewsPage: React.FC = () => {
 
     const {data: posts, isLoading: isGettingPosts} = UseGetOpenPosts()
     const {data: categories, isLoading: isGettingCategories} = UseGetOpenCategories({type: "news"})
-
+    const {data: events, isLoading: isGettingEvents} = UseGetOpenEvents()
 
     // Helper to get a localized value from a record coming from Supabase.
     // It tries, in order:
     // 1) field_lang (ex: title_en, short_description_en)
     // 2) record.translations?.[lang]?.[field]
     // 3) fallback to the base field (ex: title)
-    const getLocalizedField = (record: any, field: string): string => {
-        const lang = i18n.language || 'fr';
-
-        // Try column like title_en, content_en, etc.
-        const directKey = `${field}_${lang}`;
-        const directValue = record?.[directKey];
-        if (typeof directValue === 'string' && directValue.trim() !== '') {
-            return directValue;
-        }
-
-        // Try JSON translations column if present
-        const translations = record?.translations;
-        const nestedValue = translations?.[lang]?.[field];
-        if (typeof nestedValue === 'string' && nestedValue.trim() !== '') {
-            return nestedValue;
-        }
-
-        // Fallback to base field (existing schema)
-        const baseValue = record?.[field];
-        return typeof baseValue === 'string' ? baseValue : '';
-    };
 
 
     useEffect(() => {
         document.title = 'Actualités - SHIPPING GL';
-        fetchPosts();
-        fetchEvents();
         if (user) {
             fetchUserLikes();
         }
@@ -96,67 +71,6 @@ const NewsPage: React.FC = () => {
         setCurrentSlide(0);
     }, [selectedPost]);
 
-    const fetchPosts = async () => {
-        try {
-            //setLoading(true);
-            const {data: postsData, error} = await supabase
-                .from('news_posts')
-                .select('*')
-                .eq('is_published', true)
-                .eq('is_active', true)
-                .order('is_pinned', {ascending: false})
-                .order('created_at', {ascending: false});
-
-            if (error) throw error;
-
-            const postsWithCounts = await Promise.all(
-                (postsData || []).map(async (post) => {
-                    const {count: likesCount} = await supabase
-                        .from('post_likes')
-                        .select('*', {count: 'exact', head: true})
-                        .eq('post_id', post.id);
-
-                    const {count: commentsCount} = await supabase
-                        .from('post_comments')
-                        .select('*', {count: 'exact', head: true})
-                        .eq('post_id', post.id);
-
-                    // Build a localized version of the post fields based on current language
-                    return {
-                        ...post,
-                        title: getLocalizedField(post, 'title'),
-                        short_description: getLocalizedField(post, 'short_description'),
-                        content: getLocalizedField(post, 'content'),
-                        likes_count: likesCount || 0,
-                        comments_count: commentsCount || 0
-                    };
-                })
-            );
-
-            //setPosts(postsWithCounts);
-        } catch (error) {
-            console.error('Error fetching posts:', error);
-            toast.error('Erreur lors du chargement des actualités');
-        } finally {
-           // setLoading(false);
-        }
-    };
-
-    const fetchEvents = async () => {
-        try {
-            const {data, error} = await supabase
-                .from('news_events')
-                .select('*')
-                .gte('event_date', new Date().toISOString())
-                .order('event_date', {ascending: true})
-                .limit(10);
-
-            if (error) throw error;
-            setEvents(data || []);
-        } catch (error) {
-            console.error('Error fetching events:', error);
-        }
-    };
 
     const fetchUserLikes = async () => {
         if (!user) return;
@@ -411,7 +325,7 @@ const NewsPage: React.FC = () => {
                         </div>
 
                         <div className="lg:col-span-3 hidden lg:block">
-                            <RightSidebar events={events}/>
+                            <RightSidebar events={events?.responseData?.data || []}/>
                         </div>
                     </div>
                 </div>
@@ -504,7 +418,7 @@ const NewsPage: React.FC = () => {
                   </span>
                                     <span
                                         className="px-4 py-1.5 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
-                    {getCategoryLabel(selectedPost.category)}
+                    {getCategoryLabel(selectedPost.category_id)}
                   </span>
                                 </div>
 
