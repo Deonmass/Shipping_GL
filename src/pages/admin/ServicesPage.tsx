@@ -23,6 +23,7 @@ interface ServiceRow {
     description: string | null;
     email: string | null;
     favorite?: string
+    image_url?: string
     is_favorite?: boolean
 }
 
@@ -121,6 +122,7 @@ const AdminServicesPage: React.FC = () => {
             code: formData.code,
             description: formData.description,
             email: formData.email,
+            image_url: formData.image_url,
             favorite: formData?.is_favorite ? "1" : "0",
         }
 
@@ -554,6 +556,7 @@ const AdminServicesPage: React.FC = () => {
                                             : 'w-full px-3 py-2 rounded-md border text-sm bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500'
                                     }
                                     placeholder="Service Administratif Ponctuel"
+                                    required
                                 />
                             </div>
 
@@ -572,6 +575,25 @@ const AdminServicesPage: React.FC = () => {
                                             : 'w-full px-3 py-2 rounded-md border text-sm bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500'
                                     }
                                     placeholder="SAP, AFR, OFR..."
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    className={isDark ? 'block text-sm font-medium mb-1 text-gray-200' : 'block text-sm font-medium mb-1 text-gray-700'}>
+                                    URL de l'image
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.image_url}
+                                    onChange={(e) => handleFormChange('image_url', e.target.value)}
+                                    className={
+                                        isDark
+                                            ? 'w-full px-3 py-2 rounded-md border text-sm bg-gray-900 border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500'
+                                            : 'w-full px-3 py-2 rounded-md border text-sm bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500'
+                                    }
+                                    required
                                 />
                             </div>
 
