@@ -6,7 +6,7 @@ import {FilterBar} from '../../components/admin/FilterBar';
 import {
     Wrench,
     FileText,
-    Edit,
+    Edit, LucideStar,
     Trash2, ToggleRight, ToggleLeft, AlertCircle, XCircle, CheckCircle,
 } from 'lucide-react';
 import {UseAddService, UseDeleteService, UseGetServices, UseUpdateService} from "../../services";
@@ -22,6 +22,8 @@ interface ServiceRow {
     code: string;
     description: string | null;
     email: string | null;
+    favorite?: string
+    is_favorite?: boolean
 }
 
 const emptyItem = {
@@ -33,6 +35,9 @@ const emptyItem = {
 
 const isActive = (u: any) =>
     u?.status?.toString() === "1"
+
+const isFavorite = (u: any) =>
+    u?.favorite?.toString() === "1"
 
 const AdminServicesPage: React.FC = () => {
     const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
@@ -116,6 +121,7 @@ const AdminServicesPage: React.FC = () => {
             code: formData.code,
             description: formData.description,
             email: formData.email,
+            favorite: formData?.is_favorite ? "1" : "0",
         }
 
         if(showFormModal === "add") {
@@ -186,7 +192,7 @@ const AdminServicesPage: React.FC = () => {
             label: 'Modifier',
             icon: Edit,
             onClick: () => {
-                setFormData(item);
+                setFormData({...item, is_favorite: isFavorite(item)});
                 setShowFormModal("edit");
             },
             color: 'text-green-400',
@@ -331,7 +337,7 @@ const AdminServicesPage: React.FC = () => {
                                         <td className="px-6 py-4">
                                             <div
                                                 className={isDark ? 'text-sm font-medium text-white' : 'text-sm font-medium text-gray-900'}>
-                                                {service.title}
+                                                {isFavorite(service) ? <LucideStar className="text-yellow-400 inline" /> : null} {service.title}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -456,8 +462,6 @@ const AdminServicesPage: React.FC = () => {
                 </div>
             )}
 
-
-
             {showStatusConfirm && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <motion.div
@@ -527,7 +531,7 @@ const AdminServicesPage: React.FC = () => {
                                 {showFormModal === "edit" ? 'Modifier le service' : 'Ajouter un service'}
                             </h2>
                             <button
-                                onClick={() => setShowFormModal(false)}
+                                onClick={() => setShowFormModal(null)}
                                 className={isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}
                             >
                                 ×
@@ -577,7 +581,7 @@ const AdminServicesPage: React.FC = () => {
                                     Description
                                 </label>
                                 <textarea
-                                    value={formData.description}
+                                    value={formData?.description || ""}
                                     onChange={(e) => handleFormChange('description', e.target.value)}
                                     rows={4}
                                     className={
@@ -596,7 +600,7 @@ const AdminServicesPage: React.FC = () => {
                                 </label>
                                 <input
                                     type="email"
-                                    value={formData.email}
+                                    value={formData?.email || ""}
                                     onChange={(e) => handleFormChange('email', e.target.value)}
                                     className={
                                         isDark
@@ -605,6 +609,19 @@ const AdminServicesPage: React.FC = () => {
                                     }
                                     placeholder="email@exemple.com"
                                 />
+                            </div>
+
+                            <div className="flex items-center space-x-6">
+                                <label className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData?.is_favorite}
+                                        onChange={(e) => handleFormChange('is_favorite', e.target.checked)}
+                                        className="w-5 h-5 text-primary-600 bg-gray-700 border-gray-600 rounded focus:ring-primary-500"
+                                    />
+                                    <span className="text-sm text-gray-300">Service Favoris</span>
+                                </label>
+
                             </div>
 
                             <div className="pt-4 flex justify-end space-x-3">
