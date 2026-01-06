@@ -25,6 +25,7 @@ interface Post {
     likes_count?: number;
     comments_count?: number;
     is_liked?: boolean;
+    category_name?: string;
 }
 
 interface Event {
@@ -51,13 +52,6 @@ const NewsPage: React.FC = () => {
     const {data: posts, isLoading: isGettingPosts} = UseGetOpenPosts()
     const {data: categories, isLoading: isGettingCategories} = UseGetOpenCategories({type: "news"})
     const {data: events, isLoading: isGettingEvents} = UseGetOpenEvents()
-
-    // Helper to get a localized value from a record coming from Supabase.
-    // It tries, in order:
-    // 1) field_lang (ex: title_en, short_description_en)
-    // 2) record.translations?.[lang]?.[field]
-    // 3) fallback to the base field (ex: title)
-
 
     useEffect(() => {
         document.title = 'Actualités - SHIPPING GL';
@@ -258,9 +252,6 @@ const NewsPage: React.FC = () => {
         return filtered;
     })();
 
-    const getCategoryLabel = (categoryId: string) => {
-        return categories?.responseData?.data?.find((cat: any) => cat.id === categoryId);
-    };
 
     return (
         <motion.div
@@ -317,7 +308,7 @@ const NewsPage: React.FC = () => {
                                             onComment={handleComment}
                                             onShare={handleShare}
                                             onReadMore={() => setSelectedPost(post)}
-                                            categoryLabel={getCategoryLabel(post.category)}
+                                            categoryLabel={post?.category_name}
                                         />
                                     ))}
                                 </div>
@@ -418,7 +409,7 @@ const NewsPage: React.FC = () => {
                   </span>
                                     <span
                                         className="px-4 py-1.5 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
-                    {getCategoryLabel(selectedPost.category_id)}
+                    {selectedPost?.category_name}
                   </span>
                                 </div>
 
