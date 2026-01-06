@@ -28,17 +28,6 @@ const QUOTE_EDITOR_FORMATS = [
     'link',
 ];
 
-type ServiceRow = {
-    id: number;
-    service_name: string;
-    service_code: string;
-    service_description: string | null;
-};
-
-type QuoteRequestRow = {
-    service_code: string | null;
-};
-
 export const ServiceIcon = (code: string) => {
     switch (code) {
         case 'AFR':
@@ -62,16 +51,8 @@ export const ServiceIcon = (code: string) => {
 
 const ServicesPage: React.FC = () => {
     const {t} = useTranslation();
-    const [dbServices, setDbServices] = useState<ServiceRow[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [loadError, setLoadError] = useState<string | null>(null);
     const [quoteService, setQuoteService] = useState<{ code: string; name: string } | null>(null);
-    const [detailModalService, setDetailModalService] = useState<{
-        code: string;
-        name: string;
-        description: string;
-        image: string;
-    } | null>(null);
+    const [detailModalService, setDetailModalService] = useState<any>(null);
     const [quoteForm, setQuoteForm] = useState({
         name: '',
         email: '',
@@ -80,7 +61,6 @@ const ServicesPage: React.FC = () => {
         details: '',
     });
     const [isSendingQuote, setIsSendingQuote] = useState(false);
-    const [quoteCountsByService, setQuoteCountsByService] = useState<Record<string, number>>({});
 
     const {data: services, isLoading: isGettingServices} = UseGetOpenServices()
 
@@ -104,64 +84,6 @@ const ServicesPage: React.FC = () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, [quoteService]);
-
-    useEffect(() => {
-        const fetchServices = async () => {
-            try {
-                setLoading(true);
-                setLoadError(null);
-
-                const {data, error} = await supabase
-                    .from('service')
-                    .select('id, service_name, service_code, service_description')
-                    .order('id', {ascending: true});
-
-                if (error) {
-                    console.error('Erreur lors du chargement des services depuis Supabase', error);
-                    setLoadError("Impossible de charger la liste des services pour le moment.");
-                    // setDbServices([]);
-                    return;
-                }
-
-                // setDbServices(data || []);
-            } catch (e) {
-                console.error('Erreur inattendue lors du chargement des services:', e);
-                setLoadError("Une erreur inattendue est survenue lors du chargement des services.");
-                setDbServices([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchServices();
-    }, []);
-
-    useEffect(() => {
-        const fetchQuoteCounts = async () => {
-            try {
-                const {data, error} = await supabase
-                    .from('quote_requests')
-                    .select('service_code');
-
-                if (error) {
-                    console.error('Erreur lors du chargement des demandes de devis par service', error);
-                    return;
-                }
-
-                const counts: Record<string, number> = {};
-                (data as QuoteRequestRow[]).forEach((row) => {
-                    if (!row.service_code) return;
-                    counts[row.service_code] = (counts[row.service_code] || 0) + 1;
-                });
-
-                setQuoteCountsByService(counts);
-            } catch (e) {
-                console.error('Erreur inattendue lors du chargement des demandes de devis par service:', e);
-            }
-        };
-
-        fetchQuoteCounts();
-    }, []);
 
     // const services = [
     //     {
@@ -495,9 +417,7 @@ const ServicesPage: React.FC = () => {
                                 <div className="flex items-start justify-between mb-4">
                                     <div>
                                         <h2 className="text-2xl font-bold text-gray-900 mb-2">{detailModalService.title}</h2>
-                                        <p className="text-sm text-gray-600">
-                                            {t('services.subtitle')}
-                                        </p>
+                                       
                                     </div>
                                     <button
                                         type="button"
