@@ -29,7 +29,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({icon, title, description, link
                     {icon}
                 </div>
                 <h3 className="text-xl font-semibold mb-3">{title}</h3>
-                <p className="text-gray-600 mb-5">{description}</p>
+                <p className="text-gray-600 mb-5 line-clamp-3">{description}</p>
                 <Link to={link}
                       className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium">
                     <span>En savoir plus</span>
@@ -122,7 +122,7 @@ const ServicesSection: React.FC = () => {
                             key={index}
                             icon={ServiceIcon(service.code)}
                             title={service.title}
-                            description={`${service?.description?.slice(0, 90)}...`}
+                            description={service?.description}
                             link="/services"
                             delay={service.delay}
                         />

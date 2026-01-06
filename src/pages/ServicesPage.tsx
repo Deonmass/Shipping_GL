@@ -6,6 +6,7 @@ import {supabase} from '../lib/supabase';
 import Swal from 'sweetalert2';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import {UseGetOpenServices} from "../services";
 
 const QUOTE_EDITOR_MODULES = {
     toolbar: [
@@ -64,7 +65,6 @@ const ServicesPage: React.FC = () => {
     const [dbServices, setDbServices] = useState<ServiceRow[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [loadError, setLoadError] = useState<string | null>(null);
-    const [quoteModalOpen, setQuoteModalOpen] = useState(false);
     const [quoteService, setQuoteService] = useState<{ code: string; name: string } | null>(null);
     const [detailModalService, setDetailModalService] = useState<{
         code: string;
@@ -82,6 +82,8 @@ const ServicesPage: React.FC = () => {
     const [isSendingQuote, setIsSendingQuote] = useState(false);
     const [quoteCountsByService, setQuoteCountsByService] = useState<Record<string, number>>({});
 
+    const {data: services, isLoading: isGettingServices} = UseGetOpenServices()
+
     // Update document title
     useEffect(() => {
         document.title = t('services.title') + ' - SHIPPING GL';
@@ -90,18 +92,18 @@ const ServicesPage: React.FC = () => {
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
-                setQuoteModalOpen(false);
+                setQuoteService(null);
             }
         };
 
-        if (quoteModalOpen) {
+        if (quoteService) {
             window.addEventListener('keydown', handleKeyDown);
         }
 
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [quoteModalOpen]);
+    }, [quoteService]);
 
     useEffect(() => {
         const fetchServices = async () => {
@@ -117,11 +119,11 @@ const ServicesPage: React.FC = () => {
                 if (error) {
                     console.error('Erreur lors du chargement des services depuis Supabase', error);
                     setLoadError("Impossible de charger la liste des services pour le moment.");
-                    setDbServices([]);
+                    // setDbServices([]);
                     return;
                 }
 
-                setDbServices(data || []);
+                // setDbServices(data || []);
             } catch (e) {
                 console.error('Erreur inattendue lors du chargement des services:', e);
                 setLoadError("Une erreur inattendue est survenue lors du chargement des services.");
@@ -161,133 +163,62 @@ const ServicesPage: React.FC = () => {
         fetchQuoteCounts();
     }, []);
 
-    const services = [
-        {
-            id: 'air-freight',
-            title: t('services.airFreight.title'),
-            description: t('services.airFreight.description'),
-            features: t('services.airFreight.features', {returnObjects: true}) as string[],
-            image: 'https://i.pinimg.com/736x/74/84/08/748408ea5a6eac160a5d18721c8baa38.jpg',
-            icon: <Plane className="w-8 h-8"/>,
-            reversed: false
-        },
-        {
-            id: 'sea-freight',
-            title: t('services.seaFreight.title'),
-            description: t('services.seaFreight.description'),
-            features: t('services.seaFreight.features', {returnObjects: true}) as string[],
-            image: 'https://i.pinimg.com/736x/80/81/c5/8081c519bd631844e676e42af2d7e41b.jpg',
-            icon: <Ship className="w-8 h-8"/>,
-            reversed: true
-        },
-        {
-            id: 'transport',
-            title: t('services.transport.title'),
-            description: t('services.transport.description'),
-            features: t('services.transport.features', {returnObjects: true}) as string[],
-            image: 'https://i.pinimg.com/736x/24/40/8b/24408b43c55bd2d8c6e00386eb2b3241.jpg',
-            icon: <Truck className="w-8 h-8"/>,
-            reversed: false
-        },
-        {
-            id: 'warehousing',
-            title: t('services.warehousing.title'),
-            description: t('services.warehousing.description'),
-            features: t('services.warehousing.features', {returnObjects: true}) as string[],
-            image: 'https://i.pinimg.com/1200x/f5/7f/cb/f57fcb397ff74d081ca95a2e039c419e.jpg',
-            icon: <Warehouse className="w-8 h-8"/>,
-            reversed: true
-        },
-        {
-            id: 'moving',
-            title: t('services.moving.title'),
-            description: t('services.moving.description'),
-            features: t('services.moving.features', {returnObjects: true}) as string[],
-            image: 'https://i.pinimg.com/736x/eb/e7/b6/ebe7b60acb7a8489ea5ac5a71fd4c901.jpg',
-            icon: <Home className="w-8 h-8"/>,
-            reversed: false
-        },
-        {
-            id: 'customs',
-            title: t('services.customs.title'),
-            description: t('services.customs.description'),
-            features: t('services.customs.features', {returnObjects: true}) as string[],
-            image: 'https://i.postimg.cc/hjchD78h/decl.png',
-            icon: <FileCheck className="w-8 h-8"/>,
-            reversed: true
-        }
-    ];
-
-    const getServiceDescription = (anchorId: string) => {
-        const match = services.find((s) => s.id === anchorId);
-        return match?.description;
-    };
-
-    const getServiceImage = (anchorId: string) => {
-        const match = services.find((s) => s.id === anchorId);
-        return match?.image;
-    };
-
-    const heroServices = dbServices.map((row) => {
-        let icon: React.ReactNode = <FileCheck className="w-8 h-8"/>;
-        let anchorId = 'customs';
-
-        switch (row.service_code) {
-            case 'AFR':
-                icon = <Plane className="w-8 h-8"/>;
-                anchorId = 'air-freight';
-                break;
-            case 'OFR':
-                icon = <Ship className="w-8 h-8"/>;
-                anchorId = 'sea-freight';
-                break;
-            case 'WHS':
-                icon = <Warehouse className="w-8 h-8"/>;
-                anchorId = 'warehousing';
-                break;
-            case 'DOM':
-                icon = <Truck className="w-8 h-8"/>;
-                anchorId = 'transport';
-                break;
-            case 'MOV':
-                icon = <Home className="w-8 h-8"/>;
-                anchorId = 'moving';
-                break;
-            case 'CCI':
-            case 'CCE':
-            case 'COI':
-            case 'SAP':
-            default:
-                icon = <FileCheck className="w-8 h-8"/>;
-                anchorId = 'customs';
-                break;
-        }
-
-        return {
-            code: row.service_code,
-            name: row.service_name,
-            description: row.service_description,
-            icon,
-            anchorId,
-        };
-    });
-
-    const openQuoteModal = (service: { id: string; title: string }) => {
-        setQuoteService({code: service.id, name: service.title});
-        setQuoteModalOpen(true);
-    };
-
-    const openDetailModal = (service: { code: string; name: string; anchorId: string }) => {
-        const description = getServiceDescription(service.anchorId) || '';
-        const image = getServiceImage(service.anchorId) || '';
-
-        setDetailModalService({
-            code: service.code,
-            name: service.name,
-            description,
-            image,
-        });
-    };
+    // const services = [
+    //     {
+    //         id: 'air-freight',
+    //         title: t('services.airFreight.title'),
+    //         description: t('services.airFreight.description'),
+    //         features: t('services.airFreight.features', {returnObjects: true}) as string[],
+    //         image: 'https://i.pinimg.com/736x/74/84/08/748408ea5a6eac160a5d18721c8baa38.jpg',
+    //         icon: <Plane className="w-8 h-8"/>,
+    //         reversed: false
+    //     },
+    //     {
+    //         id: 'sea-freight',
+    //         title: t('services.seaFreight.title'),
+    //         description: t('services.seaFreight.description'),
+    //         features: t('services.seaFreight.features', {returnObjects: true}) as string[],
+    //         image: 'https://i.pinimg.com/736x/80/81/c5/8081c519bd631844e676e42af2d7e41b.jpg',
+    //         icon: <Ship className="w-8 h-8"/>,
+    //         reversed: true
+    //     },
+    //     {
+    //         id: 'transport',
+    //         title: t('services.transport.title'),
+    //         description: t('services.transport.description'),
+    //         features: t('services.transport.features', {returnObjects: true}) as string[],
+    //         image: 'https://i.pinimg.com/736x/24/40/8b/24408b43c55bd2d8c6e00386eb2b3241.jpg',
+    //         icon: <Truck className="w-8 h-8"/>,
+    //         reversed: false
+    //     },
+    //     {
+    //         id: 'warehousing',
+    //         title: t('services.warehousing.title'),
+    //         description: t('services.warehousing.description'),
+    //         features: t('services.warehousing.features', {returnObjects: true}) as string[],
+    //         image: 'https://i.pinimg.com/1200x/f5/7f/cb/f57fcb397ff74d081ca95a2e039c419e.jpg',
+    //         icon: <Warehouse className="w-8 h-8"/>,
+    //         reversed: true
+    //     },
+    //     {
+    //         id: 'moving',
+    //         title: t('services.moving.title'),
+    //         description: t('services.moving.description'),
+    //         features: t('services.moving.features', {returnObjects: true}) as string[],
+    //         image: 'https://i.pinimg.com/736x/eb/e7/b6/ebe7b60acb7a8489ea5ac5a71fd4c901.jpg',
+    //         icon: <Home className="w-8 h-8"/>,
+    //         reversed: false
+    //     },
+    //     {
+    //         id: 'customs',
+    //         title: t('services.customs.title'),
+    //         description: t('services.customs.description'),
+    //         features: t('services.customs.features', {returnObjects: true}) as string[],
+    //         image: 'https://i.postimg.cc/hjchD78h/decl.png',
+    //         icon: <FileCheck className="w-8 h-8"/>,
+    //         reversed: true
+    //     }
+    // ];
 
     const handleQuoteChange = (field: keyof typeof quoteForm, value: string) => {
         setQuoteForm(prev => ({...prev, [field]: value}));
@@ -316,7 +247,7 @@ const ServicesPage: React.FC = () => {
         try {
             setIsSendingQuote(true);
 
-            const serviceRow = dbServices.find(s => s.service_code === quoteService.code);
+            const serviceRow = services?.responseData?.data?.find(s => s.service_code === quoteService.code);
             const effectiveServiceName = serviceRow?.service_name || quoteService.name;
 
             const {error: quoteError} = await supabase
@@ -384,7 +315,7 @@ const ServicesPage: React.FC = () => {
                 text: 'Votre demande de devis a été envoyée. Nous vous répondrons dans les meilleurs délais.',
                 confirmButtonText: 'OK',
             });
-            setQuoteModalOpen(false);
+            setQuoteService(null);
             setQuoteForm({name: '', email: '', phone: '', company: '', details: ''});
         } catch (err) {
             console.error('Erreur lors de l\'envoi de la demande de devis:', err);
@@ -406,7 +337,7 @@ const ServicesPage: React.FC = () => {
             exit={{opacity: 0}}
             transition={{duration: 0.3}}
         >
-            {loading && (
+            {isGettingServices && (
                 <section className="pt-32 pb-10 bg-primary-700">
                     <div className="container-custom flex flex-col items-center justify-center text-center text-white">
                         <div
@@ -415,11 +346,11 @@ const ServicesPage: React.FC = () => {
                     </div>
                 </section>
             )}
-            {loadError && !loading && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 text-center">
-                    {loadError}
-                </div>
-            )}
+            {/*{loadError && !loading && (*/}
+            {/*    <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 text-center">*/}
+            {/*        {loadError}*/}
+            {/*    </div>*/}
+            {/*)}*/}
             {/* Bannière d'en-tête avec image de fond */}
             <div className="relative py-20 md:py-28 overflow-hidden">
                 <div
@@ -453,7 +384,7 @@ const ServicesPage: React.FC = () => {
                 {/* Grille pleine largeur avec léger padding latéral */}
                 <div className="px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0">
-                        {heroServices.map((service, index) => (
+                        {services?.responseData?.data?.map((service: any, index: number) => (
                             <motion.button
                                 key={service.code}
                                 initial={{opacity: 0, y: 20}}
@@ -461,19 +392,15 @@ const ServicesPage: React.FC = () => {
                                 transition={{duration: 0.5, delay: index * 0.1}}
                                 onClick={(e) => {
                                     e.preventDefault();
-                                    openDetailModal({
-                                        code: service.code,
-                                        name: service.name,
-                                        anchorId: service.anchorId
-                                    });
+                                    setDetailModalService(service);
                                 }}
                                 className="relative bg-white border border-gray-100 hover:border-transparent rounded-none shadow-sm hover:shadow-xl transition-all duration-300 p-8 text-center group overflow-hidden cursor-pointer w-full text-left"
                             >
                                 <div className="absolute inset-0 pointer-events-none">
-                                    {getServiceImage(service.anchorId) && (
+                                    {service?.image_url && (
                                         <img
-                                            src={getServiceImage(service.anchorId)}
-                                            alt={service.name}
+                                            src={service?.image_url}
+                                            alt={service.title}
                                             className="w-full h-full object-cover opacity-0 group-hover:opacity-40 transition-opacity duration-300"
                                         />
                                     )}
@@ -486,10 +413,10 @@ const ServicesPage: React.FC = () => {
                                         <div className="flex items-center gap-3">
                                             <div
                                                 className="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center text-primary-600 group-hover:bg-white/10 group-hover:text-white transition-colors duration-300 shadow-sm">
-                                                {service.icon}
+                                                {ServiceIcon(service.code)}
                                             </div>
                                             <h3 className="text-base md:text-lg font-semibold text-gray-900 group-hover:text-white transition-colors">
-                                                {service.name}
+                                                {service.title}
                                             </h3>
                                         </div>
                                         <span
@@ -500,7 +427,7 @@ const ServicesPage: React.FC = () => {
 
                                     {/* Description */}
                                     <p className="text-[13px] text-gray-600 group-hover:text-gray-100 leading-snug mb-4 flex-1 transition-colors line-clamp-3">
-                                        {getServiceDescription(service.anchorId) || t('services.learnMore')}
+                                        {service?.description}
                                     </p>
 
                                     {/* Boutons d'action */}
@@ -510,11 +437,7 @@ const ServicesPage: React.FC = () => {
                                                 type="button"
                                                 onClick={(e) => {
                                                     e.preventDefault();
-                                                    openDetailModal({
-                                                        code: service.code,
-                                                        name: service.name,
-                                                        anchorId: service.anchorId
-                                                    });
+                                                    setDetailModalService(service);
                                                 }}
                                                 className="inline-flex items-center text-[11px] font-medium text-primary-600 group-hover:text-white"
                                             >
@@ -525,18 +448,13 @@ const ServicesPage: React.FC = () => {
                                                           d="M9 5l7 7-7 7"/>
                                                 </svg>
                                             </button>
-                                            {(quoteCountsByService[service.code] ?? 0) > 0 && (
-                                                <span
-                                                    className="inline-flex items-center px-2.5 py-1 rounded-full bg-primary-50 text-primary-700 text-[10px] font-semibold border border-primary-100/60 group-hover:bg-white/15 group-hover:text-white">
-                          {quoteCountsByService[service.code]} demande{quoteCountsByService[service.code] > 1 ? 's' : ''}
-                        </span>
-                                            )}
+
                                         </div>
                                         <button
                                             type="button"
                                             onClick={(e) => {
                                                 e.preventDefault();
-                                                openQuoteModal({id: service.code, title: service.name});
+                                                setQuoteService(service);
                                             }}
                                             className="inline-flex items-center px-3 py-1.5 rounded-full bg-primary-600 hover:bg-primary-700 text-white text-[11px] font-semibold shadow-sm"
                                         >
@@ -565,10 +483,10 @@ const ServicesPage: React.FC = () => {
                     >
                         <div className="grid grid-cols-1 md:grid-cols-2 h-full">
                             <div className="relative bg-gray-900">
-                                {detailModalService.image && (
+                                {detailModalService.image_url && (
                                     <img
-                                        src={detailModalService.image}
-                                        alt={detailModalService.name}
+                                        src={detailModalService.image_url}
+                                        alt={detailModalService.title}
                                         className="w-full h-full object-cover"
                                     />
                                 )}
@@ -576,7 +494,7 @@ const ServicesPage: React.FC = () => {
                             <div className="flex flex-col p-6 md:p-8">
                                 <div className="flex items-start justify-between mb-4">
                                     <div>
-                                        <h2 className="text-2xl font-bold text-gray-900 mb-2">{detailModalService.name}</h2>
+                                        <h2 className="text-2xl font-bold text-gray-900 mb-2">{detailModalService.title}</h2>
                                         <p className="text-sm text-gray-600">
                                             {t('services.subtitle')}
                                         </p>
@@ -598,10 +516,7 @@ const ServicesPage: React.FC = () => {
                                         type="button"
                                         onClick={() => {
                                             setDetailModalService(null);
-                                            openQuoteModal({
-                                                id: detailModalService.code,
-                                                title: detailModalService.name
-                                            });
+                                            setQuoteService(detailModalService);
                                         }}
                                         className="inline-flex items-center px-4 py-2 rounded-full bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold shadow-sm"
                                     >
@@ -614,10 +529,10 @@ const ServicesPage: React.FC = () => {
                 </div>
             )}
 
-            {quoteModalOpen && quoteService && (
+            { quoteService && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
-                    onClick={() => setQuoteModalOpen(false)}
+                    onClick={() => setQuoteService(null)}
                 >
                     <motion.div
                         initial={{opacity: 0, scale: 0.95}}
@@ -635,7 +550,7 @@ const ServicesPage: React.FC = () => {
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setQuoteModalOpen(false)}
+                                onClick={() => setQuoteService(null)}
                                 className="text-gray-400 hover:text-gray-700 text-xl leading-none"
                             >
                                 ×
@@ -708,7 +623,7 @@ const ServicesPage: React.FC = () => {
                             <div className="flex justify-end gap-3 pt-2 pb-4">
                                 <button
                                     type="button"
-                                    onClick={() => setQuoteModalOpen(false)}
+                                    onClick={() => setQuoteService(null)}
                                     className="px-4 py-2 rounded-full border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50"
                                     disabled={isSendingQuote}
                                 >
