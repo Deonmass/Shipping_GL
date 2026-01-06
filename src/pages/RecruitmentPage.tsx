@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Briefcase, FileText, Upload, X, MapPin, ChevronDown, Check } from 'lucide-react';
+import { Briefcase, X, MapPin, Check } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 // Fonction pour formater la description en respectant le HTML existant
@@ -22,9 +22,8 @@ const formatDescription = (html: string): string => {
   
   return cleanHtml;
 };
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 import { supabase } from '../lib/supabase';
+import {UseGetOpenCategories, UseGetOpenJobOffers} from "../services";
 
 // Interface pour les offres d'emploi
 interface JobOffer {
@@ -69,26 +68,11 @@ const formatDate = (dateString?: string) => {
   return date.toLocaleDateString('fr-FR');
 };
 
-// Fonction pour obtenir le libellé du type de contrat
-const getContractType = (type: string) => {
-  const types: Record<string, string> = {
-    'CDI': 'CDI',
-    'CDD': 'CDD',
-    'Stage': 'Stage',
-    'Alternance': 'Alternance'
-  };
-  return types[type] || type;
-};
-
 const RecruitmentPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'offers' | 'cv'>('offers');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [jobOffers, setJobOffers] = useState<JobOffer[]>([]);
-  const [jobCategories, setJobCategories] = useState<Array<{ id: string; name: string }>>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [cvForm, setCvForm] = useState({
     cvFile: null as File | null,
@@ -97,7 +81,10 @@ const RecruitmentPage: React.FC = () => {
     telephone: '',
     email: ''
   });
-  
+
+  const {data: jobOffers, isLoading: isGettingJobOffers} = UseGetOpenJobOffers()
+  const {data: jobCategories, isLoading: isGettingCategories} = UseGetOpenCategories({type: "job"})
+
   interface Filters {
     search: string;
     location: string;
@@ -114,7 +101,6 @@ const RecruitmentPage: React.FC = () => {
     urgent: false
   });
   const [selectedOffer, setSelectedOffer] = useState<JobOffer | null>(null);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -165,75 +151,19 @@ const RecruitmentPage: React.FC = () => {
 
   // Filtrer les offres
   const filteredOffers = useMemo(() => {
-    return jobOffers.filter(offer => {
+    return jobOffers?.responseData?.data?.filter((offer: any) => {
       const matchesSearch = !filters.search || 
         offer.title.toLowerCase().includes(filters.search.toLowerCase()) ||
         (offer.description && offer.description.toLowerCase().includes(filters.search.toLowerCase()));
       const matchesLocation = !filters.location || 
         (offer.location && offer.location.toLowerCase().includes(filters.location.toLowerCase()));
       const matchesType = !filters.type || offer.type === filters.type;
-      const matchesCategory = !filters.category || offer.category === filters.category;
+      //const matchesCategory = !filters.category || offer.category === filters.category;
       const matchesUrgent = !filters.urgent || offer.urgent === true;
       
-      return matchesSearch && matchesLocation && matchesType && matchesCategory && matchesUrgent;
+      return matchesSearch && matchesLocation && matchesType && matchesUrgent;
     });
   }, [jobOffers, filters]);
-
-  // Charger les offres d'emploi depuis Supabase
-  useEffect(() => {
-    const fetchJobOffers = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('job_offers')
-          .select('*')
-          .eq('status', 'published') // Seulement les offres publiées
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        // Formater les données pour correspondre à l'interface
-        const formattedOffers = (data || []).map(offer => ({
-          ...defaultJobOffer,
-          ...offer,
-          responsibilities: offer.responsibilities || [],
-          requirements: offer.requirements || [],
-          benefits: offer.benefits || [],
-          publishedDate: formatDate(offer.created_at),
-          closingDate: offer.closing_date ? formatDate(offer.closing_date) : ''
-        }));
-
-        setJobOffers(formattedOffers);
-      } catch (err) {
-        console.error('Erreur lors du chargement des offres:', err);
-        setError('Impossible de charger les offres d\'emploi. Veuillez réessayer plus tard.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchJobOffers();
-  }, []);
-
-  // Récupérer les catégories de postes depuis la base de données
-  useEffect(() => {
-    const loadJobCategories = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('job_categories')
-          .select('id, name')
-          .order('name', { ascending: true });
-
-        if (error) throw error;
-        if (data) setJobCategories(data);
-      } catch (error) {
-        console.error('Erreur lors du chargement des catégories:', error);
-        toast.error('Erreur lors du chargement des catégories');
-      }
-    };
-
-    loadJobCategories();
-  }, []);
 
   // Search input for categories
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,8 +172,8 @@ const RecruitmentPage: React.FC = () => {
 
   // Filter categories based on search term
   const filteredCategories = useMemo(() => {
-    if (!searchTerm) return jobCategories;
-    return jobCategories.filter(category => 
+    if (!searchTerm) return jobCategories?.responseData?.data || [];
+    return jobCategories?.responseData?.data?.filter(category =>
       category.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [jobCategories, searchTerm]);
@@ -402,7 +332,7 @@ const prevStep = () => setCurrentStep(prev => prev - 1);
         
         // Convertir le tableau de postes en une chaîne lisible
         const postesText = cvForm.postesRecherches
-          .map(id => jobCategories.find(cat => cat.id === id)?.name || id)
+          .map(id => jobCategories?.responseData?.data?.find(cat => cat.id === id)?.name || id)
           .join(', ');
 
         // 3. Mettre à jour ou créer le profil dans la table 'profiles' avec le poste_recherche
@@ -505,7 +435,7 @@ const prevStep = () => setCurrentStep(prev => prev - 1);
                       <span className="text-gray-400 text-sm self-center px-2">Sélectionnez un ou plusieurs postes</span>
                     ) : (
                       cvForm.postesRecherches.map(catId => {
-                        const category = jobCategories.find(c => c.id === catId);
+                        const category = jobCategories?.responseData?.data?.find(c => c.id === catId);
                         return category ? (
                           <span 
                             key={catId}
@@ -657,7 +587,7 @@ const prevStep = () => setCurrentStep(prev => prev - 1);
                 <p className="font-semibold">Poste(s) :</p>
                 <ul className="list-disc pl-5 mt-1">
                   {cvForm.postesRecherches.map(postId => {
-                    const post = jobCategories.find(cat => cat.id === postId);
+                    const post = jobCategories?.responseData?.data?.find(cat => cat.id === postId);
                     return post ? <li key={postId}>{post.name}</li> : null;
                   })}
                 </ul>
@@ -698,12 +628,11 @@ const prevStep = () => setCurrentStep(prev => prev - 1);
   };
 
   // Récupérer les options uniques pour les filtres
-  const locations = [...new Set(jobOffers.map(offer => offer.location))];
-  const types = [...new Set(jobOffers.map(offer => offer.type))];
-  const categories = [...new Set(jobOffers.map(offer => offer.category))].filter(Boolean) as string[];
+  const locations = [...new Set(jobOffers?.responseData?.data?.map(offer => offer.location))];
+  const types = [...new Set(jobOffers?.responseData?.data?.map(offer => offer.type))];
 
   // Afficher un indicateur de chargement
-  if (loading) {
+  if (isGettingJobOffers) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
@@ -713,19 +642,19 @@ const prevStep = () => setCurrentStep(prev => prev - 1);
   }
 
   // Afficher un message d'erreur s'il y en a un
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-12 text-center">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Erreur ! </strong>
-          <span className="block sm:inline">{error}</span>
-        </div>
-      </div>
-    );
-  }
+  // if (error) {
+  //   return (
+  //     <div className="container mx-auto px-4 py-12 text-center">
+  //       <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+  //         <strong className="font-bold">Erreur ! </strong>
+  //         <span className="block sm:inline">Une erreur s'est produite, actualisez svp.</span>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   // Afficher un indicateur de chargement
-  if (loading) {
+  if (isGettingJobOffers || isGettingCategories) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
@@ -734,17 +663,6 @@ const prevStep = () => setCurrentStep(prev => prev - 1);
     );
   }
 
-  // Afficher un message d'erreur s'il y en a un
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-12 text-center">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Erreur ! </strong>
-          <span className="block sm:inline">{error}</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <motion.div
@@ -848,7 +766,7 @@ const prevStep = () => setCurrentStep(prev => prev - 1);
                   className="block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none"
                 >
                   <option value="">Toutes les localisations</option>
-                  {locations.map((location, index) => (
+                  {locations?.map((location, index) => (
                     <option key={index} value={location}>
                       {location}
                     </option>
@@ -876,7 +794,7 @@ const prevStep = () => setCurrentStep(prev => prev - 1);
                   className="block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none"
                 >
                   <option value="">Tous les types</option>
-                  {types.map((type, index) => (
+                  {types?.map((type, index) => (
                     <option key={index} value={type}>
                       {type}
                     </option>
@@ -904,7 +822,7 @@ const prevStep = () => setCurrentStep(prev => prev - 1);
                   className="block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none"
                 >
                   <option value="">Tous les domaines</option>
-                  {jobCategories.map((category) => (
+                  {jobCategories?.responseData?.data?.map((category) => (
                     <option key={category.id} value={category.name}>
                       {category.name}
                     </option>
@@ -919,19 +837,19 @@ const prevStep = () => setCurrentStep(prev => prev - 1);
             </div>
 
             {/* Urgent Filter */}
-            <div className="flex items-center mb-6 p-3 bg-amber-50 rounded-lg border border-amber-100">
-              <input
-                id="urgent-filter"
-                type="checkbox"
-                name="urgent"
-                checked={filters.urgent}
-                onChange={(e) => setFilters(prev => ({ ...prev, urgent: e.target.checked }))}
-                className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
-              />
-              <label htmlFor="urgent-filter" className="ml-2 text-sm font-medium text-amber-800">
-                Afficher uniquement les offres urgentes
-              </label>
-            </div>
+            {/*<div className="flex items-center mb-6 p-3 bg-amber-50 rounded-lg border border-amber-100">*/}
+            {/*  <input*/}
+            {/*    id="urgent-filter"*/}
+            {/*    type="checkbox"*/}
+            {/*    name="urgent"*/}
+            {/*    checked={filters.urgent}*/}
+            {/*    onChange={(e) => setFilters(prev => ({ ...prev, urgent: e.target.checked }))}*/}
+            {/*    className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"*/}
+            {/*  />*/}
+            {/*  <label htmlFor="urgent-filter" className="ml-2 text-sm font-medium text-amber-800">*/}
+            {/*    Afficher uniquement les offres urgentes*/}
+            {/*  </label>*/}
+            {/*</div>*/}
           </motion.div>
 
             {/* Job Listings */}
@@ -948,7 +866,7 @@ const prevStep = () => setCurrentStep(prev => prev - 1);
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredOffers.length > 0 ? (
-                  filteredOffers.map((offer, index) => (
+                  filteredOffers?.map((offer, index) => (
                     <motion.article
                       key={offer.id}
                       initial={{ opacity: 0, y: 20 }}
