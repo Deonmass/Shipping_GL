@@ -7,6 +7,7 @@ const urls =  {
     openNewsletters: '/open/newsletters',
     openJobOffers: '/open/job-offers',
     openTeams: '/open/teams',
+    openCategories: '/open/categories',
 
     login: '/login',
     logout: '/api/logout',

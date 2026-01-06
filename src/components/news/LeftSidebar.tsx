@@ -1,50 +1,20 @@
-import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
 import {
   Globe, Briefcase, Users, Calendar, User as UserIcon,
   Megaphone, Award, Building, Tag
 } from 'lucide-react';
 
 interface LeftSidebarProps {
+  data: any[];
+  isLoading: boolean;
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
 }
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  icon?: string;
-}
-
-const LeftSidebar: React.FC<LeftSidebarProps> = ({ selectedCategory, onCategoryChange }) => {
+const LeftSidebar: React.FC<LeftSidebarProps> = ({ selectedCategory, onCategoryChange, data, isLoading }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('news_categories')
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-      setCategories(data || []);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getIconForCategory = (iconName?: string) => {
     const iconMap: { [key: string]: React.ComponentType<{ className?: string }> } = {
@@ -80,7 +50,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ selectedCategory, onCategoryC
         )}
 
         <nav className="p-2">
-          {loading ? (
+          {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>
@@ -97,7 +67,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ selectedCategory, onCategoryC
                 <Globe className="w-5 h-5 flex-shrink-0" />
                 <span className="text-sm font-medium">{t('news.categories.all')}</span>
               </button>
-              {categories.map(category => {
+              {data.map(category => {
                 const Icon = getIconForCategory(category.icon);
                 return (
                   <button

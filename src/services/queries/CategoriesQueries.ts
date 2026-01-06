@@ -11,7 +11,7 @@ import {
 export const UseGetOpenCategories = (options?: GetQueryParams) => UseGetQuery({
     identifier: "OpenCategories",
     options: options,
-    endpoint: endpoints.categories,
+    endpoint: endpoints.openCategories,
 })
 
 export const UseGetCategories = (options?: GetQueryParams) => UseGetQuery({
