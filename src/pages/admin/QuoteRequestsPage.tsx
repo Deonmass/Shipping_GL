@@ -1,21 +1,24 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {useOutletContext} from 'react-router-dom';
-import {supabase} from '../../lib/supabase';
 import {StatsCard} from '../../components/admin/StatsCard';
 import {FilterBar} from '../../components/admin/FilterBar';
 import {FileText, Trash2, Mail, Eye, CheckCircle2} from 'lucide-react';
-import toast from 'react-hot-toast';
-import {UseGetQuoteRequests, UseGetServices} from "../../services";
+import {UseDeleteQuoteRequests, UseGetQuoteRequests, UseGetServices, UseUpdateQuoteRequests} from "../../services";
 import {HasPermission} from "../../utils/PermissionChecker.ts";
 import {appPermissions} from "../../constants/appPermissions.ts";
 import {appOps} from "../../constants";
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
+import Swal from "sweetalert2";
+import AppToast from "../../utils/AppToast.ts";
+import {getAuthData} from "../../utils";
+import {format} from 'date-fns';
+
 
 interface QuoteRequestRow {
     id: string;
     created_at: string;
     service_code: string;
-    service_name: string | null;
+    service_title: string | null;
     name: string;
     email: string;
     phone: string | null;
@@ -31,19 +34,32 @@ interface QuoteStats {
     byService: Record<string, number>;
 }
 
+const isActive = (u: any) =>
+    u?.status?.toString() === "1"
+
+const isProcessed = (u: any) =>
+    u?.status?.toString() === "2"
+
+
 const AdminQuoteRequestsPage: React.FC = () => {
     const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
     const isDark = theme === 'dark';
+    const {user: connectedUser} = getAuthData()
 
-    const [refreshing, setRefreshing] = useState<boolean>(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedService, setSelectedService] = useState<string>('');
     const [stats, setStats] = useState<QuoteStats>({total: 0, byService: {}});
     const [displayStats, setDisplayStats] = useState<QuoteStats>({total: 0, byService: {}});
     const [selectedRequest, setSelectedRequest] = useState<QuoteRequestRow | null>(null);
 
-    const {data: requests, isLoading: isGettingRequests, refetch: reGetRequests} = UseGetQuoteRequests()
+    const {
+        data: requests,
+        isLoading: isGettingRequests,
+        refetch: reGetRequests
+    } = UseGetQuoteRequests({format: "stats"})
     const {data: services, isLoading: isGettingServices} = UseGetServices({noPermission: 1})
+    const {data: deleteResult, isPending: isDeleting, mutate: deleteRequest} = UseDeleteQuoteRequests()
+    const {data: updateResult, isPending: isUpdating, mutate: updateRequest} = UseUpdateQuoteRequests()
 
 
     useEffect(() => {
@@ -76,49 +92,73 @@ const AdminQuoteRequestsPage: React.FC = () => {
         };
     }, [stats.total, JSON.stringify(stats.byService)]);
 
+    useEffect(() => {
+        if (updateResult) {
+            if (updateResult?.responseData?.error) {
+                AppToast.error(theme === "dark", updateResult?.responseData?.message || "Erreur lors de la mise a jour")
+            } else {
+                reGetRequests()
+                AppToast.success(theme === "dark", 'Demande de devis traitée avec succès')
+            }
+        }
+    }, [updateResult]);
+
+
+    useEffect(() => {
+        if (deleteResult) {
+            if (deleteResult?.responseData?.error) {
+                AppToast.error(theme === "dark", deleteResult?.responseData?.message || "Erreur lors de la suppression")
+            } else {
+                reGetRequests()
+                AppToast.success(theme === "dark", 'Demande de devis supprimée avec succès')
+            }
+        }
+    }, [deleteResult]);
+
 
     const handleToggleStatus = async (row: QuoteRequestRow) => {
-        const nextStatus = row.status === 'done' ? 'new' : 'done';
-        const nextProcessedAt = nextStatus === 'done' ? new Date().toISOString() : null;
-
-        try {
-            const {error} = await supabase
-                .from('quote_requests')
-                .update({status: nextStatus, processed_at: nextProcessedAt})
-                .eq('id', row.id);
-
-            if (error) throw error;
-
-            toast.success(
-                nextStatus === 'done' ? 'Demande marquée comme traitée' : 'Demande remise en "nouvelle"'
-            );
-            await fetchRequests();
-        } catch (e: any) {
-            console.error('[QuoteRequestsAdmin] Error updating quote request status:', e);
-            toast.error("Erreur lors de la mise à jour du statut");
+        if (!row?.id) {
+            AppToast.error(theme === "dark", 'Aucun ID fourni pour la mise a jour');
+            return;
         }
-    };
-
-    const handleRefresh = async () => {
-        setRefreshing(true);
-        await fetchRequests();
+        const result = await Swal.fire({
+            title: 'Traitement de demande',
+            text: `Traiter la demande de ${row.name} pour ${row.service_title || row.service_code} ?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Oui, traiter',
+            cancelButtonText: 'Annuler',
+            background: theme === 'dark' ? '#1f2937' : '#ffffff',
+            color: theme === 'dark' ? '#ffffff' : '#111827',
+        });
+        if (result.isConfirmed) {
+            updateRequest({id: row.id, status: "2", processed_at: format(new Date(), 'yyyy/MM/dd HH:mm:ss'), processed_by: connectedUser?.id});
+        }
     };
 
     const handleDelete = async (row: QuoteRequestRow) => {
-        if (!window.confirm(`Supprimer la demande de ${row.name} pour ${row.service_name || row.service_code} ?`)) return;
-        try {
-            const {error} = await supabase
-                .from('quote_requests')
-                .delete()
-                .eq('id', row.id);
-
-            if (error) throw error;
-            toast.success('Demande supprimée');
-            await fetchRequests();
-        } catch (e: any) {
-            console.error('[QuoteRequestsAdmin] Error deleting quote request:', e);
-            toast.error("Erreur lors de la suppression de la demande");
+        if (!row?.id) {
+            AppToast.error(theme === "dark", 'Aucun ID fourni pour la suppression');
+            return;
         }
+        const result = await Swal.fire({
+            title: 'Êtes-vous sûr ?',
+            text: `Supprimer la demande de ${row.name} pour ${row.service_title || row.service_code} ?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Oui, supprimer',
+            cancelButtonText: 'Annuler',
+            background: theme === 'dark' ? '#1f2937' : '#ffffff',
+            color: theme === 'dark' ? '#ffffff' : '#111827',
+        });
+        if (result.isConfirmed) {
+            deleteRequest({id: row.id});
+        }
+
     };
 
     const filteredRequests = useMemo(() => {
@@ -136,13 +176,6 @@ const AdminQuoteRequestsPage: React.FC = () => {
         });
     }, [requests, searchTerm, selectedService]);
 
-    const uniqueServices = useMemo(() => {
-        const set = new Set<string>();
-        requests?.responseData?.data?.items?.forEach((r) => {
-            if (r.service_code) set.add(r.service_code);
-        });
-        return Array.from(set).sort();
-    }, [requests]);
 
     return (
         <div>
@@ -296,7 +329,7 @@ const AdminQuoteRequestsPage: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4 text-sm">
                                         <div className={isDark ? 'text-gray-100' : 'text-gray-900'}>
-                                            {row.service_name || row.service_code}
+                                            {row.service_title}
                                         </div>
                                         <div className="mt-1">
                         <span
@@ -325,16 +358,16 @@ const AdminQuoteRequestsPage: React.FC = () => {
                                         <div className="flex flex-col gap-1">
                         <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                                row.status === 'done'
+                                isProcessed(row) 
                                     ? 'bg-emerald-100 text-emerald-800'
-                                    : row.status === 'in_progress'
+                                    : !isActive(row)
                                         ? 'bg-amber-100 text-amber-800'
                                         : 'bg-gray-100 text-gray-800'
                             }`}
                         >
-                          {row.status === 'done'
+                          {isProcessed(row)
                               ? 'Traitée'
-                              : row.status === 'in_progress'
+                              : !isActive(row)
                                   ? 'En cours'
                                   : 'Nouvelle'}
                         </span>
@@ -355,7 +388,7 @@ const AdminQuoteRequestsPage: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div className="flex items-center justify-end gap-2">
-                                            {HasPermission(appPermissions.devis, appOps.update) ? <button
+                                            {!isProcessed(row) && HasPermission(appPermissions.devis, appOps.update) ? <button
                                                 onClick={() => handleToggleStatus(row)}
                                                 className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border text-xs font-medium transition ${
                                                     row.status === 'done'
@@ -419,7 +452,7 @@ const AdminQuoteRequestsPage: React.FC = () => {
                                     Détail de la demande de devis
                                 </h2>
                                 <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                    {selectedRequest.service_name || selectedRequest.service_code}
+                                    {selectedRequest.service_title || selectedRequest.service_code}
                                     — {selectedRequest.name} ({selectedRequest.email})
                                 </p>
                             </div>
