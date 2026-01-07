@@ -1,14 +1,14 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Truck, Ship, Plane, Warehouse, Home, FileCheck } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {UseGetOpenServices} from "../../services";
 import {ServiceIcon} from "../../pages/ServicesPage.tsx";
 
 const HeroSection: React.FC = () => {
   const { t } = useTranslation();
-  const {data: services, isLoading: isGettingServices} = UseGetOpenServices()
+  const {data: services, isLoading: isGettingServices} = UseGetOpenServices({favorite: "1"})
 
   return (
     <section className="relative bg-primary-900 text-white overflow-hidden min-h-screen scroll-snap-align-start flex items-center">
