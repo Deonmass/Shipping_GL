@@ -43,7 +43,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({icon, title, description, link
 const ServicesSection: React.FC = () => {
     const {t} = useTranslation();
 
-    const {data: services, isLoading: isGettingServices} = UseGetOpenServices()
+    const {data: services, isLoading: isGettingServices} = UseGetOpenServices({favorite: "1"})
 
     // const services = [
     //     {
