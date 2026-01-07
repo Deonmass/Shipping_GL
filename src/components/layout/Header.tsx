@@ -63,7 +63,7 @@ const Header: React.FC = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center">
             <img 
-              src="https://shippinggreatlakes.com/wp-content/uploads/2018/11/logo_90.png" 
+              src="/logo_colored - Copie.png" 
               alt="SHIPPING GL" 
               className="h-[50px] w-auto"
             />

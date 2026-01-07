@@ -20,6 +20,7 @@ import AppToast from "../../utils/AppToast.ts";
 import {HasPermission} from "../../utils/PermissionChecker.ts";
 import {appPermissions} from "../../constants/appPermissions.ts";
 import {appOps} from "../../constants";
+import OfficeMap from "../../components/maps/OfficeMap";
 
 const emptyItem = {
     title: "",
@@ -138,18 +139,37 @@ const OfficesPage = () => {
     }
 
 
+    // Préparer les données pour la carte
+    const officeLocations = offices?.responseData?.data
+        ?.filter((office: any) => office.latitude && office.longitude)
+        .map((office: any) => ({
+            id: office.id,
+            name: office.title,
+            latitude: parseFloat(office.latitude),
+            longitude: parseFloat(office.longitude),
+            address: [
+                office.address_line_1,
+                office.address_line_2,
+                office.address_line_3
+            ].filter(Boolean).join(', ')
+        })) || [];
+
     return (
-        <div>
+        <div className="p-6 space-y-6">
             <AdminPageHeader
+                Icon={<Building2 className="w-6 h-6 text-primary-500"/>}
                 title="Gestion des Bureaux"
-                Icon={<Building2 className={`w-7 h-7 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}/>}
-                //onExport={handleExportToExcel}
-                onRefresh={reGetOffices}
+                onRefresh={() => reGetOffices()}
                 onAdd={HasPermission(appPermissions.offices, appOps.create) ? () => {
                     setFormData(emptyItem);
                     setShowAddModal(true);
                 } : undefined}
             />
+            
+            {/* Carte des bureaux */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                <OfficeMap offices={officeLocations} className="h-96" />
+            </div>
 
             {
                 isGettingOffices || isReGettingOffices ? (

@@ -224,10 +224,10 @@ const HomePage: React.FC = () => {
 
   return (
     <>
-      <AnimatePresence>
+      {/*<AnimatePresence>
         {loading && <LoadingAnimation />}
         {showAnniversary && <AnniversaryModal onClose={() => setShowAnniversary(false)} />}
-      </AnimatePresence>
+      </AnimatePresence>*/}
 
       <motion.div
         initial={{ opacity: 0 }}

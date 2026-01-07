@@ -44,3 +44,13 @@ export type FormPageType = {
     onSuccessOps?: (newData?: any) => void,
     onSubmitForm?: (data?: any) => void,
 }
+
+export interface User {
+    id: string;
+    email: string;
+    full_name: string;
+    status?: string | number;
+    role_id?: string | number;
+    phone?: string;
+    [key: string]: any;
+}

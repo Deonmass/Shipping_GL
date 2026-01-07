@@ -262,7 +262,7 @@ const RolePermissionsPage: React.FC = () => {
             <div className="flex space-x-6">
                 {/* Liste des rôles */}
                 <div
-                    className={`w-1/4 rounded-lg border p-4 flex flex-col ${
+                    className={`w-80 rounded-lg border p-4 flex flex-col h-min ${
                         theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
                     }`}
                 >

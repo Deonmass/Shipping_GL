@@ -14,10 +14,13 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="space-y-4">
-            <div className="mt-1">
+            <div className="mt-0">
               <img 
-                src="https://shippinggreatlakes.com/wp-content/uploads/2018/11/logo_90.png" 
-                className="h-35 w-auto brightness-0 invert"
+                src="/logo_white.png" 
+                alt="SHIPPING GL"
+                className="h-30 w-auto"
+                style={{ marginLeft: '-68px', marginTop: '-31px' }}
+
               />
             </div>
             <div className="flex space-x-4 pt-4">

@@ -1,6 +1,7 @@
 import React, {useState, useEffect, useRef} from 'react';
 import {motion} from 'framer-motion';
 import {useLocation} from 'react-router-dom';
+import { User } from '../../types';
 import {
     Users, Eye, UserCheck, Edit, Trash2,
     AlertTriangle, X, User as UserIcon, KeyRound,
@@ -25,17 +26,39 @@ import AppToast from "../../utils/AppToast.ts";
 import {HasPermission} from "../../utils/PermissionChecker.ts";
 import {appPermissions} from "../../constants/appPermissions.ts";
 import {appOps} from "../../constants";
-const emptyUser = {
+
+interface GroupedUsers {
+  [key: string]: User[];
+}
+
+interface ActionItem {
+  visible: boolean;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  onClick: () => void;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+}
+
+interface FormUser extends Partial<User> {
+    password?: string;
+    confirm_password?: string;
+    role_title?: string;
+    [key: string]: any;
+}
+
+const emptyUser: FormUser = {
     email: '',
     password: '',
-    name: '',
+    full_name: '',
     phone: '',
     role_id: '',
     role_title: '',
-}
+};
 
-const isActive = (u: any) =>
-    u?.status?.toString() === "1"
+const isActive = (user: User): boolean =>
+    user?.status?.toString() === "1"
 
 const getPasswordValidation = (password: string, confirm: string) => {
     const lengthOk = password.length >= 8;

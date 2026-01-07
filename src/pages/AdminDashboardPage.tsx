@@ -1663,7 +1663,7 @@ const AdminDashboardPage: React.FC = () => {
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
                 className="text-sm rounded border border-gray-300 px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white ml-2"
               >
-                {[2023, 2024, 2025].map(year => (
+                {[2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035].map(year => (
                   <option key={year} value={year}>{year}</option>
                 ))}
               </select>
@@ -1684,7 +1684,21 @@ const AdminDashboardPage: React.FC = () => {
                 <XAxis 
                   dataKey="name" 
                   stroke="#9CA3AF"
-                  tick={{ fill: theme === 'dark' ? '#9CA3AF' : '#4B5563' }}
+                  tick={{ 
+                    fill: theme === 'dark' ? '#9CA3AF' : '#4B5563',
+                    fontSize: '0.75rem' // Réduire la taille de la police
+                  }}
+                  tickFormatter={(value, index) => {
+                    // Récupérer la date complète depuis les données
+                    const item = chartData.monthlyTrends[index];
+                    if (!item) return value;
+                    
+                    // Formater la date au format "MMM-YY" (ex: "jan-25")
+                    const date = new Date(item.monthDate || item.start || new Date());
+                    const month = date.toLocaleString('fr-FR', { month: 'short' }).substring(0, 3);
+                    const year = date.getFullYear().toString().slice(-2);
+                    return `${month}-${year}`;
+                  }}
                 />
                 <YAxis 
                   stroke="#9CA3AF"

@@ -28,25 +28,119 @@ const QUOTE_EDITOR_FORMATS = [
 ];
 
 export const ServiceIcon = (code: string) => {
+    const iconClass = "w-8 h-8";
+    
     switch (code) {
         case 'AFR':
-            return <Plane className="w-8 h-8"/>;
+            return (
+                <motion.div
+                    className={iconClass}
+                    whileHover={{
+                        x: [0, -5, 5, 0],
+                        y: [0, -3, 0],
+                        rotate: [0, -10, 10, 0],
+                        transition: {
+                            duration: 1.5,
+                            repeat: Infinity,
+                            repeatType: "reverse"
+                        }
+                    }}
+                >
+                    <Plane className="w-full h-full" />
+                </motion.div>
+            );
+            
         case 'OFR':
-            return <Ship className="w-8 h-8"/>;
+            return (
+                <motion.div
+                    className={iconClass}
+                    whileHover={{
+                        rotate: [0, -5, 5, 0],
+                        y: [0, -2, 0],
+                        transition: {
+                            duration: 2,
+                            repeat: Infinity,
+                            repeatType: "reverse"
+                        }
+                    }}
+                >
+                    <Ship className="w-full h-full" />
+                </motion.div>
+            );
+            
         case 'WHS':
-            return <Warehouse className="w-8 h-8"/>;
+            return (
+                <motion.div
+                    className={iconClass}
+                    whileHover={{
+                        scale: [1, 1.1, 1],
+                        transition: {
+                            duration: 1.5,
+                            repeat: Infinity
+                        }
+                    }}
+                >
+                    <Warehouse className="w-full h-full" />
+                </motion.div>
+            );
+            
         case 'DOM':
-            return <Truck className="w-8 h-8"/>;
+            return (
+                <motion.div
+                    className={iconClass}
+                    whileHover={{
+                        x: [0, 3, -3, 0],
+                        transition: {
+                            duration: 1.2,
+                            repeat: Infinity,
+                            repeatType: "reverse"
+                        }
+                    }}
+                >
+                    <Truck className="w-full h-full" />
+                </motion.div>
+            );
+            
         case 'MOV':
-            return <Home className="w-8 h-8"/>;
+            return (
+                <motion.div
+                    className={iconClass}
+                    whileHover={{
+                        y: [0, -3, 0],
+                        transition: {
+                            duration: 1.5,
+                            repeat: Infinity,
+                            repeatType: "reverse"
+                        }
+                    }}
+                >
+                    <Home className="w-full h-full" />
+                </motion.div>
+            );
+            
         case 'CCI':
         case 'CCE':
         case 'COI':
         case 'SAP':
         default:
-            return <FileCheck className="w-8 h-8"/>;
+            return (
+                <motion.div
+                    className={iconClass}
+                    whileHover={{
+                        rotateY: [0, 180, 0],
+                        scale: [1, 1.1, 1],
+                        transition: {
+                            duration: 1,
+                            repeat: 1,
+                            repeatType: "reverse"
+                        }
+                    }}
+                >
+                    <FileCheck className="w-full h-full" />
+                </motion.div>
+            );
     }
-}
+};
 
 const ServicesPage: React.FC = () => {
     const {t} = useTranslation();
