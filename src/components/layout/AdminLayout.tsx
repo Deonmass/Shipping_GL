@@ -284,7 +284,7 @@ const AdminLayout: React.FC = () => {
         {key: appPermissions.dashboard, label: 'Dashboard', path: '/admin/dashboard', keywords: ['accueil', 'home']},
         {key: appPermissions.users, label: 'Utilisateurs', path: '/admin/users', keywords: ['users', 'comptes']},
         {
-            key: appPermissions.users_permissions,
+            key: appPermissions.appPermissions,
             label: 'Permissions des rôles',
             path: '/admin/users/permissions',
             keywords: ['rôles', 'droits']

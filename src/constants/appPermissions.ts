@@ -17,15 +17,14 @@ export const appPermissions = {
     post_likes: "15",
     db_logs: "16",
     jobOffers: "17",
+    dashboard: "18",
+    reports: "19",
 
 
     menu_visibility: "00",
-    quote_requests: "00",
     likes: "00",
-    dashboard: "00",
     users_assign_roles: "00",
     users_permissions: "00",
-    reports: "00",
     settings: "00",
     notifications: "00",
     updates: "00",
