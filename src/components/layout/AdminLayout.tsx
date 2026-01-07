@@ -4,7 +4,7 @@ import {
     BarChart3, Users, FileText, Settings,
     Bell, Search, LogOut, Handshake, ClipboardEditIcon,
     MessageSquare, Heart, Calendar, Tags, TrendingUp, ChevronDown, ChevronRight,
-    Mail, Shield, Menu, CheckCircle2, Sun, Moon, User, Home, X, RefreshCcw, Wrench, Building2
+    Mail, Shield, Menu, CheckCircle2, Sun, Moon, User, Home, X, Wrench, Building2
 } from 'lucide-react';
 import {supabase} from '../../lib/supabase';
 import {formatDistanceToNow} from 'date-fns';
@@ -190,25 +190,18 @@ const AdminLayout: React.FC = () => {
 
     const tableItems = [
         {
-            key: appPermissions.partners,
-            path: '/admin/partners',
-            icon: Handshake,
-            label: 'Partenaires',
-            keywords: ['partenaire', 'partner']
-        },
-        {
-            key: appPermissions.posts,
-            path: '/admin/posts',
-            icon: FileText,
-            label: 'Posts',
-            keywords: ['articles', 'news']
-        },
-        {
             key: appPermissions.services,
             path: '/admin/services',
             icon: Wrench,
             label: 'Services',
             keywords: ['services', 'service']
+        },
+        {
+            key: appPermissions.partners,
+            path: '/admin/partners',
+            icon: Handshake,
+            label: 'Partenaires',
+            keywords: ['partenaire', 'partner']
         },
         {
             key: appPermissions.jobOffers,
@@ -225,13 +218,26 @@ const AdminLayout: React.FC = () => {
             keywords: ['devis', 'quote', 'demande de devis']
         },
         {
+            key: appPermissions.posts,
+            path: '/admin/posts',
+            icon: FileText,
+            label: 'Posts',
+            keywords: ['articles', 'news']
+        },
+        {
             key: appPermissions.comments,
             path: '/admin/comments',
             icon: MessageSquare,
             label: 'Commentaires',
             keywords: ['commentaires']
         },
-        {key: appPermissions.likes, path: '/admin/likes', icon: Heart, label: 'Likes', keywords: ['likes']},
+        {
+            key: appPermissions.likes, 
+            path: '/admin/likes', 
+            icon: Heart, 
+            label: 'Likes', 
+            keywords: ['likes']
+        },
         {
             key: appPermissions.events,
             path: '/admin/events',
@@ -240,21 +246,12 @@ const AdminLayout: React.FC = () => {
             keywords: ['événement', 'event']
         },
         {
-            key: appPermissions.categories,
-            path: '/admin/categories',
-            icon: Tags,
-            label: 'Catégories',
-            keywords: ['catégorie']
-        },
-        {
             key: appPermissions.newsletter,
             path: '/admin/newsletter',
             icon: Mail,
             label: 'Newsletter',
             keywords: ['email', 'newsletter']
         },
-        {key: appPermissions.team, path: '/admin/team', icon: Users, label: 'Equipe Dirigeante', keywords: ['equipe', 'membre']},
-        {key: appPermissions.offices, path: '/admin/offices', icon: Building2, label: 'Bureaux', keywords: ['bureaux']}
     ];
 
     const notificationTypeKeys: Record<string, string> = {
@@ -263,15 +260,14 @@ const AdminLayout: React.FC = () => {
         post: 'notifications_post',
         partner: 'notifications_partner',
         other: 'notifications_other',
-        update: 'notifications_update',
         quote: 'notifications_quote',
     };
 
     const notificationItems = [
-        {key: 'notifications_like', type: 'like', label: 'Likes'},
-        {key: 'notifications_comment', type: 'comment', label: 'Commentaires'},
-        {key: 'notifications_post', type: 'post', label: 'Posts'},
-        {key: 'notifications_partner', type: 'partner', label: 'Partenaires'},
+        {key: appPermissions.post_likes, type: 'like', label: 'Likes'},
+        {key: appPermissions.comments, type: 'comment', label: 'Commentaires'},
+        {key: appPermissions.posts, type: 'post', label: 'Posts'},
+        {key: appPermissions.partners, type: 'partner', label: 'Partenaires'},
     ];
 
     const canSeeNotificationType = (type: string): boolean => {
@@ -281,8 +277,18 @@ const AdminLayout: React.FC = () => {
     };
 
     const searchItems = [
-        {key: appPermissions.dashboard, label: 'Dashboard', path: '/admin/dashboard', keywords: ['accueil', 'home']},
-        {key: appPermissions.users, label: 'Utilisateurs', path: '/admin/users', keywords: ['users', 'comptes']},
+        {
+            key: appPermissions.dashboard, 
+            label: 'Dashboard', 
+            path: '/admin/dashboard', 
+            keywords: ['accueil', 'home']
+        },
+        {
+            key: appPermissions.users, 
+            label: 'Utilisateurs', 
+            path: '/admin/users', 
+            keywords: ['users', 'comptes']
+        },
         {
             key: appPermissions.appPermissions,
             label: 'Permissions des rôles',
@@ -311,6 +317,14 @@ const AdminLayout: React.FC = () => {
         ...tableItems,
     ];
 
+    // Vérification des permissions pour les notifications
+    console.log('Permissions des notifications:', {
+      'post_likes': HasPermission(appPermissions.post_likes),
+      'comments': HasPermission(appPermissions.comments),
+      'posts': HasPermission(appPermissions.posts),
+      'partners': HasPermission(appPermissions.partners)
+    });
+    
     const effectiveSearchItems = searchItems.filter((item) => !item.key || HasPermission(item.key));
 
     const filteredSearchItems = searchQuery
@@ -330,6 +344,27 @@ const AdminLayout: React.FC = () => {
             path: '/admin/users/permissions',
             icon: Settings,
             label: 'Permissions des rôles'
+        },
+        {
+            key: appPermissions.team, 
+            path: '/admin/team', 
+            icon: Users, 
+            label: 'Equipe Dirigeante', 
+            keywords: ['equipe', 'membre']
+        },
+        {
+            key: appPermissions.offices, 
+            path: '/admin/offices', 
+            icon: Building2, 
+            label: 'Bureaux', 
+            keywords: ['bureaux']
+        },
+        {
+            key: appPermissions.categories,
+            path: '/admin/categories',
+            icon: Tags,
+            label: 'Catégories',
+            keywords: ['catégorie']
         }
     ];
 
@@ -424,7 +459,7 @@ const AdminLayout: React.FC = () => {
                                         <Users className="w-5 h-5"/>
                                         {sidebarExpanded && (
                                             <span
-                                                className="ml-3 whitespace-nowrap hidden md:inline">Utilisateurs</span>
+                                                className="ml-3 whitespace-nowrap hidden md:inline">Général</span>
                                         )}
                                     </div>
                                     {sidebarExpanded && (
@@ -666,39 +701,7 @@ const AdminLayout: React.FC = () => {
                             </li>
                         )}
 
-                        {HasPermission(appPermissions.updates) && (
-                            <li className="relative">
-                                <Link
-                                    to={{pathname: '/admin/notifications', search: '?type=update'}}
-                                    className={`flex items-center ${
-                                        sidebarExpanded ? 'justify-start' : 'justify-center'
-                                    } p-2 rounded-lg text-sm ${
-                                        location.pathname === '/admin/notifications' && selectedNotificationType === 'update'
-                                            ? 'text-white bg-red-600'
-                                            : sidebarExpanded
-                                                ? theme === 'dark'
-                                                    ? 'text-gray-400 hover:text-white hover:bg-gray-700'
-                                                    : 'text-gray-700 hover:text-gray-900 hover:bg-slate-100'
-                                                : theme === 'dark'
-                                                    ? 'text-primary-400 hover:text-white hover:bg-gray-700'
-                                                    : 'text-primary-600 hover:text-primary-700 hover:bg-slate-100'
-                                    }`}
-                                >
-                                    <div className="relative flex items-center">
-                                        <RefreshCcw className="w-5 h-5"/>
-                                        {notificationCountsByType.update > 0 && (
-                                            <span
-                                                className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] rounded-full min-w-[1.1rem] px-1 flex items-center justify-center">
-                        {notificationCountsByType.update > 9 ? '9+' : notificationCountsByType.update}
-                      </span>
-                                        )}
-                                    </div>
-                                    {sidebarExpanded && (
-                                        <span className="ml-3 whitespace-nowrap hidden md:inline">Mises à jour</span>
-                                    )}
-                                </Link>
-                            </li>
-                        )}
+                        {/* Mises à jour - Menu masqué par demande utilisateur */}
                     </ul>
 
                     <div
@@ -741,6 +744,14 @@ const AdminLayout: React.FC = () => {
                 </span>
                             )}
                         </button>
+                        
+                        {/* Signature du compteur */}
+                        <div className={`mt-3 text-center ${!sidebarExpanded ? 'px-1' : 'px-3'} ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} text-[8px]`}>
+                            <div className="border-t border-gray-600/20 pt-2">
+                                <div>Powered by DigitalEdge</div>
+                                <div className="font-medium">Deon Mass</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </aside>

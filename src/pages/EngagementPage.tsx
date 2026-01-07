@@ -229,7 +229,7 @@ const EngagementPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Gallery Section */}
+      {/* Gallery Section
       <section className="py-16 bg-gray-50">
         <div className="container-custom px-4">
           <div className="text-center mb-12">
@@ -269,7 +269,6 @@ const EngagementPage: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      
 
     </motion.div>
   );

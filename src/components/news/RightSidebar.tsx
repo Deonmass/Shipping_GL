@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Calendar, MapPin, Mail, Send, X, Heart, MessageCircle, Share2} from 'lucide-react';
+import {MapPin, Mail, Send, X, Heart, MessageCircle, Share2} from 'lucide-react';
 import {toast} from 'react-hot-toast';
 import {motion, AnimatePresence} from 'framer-motion';
 import {EventCountdown} from '../admin/EventCountdown';
@@ -56,7 +56,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({events}) => {
             toast.error(t('news.messages.emailInvalid'));
             return;
         }
-        addNewsletter({email: newsletterEmail})
+        addNewsletter({email: newsletterEmail, created_by: "1000"})
     };
 
     return (

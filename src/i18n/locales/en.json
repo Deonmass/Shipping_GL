@@ -14,7 +14,7 @@
   "home": {
     "hero": {
       "title": "Complete & Reliable Logistics Solutions",
-      "subtitle": "Your trusted partner for all your transportation, customs clearance and logistics needs",
+      "subtitle": "Your trusted partner for all your transport, customs clearance and logistics needs",
       "cta": "Request a Quote"
     },
     "services": {
@@ -22,23 +22,23 @@
       "subtitle": "Integrated logistics solutions to meet all your needs",
       "airFreight": {
         "title": "Air Freight",
-        "description": "Fast and reliable air transport solutions for your urgent goods worldwide."
+        "description": "Fast and reliable air transport solutions for your urgent shipments worldwide."
       },
       "seaFreight": {
         "title": "Sea Freight",
-        "description": "Economical and secure maritime transport for your bulky or containerized cargo."
+        "description": "Economical and secure sea transport for your bulky or containerized cargo."
       },
       "transport": {
         "title": "Land Transport",
-        "description": "Reliable and punctual road transport services for your local and regional deliveries."
+        "description": "Reliable and timely road transport services for your local and regional deliveries."
       },
       "warehousing": {
         "title": "Warehousing",
-        "description": "Secure storage solutions with inventory management and efficient distribution."
+        "description": "Secure warehousing solutions with inventory management and efficient distribution."
       },
       "moving": {
         "title": "Moving",
-        "description": "Customized moving services for individuals and businesses, local and international."
+        "description": "Customized moving services for individuals and businesses, locally and internationally."
       },
       "customs": {
         "title": "Customs Services",
@@ -48,51 +48,51 @@
     "about": {
       "title": "SHIPPING GL",
       "subtitle": "Your Trusted Logistics Partner",
-      "description": "Since our inception, SHIPPING GL has been committed to providing top-tier logistics services with integrity, reliability, and excellence. Our team of dedicated experts works tirelessly to ensure your goods arrive at their destination safely and on time.",
+      "description": "Since our founding, SHIPPING GL has been committed to providing first-class logistics services with integrity, reliability and excellence. Our team of dedicated experts works tirelessly to ensure your goods arrive safely and on time.",
       "cta": "Learn More"
     },
     "testimonials": {
       "title": "What Our Clients Say",
       "subtitle": "Satisfied partners across Africa and the world",
       "testimonial1": {
-        "text": "SHIPPING GL has transformed our supply chain with their exceptional service and customs expertise. We are impressed by their efficiency and professionalism.",
+        "text": "SHIPPING GL transformed our supply chain with their exceptional service and customs expertise. We're impressed by their efficiency and professionalism.",
         "author": "Jean Mukendi",
         "position": "Operations Director, MineTech DRC"
       },
       "testimonial2": {
-        "text": "We trust SHIPPING GL for all our sea freight needs. Their team is responsive, attentive, and always ready to solve complex logistics challenges.",
+        "text": "We trust SHIPPING GL for all our sea freight needs. Their team is responsive, attentive and always ready to solve complex logistics challenges.",
         "author": "Marie Diallo",
         "position": "Logistics Manager, Afri-Commerce"
       },
       "testimonial3": {
-        "text": "SHIPPING GL's customs clearance expertise has saved us considerable time and resources. Their knowledge of local regulations is invaluable.",
+        "text": "SHIPPING GL's customs expertise has saved us considerable time and resources. Their knowledge of local regulations is invaluable.",
         "author": "David Nkosi",
         "position": "CEO, Transaf Solutions"
       }
     },
     "cta": {
       "title": "Ready to optimize your logistics?",
-      "subtitle": "Contact us today for tailored solutions adapted to your specific needs",
+      "subtitle": "Contact us today for customized solutions tailored to your specific needs",
       "button": "Contact Us Now"
     }
   },
   "services": {
     "title": "Our Services",
-    "subtitle": "Comprehensive logistics solutions for all your needs",
+    "subtitle": "Complete logistics solutions for all your needs",
     "airFreight": {
       "title": "Air Freight",
-      "description": "Our air freight service offers fast and reliable delivery times for your urgent goods. With our global network of partners, we ensure secure handling and efficient transport of your air cargo.",
+      "description": "Our air freight service offers fast and reliable delivery times for your urgent shipments. With our global network of partners, we guarantee secure handling and efficient transport of your air cargo.",
       "features": [
         "International express shipments",
         "Real-time tracking",
-        "Customs documentation management",
+        "Customs document management",
         "Secure handling of fragile goods",
         "Solutions for cargo of all sizes"
       ]
     },
     "seaFreight": {
       "title": "Sea Freight",
-      "description": "Our sea freight service offers economical solutions for transporting bulky goods. Whether you need a full container (FCL) or groupage (LCL), our expertise ensures the safety and efficiency of your maritime shipments.",
+      "description": "Our sea freight service offers economical solutions for transporting bulky goods. Whether you need a full container (FCL) or consolidation (LCL), our expertise ensures the security and efficiency of your sea shipments.",
       "features": [
         "FCL and LCL services",
         "Import/export customs clearance",
@@ -103,20 +103,20 @@
     },
     "transport": {
       "title": "Land Transport",
-      "description": "Our land transport services ensure reliable and timely delivery of your goods locally and across borders. Our modern fleet and experienced drivers guarantee the safety of your property throughout the journey.",
+      "description": "Our land transport services ensure reliable and timely delivery of your goods locally and across borders. Our modern fleet and experienced drivers guarantee the safety of your goods throughout the journey.",
       "features": [
         "Local and cross-border transport",
         "Scheduled deliveries",
-        "Special goods transport",
+        "Special cargo transport",
         "GPS vehicle tracking",
         "Integrated multimodal solutions"
       ]
     },
     "warehousing": {
       "title": "Warehousing",
-      "description": "Our secure warehousing facilities offer flexible solutions for storing your goods. With advanced inventory management systems and qualified teams, we ensure the protection and efficient management of your inventory.",
+      "description": "Our secure warehousing facilities offer flexible solutions for storing your goods. With advanced inventory management systems and qualified teams, we ensure the protection and efficient management of your stock.",
       "features": [
-        "Short and long-term storage",
+        "Short and long-term warehousing",
         "Computerized inventory management",
         "Distribution services",
         "Order preparation",
@@ -125,12 +125,12 @@
     },
     "moving": {
       "title": "Moving",
-      "description": "Our customized moving services handle all aspects of your relocation, whether local or international. Our professional team ensures the packing, transport, and unpacking of your belongings with the utmost care.",
+      "description": "Our customized moving services handle all aspects of your relocation, whether local or international. Our professional team ensures the packing, transport and unpacking of your belongings with the utmost care.",
       "features": [
         "Local and international moves",
         "Professional packing and unpacking",
         "Temporary storage services",
-        "Handling of valuables",
+        "Handling of valuable items",
         "Comprehensive insurance"
       ]
     },
@@ -138,16 +138,16 @@
       "title": "Customs Services",
       "description": "Our customs clearance expertise allows you to easily navigate through the complexities of customs regulations. Our qualified customs agents ensure compliance and efficiency in your import and export processes.",
       "features": [
-        "Import and export customs clearance",
+        "Import and export clearance",
         "Tariff classification advice",
-        "Trade regulations guidance",
+        "Trade regulations advice",
         "Representation with customs authorities",
         "Complete and compliant documentation"
       ]
     }
   },
   "quotation": {
-    "title": "Request a Quote",
+    "title": "Quotation Request",
     "subtitle": "Get a personalized quote for your logistics needs",
     "form": {
       "personalInfo": "Personal Information",
@@ -164,13 +164,13 @@
       "cargoVolume": "Volume (m³)",
       "specialRequirements": "Special Requirements",
       "submit": "Submit Request",
-      "success": "Your request has been successfully sent. We will contact you shortly.",
+      "success": "Your request has been sent successfully. We will contact you shortly.",
       "error": "An error occurred. Please try again."
     }
   },
   "tracking": {
     "title": "Cargo Tracking",
-    "subtitle": "Track the status and location of your shipment in real-time",
+    "subtitle": "Track the status and location of your shipment in real time",
     "form": {
       "trackingNumber": "Tracking Number",
       "search": "Search",
@@ -194,19 +194,19 @@
     "subtitle": "Your trusted logistics partner in Africa and worldwide",
     "mission": {
       "title": "Our Mission",
-      "description": "At SHIPPING GL, our mission is to provide world-class integrated logistics solutions that simplify our customers' business operations. We are committed to offering reliable, efficient, and personalized service that perfectly meets the specific needs of each client."
+      "description": "At SHIPPING GL, our mission is to provide world-class integrated logistics solutions that simplify our clients' business operations. We are committed to delivering reliable, efficient and personalized service that perfectly meets the specific needs of each client."
     },
     "vision": {
       "title": "Our Vision",
-      "description": "Our vision is to become the reference logistics partner in Africa, recognized for the excellence of our services, our integrity, and our constant innovation in the field of logistics and international trade."
+      "description": "Our vision is to become the reference logistics partner in Africa, recognized for the excellence of our services, our integrity and our constant innovation in logistics and international trade."
     },
     "values": {
       "title": "Our Values",
       "subtitle": "The principles that guide our daily actions",
       "integrity": {
         "title": "Integrity",
-        "description": "We adhere to the highest ethical standards in all our business interactions.",
-        "details": "Integrity is at the heart of everything we do. We maintain transparency in our communications, respect our commitments and act with honesty in all our business relationships. This fundamental value guides our daily decisions and strengthens the trust our partners place in us."
+        "description": "We adhere to the highest ethical standards in all our professional interactions.",
+        "details": "Integrity is at the heart of everything we do. We maintain transparency in our communications, honor our commitments and act with honesty in all our business relationships. This fundamental value guides our daily decisions and strengthens the trust our partners place in us."
       },
       "excellence": {
         "title": "Excellence",
@@ -216,51 +216,35 @@
       "reliability": {
         "title": "Reliability",
         "description": "We keep our promises and take responsibility for our actions.",
-        "details": "Reliability is our signature. We respect our deadlines, honor our commitments and fully assume our responsibilities. Our customers can count on us to deliver their goods safely and on time."
+        "details": "Reliability is our signature. We respect our deadlines, honor our commitments and fully assume our responsibilities. Our clients can rely on us to deliver their goods safely and on time."
       },
       "innovation": {
         "title": "Innovation",
         "description": "We continuously seek new ways to improve our processes and services.",
-        "details": "Innovation allows us to stay at the forefront of the logistics industry. We adopt new technologies, develop creative solutions and anticipate our customers' future needs to offer them ever more efficient services."
+        "details": "Innovation allows us to stay at the forefront of the logistics industry. We adopt new technologies, develop creative solutions and anticipate our clients' future needs to offer increasingly efficient services."
       },
       "customerFocus": {
         "title": "Customer Focus",
         "description": "We place our clients' needs at the center of all our decisions.",
-        "details": "Our customers are at the center of our strategy. We listen to their needs, adapt our services to their specific requirements and maintain open communication to ensure their complete satisfaction."
+        "details": "Our clients are at the center of our strategy. We listen to their needs, adapt our services to their specific requirements and maintain open communication to ensure their total satisfaction."
       }
     },
-    "mission": {
-      "details": "Our mission extends beyond simply providing logistics services. We are committed to being a catalyst for economic development in Africa by facilitating trade, creating local jobs and contributing to strengthening the continent's logistics infrastructure. We firmly believe that logistics is an essential pillar of economic development and we strive to be at the forefront of this transformation."
-    },
-    "vision": {
-      "title": "OUR VISION",
-      "paragraph1": "SHIPPING GL's vision is to make a difference in the way goods are transported, stored and delivered in our region, by focusing on improving efficiency, reducing costs and enhancing customer satisfaction.",
-      "paragraph2": "We strive to become a leading player in the logistics sector, connecting the Great Lakes region to the world and vice versa, and known for its reliability, transparency and commitment to sustainable development.",
-      "paragraph3": "Ultimately, creating a transparent and interconnected global supply chain that enables other global freight transport companies to connect with their Great Lakes customers in the most efficient and cost-effective way possible.",
-      "details": "Our vision is built around three fundamental pillars: operational excellence, technological innovation and positive social impact. We aspire to create an integrated logistics ecosystem that connects Africa to the world, facilitates intra-African trade and contributes to the economic prosperity of the continent. We want to be recognized not only for our performance, but also for our contribution to Africa's sustainable development."
-    },
-    "mission": {
-      "title": "OUR MISSION",
-      "paragraph1": "By focusing on our operations, we help our partners plan effectively and achieve their goals. We play a crucial role in ensuring that shipments run quickly and smoothly in a vast and challenging region.",
-      "paragraph2": "This benefits businesses in the region by improving efficiency and reducing lead times.",
-      "details": "Our mission extends beyond simply providing logistics services. We are committed to being a catalyst for economic development in Africa by facilitating trade, creating local jobs and contributing to strengthening the continent's logistics infrastructure. We firmly believe that logistics is an essential pillar of economic development and we strive to be at the forefront of this transformation."
-    },
     "statement": {
-      "title": "OUR STATEMENT",
-      "paragraph1": "SHIPPING GL wants to act sustainably, in compliance with rules and regulations, cultural differences and the environment."
+      "title": "Our Statement",
+      "paragraph1": "SHIPPING GL aims to operate sustainably, respecting rules and regulations, cultural differences and the environment."
     },
     "team": {
       "title": "Our Team",
-      "description": "SHIPPING GL is proud of its diverse team of experienced professionals in the field of logistics, transportation, and customs. Our qualified staff has in-depth knowledge of local and international markets, ensuring solutions adapted to the specific challenges of each region.",
+      "description": "SHIPPING GL is proud of its diverse team of experienced professionals in logistics, transport and customs. Our qualified staff has in-depth knowledge of local and international markets, ensuring solutions adapted to the specific challenges of each region.",
       "memberDetails": "Member Details"
     },
     "contact": {
-      "title": "Contact Services",
+      "title": "Services to Contact",
       "subtitle": "Contact the appropriate service directly for your specific needs",
       "sendEmail": "Send Email",
       "quotations": {
         "title": "Quotation Requests",
-        "description": "For all your quote and personalized quotation requests"
+        "description": "For all your quote requests and personalized quotations"
       },
       "accounting": {
         "title": "Invoices and Finance",
@@ -273,9 +257,9 @@
       "emailForm": {
         "title": "Send Email",
         "to": "To",
-        "yourEmail": "Your email address",
+        "yourEmail": "Your Email Address",
         "cc": "CC (optional)",
-        "message": "Your message",
+        "message": "Your Message",
         "send": "Send",
         "cancel": "Cancel"
       }
@@ -285,54 +269,54 @@
       "subtitle": "Our strategic presence in Africa",
       "headquarters": "Headquarters"
     },
-    "readMore": "Read more",
+    "readMore": "Read More",
     "history": {
       "title": "Our History",
-      "description": "Founded with the vision of revolutionizing the logistics sector in Africa, SHIPPING GL has grown to become a key player in facilitating international trade. Over the years, we have developed unmatched expertise in navigating the complexities of African and global trade, establishing strategic partnerships that enhance our ability to serve our clients with excellence."
+      "description": "Founded with the vision of revolutionizing the logistics sector in Africa, SHIPPING GL has grown to become a key player in facilitating international trade. Over the years, we have developed unparalleled expertise in navigating the complexities of African and global trade, establishing strategic partnerships that strengthen our ability to serve our clients with excellence."
     }
   },
   "news": {
     "title": "SHIPPING GL News",
-    "subtitle": "Stay informed about our latest news, events and developments in African logistics",
+    "subtitle": "Stay informed about our latest news, events and developments in logistics in Africa",
     "filters": {
       "categories": "Categories",
       "period": "Period",
-      "all": "All news",
-      "week": "This week",
-      "month": "This month",
-      "year": "This year",
-      "allCategories": "All categories",
+      "all": "All News",
+      "week": "This Week",
+      "month": "This Month",
+      "year": "This Year",
+      "allCategories": "All Categories",
       "category": "Category",
       "event": "Event",
-      "sortBy": "Sort by",
-      "mostLiked": "Most liked",
-      "mostCommented": "Most commented",
-      "mostShared": "Most shared",
-      "startDate": "Start date",
-      "endDate": "End date",
+      "sortBy": "Sort By",
+      "mostLiked": "Most Likes",
+      "mostCommented": "Most Comments",
+      "mostShared": "Most Shares",
+      "startDate": "Start Date",
+      "endDate": "End Date",
       "apply": "Apply",
       "clear": "Clear"
     },
     "categories": {
-      "all": "All news",
+      "all": "All News",
       "operations": "Operations",
       "conferences": "Conferences",
       "events": "Events",
       "meetings": "Meetings",
-      "official": "Official statements",
+      "official": "Official Releases",
       "awards": "Awards",
       "partnerships": "Partnerships"
     },
     "periods": {
-      "all": "All periods",
-      "week": "This week",
-      "month": "This month",
-      "year": "This year"
+      "all": "Any Period",
+      "week": "This Week",
+      "month": "This Month",
+      "year": "This Year"
     },
     "messages": {
-      "likeRemoved": "Like removed",
-      "liked": "Article liked!",
-      "loginRequired": "Please log in to comment",
+      "likeRemoved": "Like Removed",
+      "liked": "Article Liked!",
+      "loginRequired": "Please login to comment",
       "commentRequired": "Please enter a comment",
       "commentAdded": "Comment added successfully!",
       "messageRequired": "Please enter your message",
@@ -347,59 +331,59 @@
       "like": "Like",
       "comment": "Comment",
       "share": "Share",
-      "readMore": "Read more",
+      "readMore": "Read More",
       "publishedBy": "Published by",
-      "seeMore": "See more",
+      "seeMore": "See More",
       "comments": "comments"
     },
     "composer": {
       "placeholder": "What's new?",
-      "whatOnMind": "What's new, share your thoughts...",
-      "create": "Create a post",
+      "whatOnMind": "What's on your mind, share your thoughts...",
+      "create": "Create Post",
       "publish": "Publish",
       "photo": "Photo/Video",
       "event": "Event",
       "article": "Article"
     },
     "upcomingEvents": {
-      "title": "Upcoming events",
-      "seeAll": "See all"
+      "title": "Upcoming Events",
+      "seeAll": "See All"
     },
-    "noResults": "No news found",
+    "noResults": "No News Found",
     "search": {
       "title": "Search",
       "placeholder": "Search..."
     },
     "contact": {
-      "title": "Contact us",
+      "title": "Contact Us",
       "placeholder": "Your message...",
       "send": "Send",
-      "quickContact": "Quick contact",
-      "description": "Have questions? Reach out to us"
+      "quickContact": "Quick Contact",
+      "description": "Need help? Contact us directly"
     },
     "newsletter": {
       "title": "Newsletter",
       "description": "Receive our latest news by email",
       "placeholder": "Your email...",
-      "subscribe": "Subscribe",
-      "emailPlaceholder": "Your email address"
+      "emailPlaceholder": "your.email@example.com",
+      "subscribe": "Subscribe"
     },
     "events": {
-      "title": "Upcoming events"
+      "title": "Upcoming Events"
     },
     "commentForm": {
-      "title": "Add a comment",
+      "title": "Add Comment",
       "placeholder": "Write your comment...",
       "publish": "Publish",
       "cancel": "Cancel",
-      "loginRequired": "Please log in to comment"
+      "loginRequired": "Please login to comment"
     }
   },
   "partners": {
     "title": "Our Partners",
     "hero": {
       "title": "Our Loyal Partners",
-      "subtitle": "We are proud to collaborate with these prestigious organizations who trust us for their logistics needs."
+      "subtitle": "We are proud to collaborate with these prestigious organizations that trust us for their logistics needs."
     },
     "categories": {
       "international": "International Organizations",
@@ -408,13 +392,13 @@
       "transport": "Transport and Logistics",
       "health": "Health Organizations",
       "others": "Other Partners",
-      "physical": "Individual Partners"
+      "physical": "Physical Partners"
     },
-    "withContract": "With contract",
+    "withContract": "With a contract",
     "headquarters": "Headquarters",
     "contact": "Contact",
     "unicef": {
-      "description": "Our collaboration with UNICEF ensures rapid and secure delivery of essential supplies for children in the most remote areas."
+      "description": "Our collaboration with UNICEF ensures the fast and secure delivery of essential supplies for children in the most remote areas."
     },
     "undp": {
       "description": "In collaboration with UNDP, we contribute to sustainable development through innovative logistics solutions."
@@ -447,10 +431,10 @@
       "description": "Belgian development agency."
     },
     "cmaCgm": {
-      "description": "Global leader in maritime transport."
+      "description": "Global leader in sea transport."
     },
     "maersk": {
-      "description": "Integrated maritime transport solutions."
+      "description": "Integrated sea transport solutions."
     },
     "geodis": {
       "description": "Global logistics solutions."
@@ -468,7 +452,7 @@
       "description": "Transport and equipment solutions."
     },
     "villageReach": {
-      "description": "Innovation in health supply chain."
+      "description": "Health supply chain innovation."
     },
     "jeanMukendi": {
       "description": "Logistics expert with over 15 years of experience in international transport."
@@ -477,7 +461,7 @@
       "description": "Specialist in customs clearance and regulatory compliance."
     },
     "davidNkosi": {
-      "description": "Consultant in maritime transport and port logistics."
+      "description": "Consultant in sea transport and port logistics."
     }
   },
   "auth": {
@@ -486,17 +470,14 @@
       "subtitle": "Access your account to manage your shipments",
       "email": "Email Address",
       "password": "Password",
-      "rememberMe": "Remember me",
-      "forgotPassword": "Forgot password?",
+      "rememberMe": "Remember Me",
+      "forgotPassword": "Forgot Password?",
       "submit": "Login",
       "noAccount": "Don't have an account?",
       "register": "Register",
       "error": "Incorrect credentials. Please try again."
     },
     "register": {
-  "services": {
-    "learnMore": "Learn more"
-  },
       "title": "Register",
       "subtitle": "Create an account to access our complete services",
       "fullName": "Full Name",
@@ -505,7 +486,7 @@
       "company": "Company (optional)",
       "password": "Password",
       "confirmPassword": "Confirm Password",
-      "terms": "I agree to the terms of use",
+      "terms": "I accept the terms of use",
       "submit": "Register",
       "haveAccount": "Already have an account?",
       "login": "Login",
@@ -531,7 +512,7 @@
     "resources": {
       "title": "Resources",
       "tracking": "Cargo Tracking",
-      "quotation": "Request a Quote",
+      "quotation": "Quotation Request",
       "faq": "FAQ",
       "blog": "Blog",
       "news": "News"

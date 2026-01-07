@@ -17,8 +17,8 @@ const AboutSection: React.FC = () => {
   ];
 
   return (
-    <section className="section bg-white min-h-screen scroll-snap-align-start flex items-center">
-      <div className="container-custom py-16">
+    <section className="section bg-white min-h-screen scroll-snap-align-start flex items-center"  style={{ marginTop: '-170px' }}>
+      <div className="container-custom py-0">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Image side */}
           <motion.div 
@@ -32,11 +32,12 @@ const AboutSection: React.FC = () => {
               <img 
                 src="https://i.postimg.cc/Px4f1PLF/home.jpg" 
                 alt="SHIPPING GL Team" 
-                className="w-full h-auto object-cover"
+                className="object-cover"
+                style={{ height: '590px', width: '700px' }}
               />
             </div>
             {/* Floating accent */}
-            <div className="absolute -bottom-6 -right-6 bg-accent-500 w-32 h-32 rounded-xl shadow-lg flex items-center justify-center text-white">
+            <div className="absolute -bottom-6 -right-6 bg-red-500 w-32 h-32 rounded-xl shadow-lg flex items-center justify-center text-white">
               <div className="text-center">
                 <div className="text-2xl font-bold">10+</div>
                 <div className="text-sm">Années</div>

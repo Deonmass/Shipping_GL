@@ -214,7 +214,7 @@ const ContactPage: React.FC = () => {
                     className="w-full inline-flex items-center justify-center border border-green-500 text-green-600 hover:bg-green-50 font-medium py-2 px-4 rounded-lg transition-colors"
                   >
                     <MessageCircle className="w-4 h-4 mr-2" />
-                    WhatsApp: {service.whatsapp}
+                    WhatsApp
                   </a>
                 </div>
               </motion.div>
