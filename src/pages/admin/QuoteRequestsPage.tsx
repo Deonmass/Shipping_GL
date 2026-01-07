@@ -48,8 +48,6 @@ const AdminQuoteRequestsPage: React.FC = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedService, setSelectedService] = useState<string>('');
-    const [stats, setStats] = useState<QuoteStats>({total: 0, byService: {}});
-    const [displayStats, setDisplayStats] = useState<QuoteStats>({total: 0, byService: {}});
     const [selectedRequest, setSelectedRequest] = useState<QuoteRequestRow | null>(null);
 
     const {
@@ -60,37 +58,6 @@ const AdminQuoteRequestsPage: React.FC = () => {
     const {data: services, isLoading: isGettingServices} = UseGetServices({noPermission: 1})
     const {data: deleteResult, isPending: isDeleting, mutate: deleteRequest} = UseDeleteQuoteRequests()
     const {data: updateResult, isPending: isUpdating, mutate: updateRequest} = UseUpdateQuoteRequests()
-
-
-    useEffect(() => {
-        const start = displayStats;
-        const end = stats;
-        const duration = 600;
-        let frameId: number;
-        const startTime = performance.now();
-
-        const animate = (now: number) => {
-            const progress = Math.min((now - startTime) / duration, 1);
-            const nextTotal = Math.round((start.total || 0) + (end.total - (start.total || 0)) * progress);
-            const nextByService: Record<string, number> = {};
-            const serviceKeys = Array.from(new Set([...Object.keys(start.byService), ...Object.keys(end.byService)]));
-            for (const key of serviceKeys) {
-                const from = start.byService[key] || 0;
-                const to = end.byService[key] || 0;
-                nextByService[key] = Math.round(from + (to - from) * progress);
-            }
-            setDisplayStats({total: nextTotal, byService: nextByService});
-            if (progress < 1) {
-                frameId = requestAnimationFrame(animate);
-            }
-        };
-
-        frameId = requestAnimationFrame(animate);
-
-        return () => {
-            if (frameId) cancelAnimationFrame(frameId);
-        };
-    }, [stats.total, JSON.stringify(stats.byService)]);
 
     useEffect(() => {
         if (updateResult) {
@@ -308,7 +275,7 @@ const AdminQuoteRequestsPage: React.FC = () => {
                             </td>
                         </tr>
                     ) : (
-                        filteredRequests?.map((row) => {
+                        filteredRequests?.map((row: any) => {
                             const created = row.created_at ? new Date(row.created_at) : null;
                             const createdLabel = created
                                 ? created.toLocaleString('fr-FR', {
