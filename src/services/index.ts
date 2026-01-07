@@ -60,6 +60,12 @@ export {
     UseGetOpenServices,
     UseGetServices,
     UseUpdateService,
+    UseGetQuoteRequestDetail,
+    UseAddQuoteRequests,
+    UseAddOpenQuoteRequests,
+    UseGetQuoteRequests,
+    UseDeleteQuoteRequests,
+    UseUpdateQuoteRequests
 } from "./queries/ServicesQueries.ts"
 
 export {

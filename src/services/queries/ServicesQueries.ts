@@ -28,3 +28,20 @@ export const UseGetServiceDetail = (id: string, options?: GetQueryParams) => Use
 export const UseAddService = () => UsePostFormDataQuery(endpoints.services, "addService")
 export const UseUpdateService = () => UseUpdateFormDataQuery(endpoints.services, "updateService")
 export const UseDeleteService = () => UseUpdateQuery(`${endpoints.services}-delete`, "deleteService")
+
+export const UseGetQuoteRequests = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "QuoteRequests",
+    options: options,
+    endpoint: endpoints.quoteRequests,
+})
+export const UseGetQuoteRequestDetail = (id: string, options?: GetQueryParams) => UseGetDetailQuery({
+    id: id,
+    identifier: "QuoteRequest",
+    options: options,
+    endpoint: endpoints.quoteRequests,
+})
+export const UseAddQuoteRequests = () => UsePostFormDataQuery(endpoints.quoteRequests, "addQuoteRequests")
+export const UseUpdateQuoteRequests = () => UseUpdateFormDataQuery(endpoints.quoteRequests, "updateQuoteRequests")
+export const UseDeleteQuoteRequests = () => UseUpdateQuery(`${endpoints.quoteRequests}-delete`, "deleteQuoteRequests")
+
+export const UseAddOpenQuoteRequests = () => UsePostFormDataQuery(endpoints.openQuoteRequests, "addOpenQuoteRequests")

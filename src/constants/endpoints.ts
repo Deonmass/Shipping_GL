@@ -8,6 +8,7 @@ const urls =  {
     openJobOffers: '/open/job-offers',
     openTeams: '/open/teams',
     openCategories: '/open/categories',
+    openQuoteRequests: '/open/quote-requests',
 
     login: '/login',
     logout: '/api/logout',
@@ -19,6 +20,7 @@ const urls =  {
     categories: '/api/categories',
     partners: '/api/partners',
     services: '/api/services',
+    quoteRequests: '/api/quote-requests',
     posts: '/api/posts',
     postLikes: '/api/post-likes',
     postComments: '/api/post-comments',
