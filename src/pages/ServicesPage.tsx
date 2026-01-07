@@ -2,11 +2,10 @@ import React, {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {motion} from 'framer-motion';
 import {Plane, Ship, Truck, Warehouse, Home, FileCheck} from 'lucide-react';
-import {supabase} from '../lib/supabase';
 import Swal from 'sweetalert2';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import {UseGetOpenServices} from "../services";
+import {UseAddOpenQuoteRequests, UseGetOpenServices} from "../services";
 
 const QUOTE_EDITOR_MODULES = {
     toolbar: [
@@ -51,7 +50,7 @@ export const ServiceIcon = (code: string) => {
 
 const ServicesPage: React.FC = () => {
     const {t} = useTranslation();
-    const [quoteService, setQuoteService] = useState<{ code: string; name: string } | null>(null);
+    const [quoteService, setQuoteService] = useState<any>(null);
     const [detailModalService, setDetailModalService] = useState<any>(null);
     const [quoteForm, setQuoteForm] = useState({
         name: '',
@@ -60,9 +59,9 @@ const ServicesPage: React.FC = () => {
         company: '',
         details: '',
     });
-    const [isSendingQuote, setIsSendingQuote] = useState(false);
 
     const {data: services, isLoading: isGettingServices} = UseGetOpenServices()
+    const {isPending: isAddingRequest, data: addResult, mutate: addRequest} = UseAddOpenQuoteRequests()
 
     // Update document title
     useEffect(() => {
@@ -85,62 +84,28 @@ const ServicesPage: React.FC = () => {
         };
     }, [quoteService]);
 
-    // const services = [
-    //     {
-    //         id: 'air-freight',
-    //         title: t('services.airFreight.title'),
-    //         description: t('services.airFreight.description'),
-    //         features: t('services.airFreight.features', {returnObjects: true}) as string[],
-    //         image: 'https://i.pinimg.com/736x/74/84/08/748408ea5a6eac160a5d18721c8baa38.jpg',
-    //         icon: <Plane className="w-8 h-8"/>,
-    //         reversed: false
-    //     },
-    //     {
-    //         id: 'sea-freight',
-    //         title: t('services.seaFreight.title'),
-    //         description: t('services.seaFreight.description'),
-    //         features: t('services.seaFreight.features', {returnObjects: true}) as string[],
-    //         image: 'https://i.pinimg.com/736x/80/81/c5/8081c519bd631844e676e42af2d7e41b.jpg',
-    //         icon: <Ship className="w-8 h-8"/>,
-    //         reversed: true
-    //     },
-    //     {
-    //         id: 'transport',
-    //         title: t('services.transport.title'),
-    //         description: t('services.transport.description'),
-    //         features: t('services.transport.features', {returnObjects: true}) as string[],
-    //         image: 'https://i.pinimg.com/736x/24/40/8b/24408b43c55bd2d8c6e00386eb2b3241.jpg',
-    //         icon: <Truck className="w-8 h-8"/>,
-    //         reversed: false
-    //     },
-    //     {
-    //         id: 'warehousing',
-    //         title: t('services.warehousing.title'),
-    //         description: t('services.warehousing.description'),
-    //         features: t('services.warehousing.features', {returnObjects: true}) as string[],
-    //         image: 'https://i.pinimg.com/1200x/f5/7f/cb/f57fcb397ff74d081ca95a2e039c419e.jpg',
-    //         icon: <Warehouse className="w-8 h-8"/>,
-    //         reversed: true
-    //     },
-    //     {
-    //         id: 'moving',
-    //         title: t('services.moving.title'),
-    //         description: t('services.moving.description'),
-    //         features: t('services.moving.features', {returnObjects: true}) as string[],
-    //         image: 'https://i.pinimg.com/736x/eb/e7/b6/ebe7b60acb7a8489ea5ac5a71fd4c901.jpg',
-    //         icon: <Home className="w-8 h-8"/>,
-    //         reversed: false
-    //     },
-    //     {
-    //         id: 'customs',
-    //         title: t('services.customs.title'),
-    //         description: t('services.customs.description'),
-    //         features: t('services.customs.features', {returnObjects: true}) as string[],
-    //         image: 'https://i.postimg.cc/hjchD78h/decl.png',
-    //         icon: <FileCheck className="w-8 h-8"/>,
-    //         reversed: true
-    //     }
-    // ];
+
+    useEffect(() => {
+        if (addResult) {
+            if (addResult?.responseData?.error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erreur',
+                    text: 'Une erreur est survenue lors de l\'envoi de votre demande. Merci de réessayer plus tard.',
+                    confirmButtonText: 'OK',
+                });
+            } else {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Demande envoyée',
+                    text: 'Votre demande de devis a été envoyée. Nous vous répondrons dans les meilleurs délais.',
+                    confirmButtonText: 'OK',
+                });
+                setQuoteService(null);
+                setQuoteForm({name: '', email: '', phone: '', company: '', details: ''});
+            }
+        }
+    }, [addResult]);
 
     const handleQuoteChange = (field: keyof typeof quoteForm, value: string) => {
         setQuoteForm(prev => ({...prev, [field]: value}));
@@ -166,90 +131,14 @@ const ServicesPage: React.FC = () => {
             return;
         }
 
-        try {
-            setIsSendingQuote(true);
-
-            const serviceRow = services?.responseData?.data?.find(s => s.service_code === quoteService.code);
-            const effectiveServiceName = serviceRow?.service_name || quoteService.name;
-
-            const {error: quoteError} = await supabase
-                .from('quote_requests')
-                .insert([
-                    {
-                        service_code: quoteService.code,
-                        service_name: effectiveServiceName,
-                        name: name.trim(),
-                        email: email.trim(),
-                        phone: phone.trim() || null,
-                        company: company.trim() || null,
-                        details,
-                    },
-                ]);
-
-            if (quoteError) throw quoteError;
-
-            const {error: notifError} = await supabase
-                .from('admin_notifications')
-                .insert([
-                    {
-                        type: 'quote',
-                        title: `Demande de devis - ${effectiveServiceName}`,
-                        message: `${name.trim()} a soumis une demande de devis pour ${effectiveServiceName}.`,
-                        data: {
-                            service_code: quoteService.code,
-                            service_name: effectiveServiceName,
-                            name: name.trim(),
-                            email: email.trim(),
-                            phone: phone.trim() || null,
-                            company: company.trim() || null,
-                        },
-                        is_read: false,
-                    },
-                ]);
-
-            if (notifError) {
-                console.warn('Erreur lors de la création de la notification de devis:', notifError);
-            }
-
-            try {
-                await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-quote-request`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        service_code: quoteService.code,
-                        service_name: effectiveServiceName,
-                        name: name.trim(),
-                        email: email.trim(),
-                        phone: phone.trim() || null,
-                        company: company.trim() || null,
-                        details: details.trim(),
-                    }),
-                });
-            } catch (edgeError) {
-                console.warn('Erreur lors de l\'appel de la fonction send-quote-request:', edgeError);
-            }
-
-            await Swal.fire({
-                icon: 'success',
-                title: 'Demande envoyée',
-                text: 'Votre demande de devis a été envoyée. Nous vous répondrons dans les meilleurs délais.',
-                confirmButtonText: 'OK',
-            });
-            setQuoteService(null);
-            setQuoteForm({name: '', email: '', phone: '', company: '', details: ''});
-        } catch (err) {
-            console.error('Erreur lors de l\'envoi de la demande de devis:', err);
-            await Swal.fire({
-                icon: 'error',
-                title: 'Erreur',
-                text: 'Une erreur est survenue lors de l\'envoi de votre demande. Merci de réessayer plus tard.',
-                confirmButtonText: 'OK',
-            });
-        } finally {
-            setIsSendingQuote(false);
-        }
+        addRequest({
+            service_id: quoteService?.id,
+            name,
+            email,
+            phone,
+            details,
+            company
+        })
     };
 
     return (
@@ -417,7 +306,7 @@ const ServicesPage: React.FC = () => {
                                 <div className="flex items-start justify-between mb-4">
                                     <div>
                                         <h2 className="text-2xl font-bold text-gray-900 mb-2">{detailModalService.title}</h2>
-                                       
+
                                     </div>
                                     <button
                                         type="button"
@@ -449,7 +338,7 @@ const ServicesPage: React.FC = () => {
                 </div>
             )}
 
-            { quoteService && (
+            {quoteService && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
                     onClick={() => setQuoteService(null)}
@@ -465,7 +354,7 @@ const ServicesPage: React.FC = () => {
                             <div>
                                 <h2 className="text-xl font-bold text-gray-900">Demande de devis</h2>
                                 <p className="text-sm text-gray-600 mt-1">
-                                    Service concerné : <span className="font-semibold">{quoteService.name}</span>
+                                    Service concerné : <span className="font-semibold">{quoteService?.title}</span>
                                 </p>
                             </div>
                             <button
@@ -545,16 +434,16 @@ const ServicesPage: React.FC = () => {
                                     type="button"
                                     onClick={() => setQuoteService(null)}
                                     className="px-4 py-2 rounded-full border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                                    disabled={isSendingQuote}
+                                    disabled={isAddingRequest}
                                 >
                                     Annuler
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={isSendingQuote}
+                                    disabled={isAddingRequest}
                                     className="px-5 py-2 rounded-full bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
-                                    {isSendingQuote ? 'Envoi en cours...' : 'Envoyer la demande'}
+                                    {isAddingRequest ? 'Envoi en cours...' : 'Envoyer la demande'}
                                 </button>
                             </div>
                         </form>
