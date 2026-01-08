@@ -292,13 +292,13 @@ const NewsPage: React.FC = () => {
                                 <div className="flex items-center justify-center py-12">
                                     <Loader className="w-8 h-8 text-primary-600 animate-spin"/>
                                 </div>
-                            ) : filteredAndSortedPosts.length === 0 ? (
+                            ) : filteredAndSortedPosts?.length === 0 ? (
                                 <div className="bg-white rounded-lg shadow-sm p-8 text-center">
                                     <p className="text-gray-500">{t('news.noResults')}</p>
                                 </div>
                             ) : (
                                 <div>
-                                    {filteredAndSortedPosts.map((post: any) => (
+                                    {filteredAndSortedPosts?.map((post: any) => (
                                         <PostCard
                                             key={post.id}
                                             post={{

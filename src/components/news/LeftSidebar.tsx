@@ -67,7 +67,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ selectedCategory, onCategoryC
                 <Globe className="w-5 h-5 flex-shrink-0" />
                 <span className="text-sm font-medium">{t('news.categories.all')}</span>
               </button>
-              {data.map(category => {
+              {data?.map(category => {
                 const Icon = getIconForCategory(category.icon);
                 return (
                   <button
