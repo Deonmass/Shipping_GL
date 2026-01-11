@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Ship, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import {UseLoginVisitor} from "../services";
+import {toast} from "react-hot-toast";
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
@@ -14,14 +16,20 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect if already logged in
+  const {isPending: isLogginVisitor, mutate: loginVisitor, data: loginResult} = UseLoginVisitor()
+
   useEffect(() => {
-    if (user) {
-      navigate('/');
+    if (loginResult) {
+      if (loginResult?.responseData?.error) {
+        toast.error(loginResult?.responseData?.message || t('auth.login.error'))
+      } else {
+        //signIn(email, password);
+        toast.success('Connexion reussie.');
+        navigate('/');
+      }
     }
-  }, [user, navigate]);
+  }, [loginResult]);
 
   // Update document title
   useEffect(() => {
@@ -35,15 +43,10 @@ const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsSubmitting(true);
-
-    try {
-      await signIn(email, password);
-    } catch (error: any) {
-      setError(t('auth.login.error'));
-    } finally {
-      setIsSubmitting(false);
-    }
+    loginVisitor({
+      email: email,
+      password: password,
+    })
   };
 
   return (
@@ -151,9 +154,9 @@ const LoginPage: React.FC = () => {
               <button 
                 type="submit" 
                 className="btn btn-primary w-full mb-4"
-                disabled={isSubmitting}
+                disabled={isLogginVisitor}
               >
-                {isSubmitting ? 'Connexion en cours...' : t('auth.login.submit')}
+                {isLogginVisitor ? 'Connexion en cours...' : t('auth.login.submit')}
               </button>
 
               <div className="text-center">
