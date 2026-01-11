@@ -24,7 +24,7 @@ export const UseUpdateVisitor = () => UseUpdateFormDataQuery(endpoints.visitors,
 export const UseDeleteVisitor = () => UseUpdateQuery(`${endpoints.visitors}-delete`, "deleteVisitor")
 
 export const UseLoginVisitor = () => UsePostFormDataQuery(`${endpoints.openVisitors}-login`, "loginVisitor")
-export const UseRegisterVisitor = () => UsePostFormDataQuery(`${endpoints.openVisitors}-register`, "registerVisitor")
+export const UseRegisterVisitor = () => UsePostFormDataQuery(endpoints.openVisitors, "registerVisitor")
 export const UseLogoutVisitor = () => UsePostFormDataQuery(`${endpoints.connectedVisitors}-logout`, "logoutVisitor")
 export const UseVisitorCommentPost = () => UsePostFormDataQuery(`${endpoints.connectedVisitors}-comment-post`, "commentPostVisitor")
 export const UseVisitorLikePost = () => UsePostFormDataQuery(`${endpoints.connectedVisitors}-like-post`, "likePostVisitor")
