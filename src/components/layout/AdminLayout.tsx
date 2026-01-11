@@ -4,7 +4,8 @@ import {
     BarChart3, Users, FileText, Settings,
     Bell, Search, LogOut, Handshake, ClipboardEditIcon,
     MessageSquare, Heart, Calendar, Tags, TrendingUp, ChevronDown, ChevronRight,
-    Mail, Shield, Menu, CheckCircle2, Sun, Moon, User, Home, X, Wrench, Building2
+    Mail, Shield, Menu, CheckCircle2, Sun, Moon, User, Home, X, Wrench, Building2,
+    UserRoundSearch, CircleUserRoundIcon
 } from 'lucide-react';
 import {supabase} from '../../lib/supabase';
 import {formatDistanceToNow} from 'date-fns';
@@ -347,8 +348,8 @@ const AdminLayout: React.FC = () => {
         },
         {
             key: appPermissions.team, 
-            path: '/admin/team', 
-            icon: Users, 
+            path: '/admin/team',
+            icon: CircleUserRoundIcon,
             label: 'Equipe Dirigeante', 
             keywords: ['equipe', 'membre']
         },
@@ -365,6 +366,13 @@ const AdminLayout: React.FC = () => {
             icon: Tags,
             label: 'Catégories',
             keywords: ['catégorie']
+        },
+        {
+            key: appPermissions.visitor_accounts,
+            path: '/admin/visitors',
+            icon: UserRoundSearch,
+            label: 'Comptes Visiteurs',
+            keywords: ['visiteurs', 'utilisateurs' ]
         }
     ];
 

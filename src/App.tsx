@@ -47,6 +47,7 @@ import JobOfferPage from './pages/admin/JobOfferPage';
 import MenuVisibilityPage from './pages/admin/MenuVisibilityPage';
 import OfficesPage from "./pages/admin/OfficesPage.tsx";
 import TeamsPage from "./pages/admin/TeamsPage.tsx";
+import VisitorsPage from "./pages/admin/VisitorsPage.tsx";
 
 function App() {
     const location = useLocation();
@@ -114,6 +115,7 @@ function App() {
                         <Route path="menu-visibility" element={<MenuVisibilityPage/>}/>
 
                         <Route path="offices" element={<OfficesPage/>}/>
+                        <Route path="visitors" element={<VisitorsPage/>}/>
 
                         <Route path="*" element={<NotFoundPage/>}/>
                     </Route>

@@ -19,6 +19,7 @@ export const appPermissions = {
     jobOffers: "17",
     dashboard: "18",
     reports: "19",
+    visitor_accounts: "20",
 
 
     menu_visibility: "00",
