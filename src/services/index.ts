@@ -97,3 +97,16 @@ export {
     UseGetOpenJobOffers,
     UseUpdateJobOffer
 } from "./queries/JobOffersQueries.ts"
+
+export {
+    UseRegisterVisitor,
+    UseVisitorLikePost,
+    UseAddVisitor,
+    UseDeleteVisitor,
+    UseGetVisitors,
+    UseGetVisitorDetail,
+    UseLoginVisitor,
+    UseLogoutVisitor,
+    UseUpdateVisitor,
+    UseVisitorCommentPost
+} from "./queries/VisitorQueries.ts"
