@@ -11,7 +11,6 @@ import {
   Calendar,
   BarChart3,
 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { format, subMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -20,7 +19,11 @@ import { ChartPanel } from '../../components/admin/ChartPanel';
 import { ChartModal } from '../../components/admin/ChartModal';
 import { useOutletContext } from 'react-router-dom';
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
-import {UseGetPostLikes} from "../../services";
+import {UseDeletePostLike, UseGetPostLikes, UseUpdatePostLike} from "../../services";
+import {HasPermission} from "../../utils/PermissionChecker.ts";
+import {appPermissions} from "../../constants/appPermissions.ts";
+import {appOps} from "../../constants";
+import AppToast from "../../utils/AppToast.ts";
 
 interface Like {
   id: string;
@@ -55,40 +58,46 @@ const LikesPage: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   const { isPending: isGettingLikes, data: likes, refetch: reGetLikes} = UseGetPostLikes({format: "stats"})
+  const {isPending: isDeleting, mutate: deleteLike, data: deleteResult} = UseDeletePostLike()
+  const {isPending: isUpdating, mutate: updateLike, data: updateResult} = UseUpdatePostLike()
+
+
+  useEffect(() => {
+    if (updateResult) {
+      if (updateResult?.responseData?.error) {
+        AppToast.error(theme === "dark", updateResult?.responseData?.message || "Erreur lors de la mise a jour")
+      } else {
+        reGetLikes()
+        AppToast.success(theme === "dark", 'Like mis a jour avec succès')
+      }
+    }
+  }, [updateResult]);
+
+  useEffect(() => {
+    if (deleteResult) {
+      if (deleteResult?.responseData?.error) {
+        AppToast.error(theme === "dark", deleteResult?.responseData?.message || "Erreur lors de la suppression")
+      } else {
+        reGetLikes()
+        AppToast.success(theme === "dark", 'Like supprimé avec succès')
+        setShowDeleteConfirm(null);
+      }
+    }
+  }, [deleteResult]);
 
   const handleDelete = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('post_likes')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast.success('Like supprimé');
-      fetchLikes();
-    } catch (error: any) {
-      console.error(error);
-      toast.error('Erreur lors de la suppression');
-    }
-    setShowDeleteConfirm(null);
+    deleteLike({id})
   };
 
   const handleToggleVisibility = async (like: Like) => {
-    try {
-      const { error } = await supabase
-        .from('post_likes')
-        .update({ is_visible: !like.is_visible })
-        .eq('id', like.id);
-
-      if (error) throw error;
-
-      toast.success(like.is_visible ? 'Like masqué' : 'Like visible');
-      fetchLikes();
-    } catch (error: any) {
-      console.error(error);
-      toast.error('Erreur lors de la modification');
+    if(!HasPermission(appPermissions.post_likes, appOps.update)){
+      toast.error("Vous n'avez pas la permission requise");
+      return
     }
+    updateLike({
+      id: like.id,
+      status: isActive(like) ? "0" : "1"
+    })
   };
 
   const filteredLikes = likes?.responseData?.data?.items?.filter(like =>
@@ -305,17 +314,17 @@ const LikesPage: React.FC = () => {
                     >
                       <Eye className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={() => setShowDeleteConfirm(like.id)}
-                      className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition border ${
-                        isDark
-                          ? 'border-red-700 bg-red-900/20 text-red-400 hover:bg-red-900/30'
-                          : 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
-                      }`}
-                      title="Supprimer"
+                    {HasPermission(appPermissions.post_likes, appOps.delete) ? <button
+                        onClick={() => setShowDeleteConfirm(like.id)}
+                        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition border ${
+                            isDark
+                                ? 'border-red-700 bg-red-900/20 text-red-400 hover:bg-red-900/30'
+                                : 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
+                        }`}
+                        title="Supprimer"
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      <Trash2 className="w-4 h-4"/>
+                    </button> : null}
                   </div>
                 </td>
               </tr>
@@ -484,7 +493,7 @@ const LikesPage: React.FC = () => {
                 onClick={() => handleDelete(showDeleteConfirm)}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
               >
-                Supprimer
+                {isDeleting ? "Chargement" : "Supprimer"}
               </button>
             </div>
           </motion.div>

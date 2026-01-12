@@ -23,7 +23,7 @@ export const appPermissions = {
 
 
     menu_visibility: "00",
-    likes: "00",
+    likes: "15",
     users_assign_roles: "00",
     users_permissions: "00",
     settings: "00",
