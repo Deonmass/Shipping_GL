@@ -1,4 +1,4 @@
-export { default as http } from './httpService'
+export {default as http} from './httpService'
 
 export {
     UseLogin,
@@ -86,7 +86,21 @@ export {
     UseGetNewsletters,
     UseAddNewsletter,
     UseUpdateNewsletter,
-    UseDeleteNewsletter
+    UseDeleteNewsletter,
+    UseGetOpenPostLikes,
+    UseGetPostLikes,
+    UseGetPostComments,
+    UseGetPostLikeDetail,
+    UseGetPostCommentDetail,
+    UseGetOpenPostComments,
+    UseAddPostComment,
+    UseAddPostLike,
+    UseAddVisitorPostComment,
+    UseAddVisitorPostLike,
+    UseDeletePostComment,
+    UseDeletePostLike,
+    UseUpdatePostComment,
+    UseUpdatePostLike
 } from "./queries/PostsQueries.ts"
 
 export {
@@ -108,5 +122,5 @@ export {
     UseLoginVisitor,
     UseLogoutVisitor,
     UseUpdateVisitor,
-    UseVisitorCommentPost
+    UseVisitorCommentPost,
 } from "./queries/VisitorQueries.ts"

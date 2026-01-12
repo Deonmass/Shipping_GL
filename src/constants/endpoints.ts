@@ -10,6 +10,8 @@ const urls =  {
     openCategories: '/open/categories',
     openQuoteRequests: '/open/quote-requests',
     openVisitors: '/open/visitor-accounts',
+    openPostComments: '/open/post-comments',
+    openPostLikes: '/open/post-likes',
 
     connectedVisitors: '/visitor/visitor-accounts',
 

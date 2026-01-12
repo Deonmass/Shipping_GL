@@ -5,7 +5,7 @@ import {
     XCircle,
     X,
     CheckCircle2,
-    AlertTriangle, UserRoundSearch
+    AlertTriangle, UserRoundSearch, EyeOff
 } from "lucide-react";
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
 import {useOutletContext} from "react-router-dom";
@@ -21,6 +21,7 @@ import AppToast from "../../utils/AppToast.ts";
 import {HasPermission} from "../../utils/PermissionChecker.ts";
 import {appPermissions} from "../../constants/appPermissions.ts";
 import {appOps} from "../../constants";
+import {StatsCard} from "../../components/admin/StatsCard.tsx";
 
 const isActive = (u: any) =>
     u?.status?.toString() === "1"
@@ -36,7 +37,7 @@ const VisitorsPage = () => {
         isRefetching: isReGettingVisitors,
         data: visitors,
         refetch: reGetVisitors,
-    } = UseGetVisitors()
+    } = UseGetVisitors({format: "stats"})
     const {isPending: isUpdating, data: updateResult, mutate: updateItem} = UseUpdateVisitor()
     const {isPending: isDeleting, data: deleteResult, mutate: deleteItem} = UseDeleteVisitor()
 
@@ -86,6 +87,32 @@ const VisitorsPage = () => {
                 onRefresh={() => reGetVisitors()}
             />
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <StatsCard
+                    title="Total Comptes"
+                    value={visitors?.responseData?.data?.items?.length || "0"}
+                    icon={UserRoundSearch}
+                    className="bg-gradient-to-br from-blue-600 to-blue-700"
+                    iconClassName="text-white"
+                    titleClassName="text-white"
+                />
+                <StatsCard
+                    title="Actifs"
+                    value={visitors?.responseData?.data?.totals?.active || "0"}
+                    icon={Eye}
+                    className="bg-gradient-to-br from-green-600 to-green-700"
+                    iconClassName="text-white"
+                    titleClassName="text-white"
+                />
+                <StatsCard
+                    title="Bloqués"
+                    value={visitors?.responseData?.data?.totals?.inactive || "0"}
+                    icon={EyeOff}
+                    className="bg-gradient-to-br from-purple-600 to-purple-700"
+                    iconClassName="text-white"
+                    titleClassName="text-white"
+                />
+            </div>
 
             {
                 isReGettingVisitors || isGetVisitors ? (
@@ -149,7 +176,7 @@ const VisitorsPage = () => {
                     </tr>
                     </thead>
                     <tbody className={isDark ? 'divide-y divide-gray-700' : 'divide-y divide-gray-100'}>
-                    {visitors?.responseData?.data.map((item: any) => (
+                    {visitors?.responseData?.data?.items?.map((item: any) => (
                         <tr
                             key={item.id}
                             className={`${
