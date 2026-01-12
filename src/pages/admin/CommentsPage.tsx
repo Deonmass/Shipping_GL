@@ -20,8 +20,12 @@ import {StatsCard} from '../../components/admin/StatsCard';
 import {ChartPanel} from '../../components/admin/ChartPanel';
 import {ChartModal} from '../../components/admin/ChartModal';
 import {useOutletContext} from 'react-router-dom';
-import {UseGetPostComments} from "../../services";
+import {UseDeletePostComment, UseGetPostComments, UseUpdatePostComment} from "../../services";
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
+import AppToast from "../../utils/AppToast.ts";
+import {HasPermission} from "../../utils/PermissionChecker.ts";
+import {appPermissions} from "../../constants/appPermissions.ts";
+import {appOps} from "../../constants";
 
 interface Comment {
     id: string;
@@ -63,25 +67,35 @@ const CommentsPage: React.FC = () => {
     // -------------------------------------------------------------------------------
 
     const {isPending: isGettingComments, data: comments, refetch: reGetComments} = UseGetPostComments({format: "stats"})
+    const {isPending: isDeleting, mutate: deleteComment, data: deleteResult} = UseDeletePostComment()
+    const {isPending: isUpdating, mutate: updateComment, data: updateResult} = UseUpdatePostComment()
 
+
+    useEffect(() => {
+        if (updateResult) {
+            if (updateResult?.responseData?.error) {
+                AppToast.error(theme === "dark", updateResult?.responseData?.message || "Erreur lors de la mise a jour")
+            } else {
+                reGetComments()
+                AppToast.success(theme === "dark", 'Commentaire mis a jour avec succès')
+            }
+        }
+    }, [updateResult]);
+
+    useEffect(() => {
+        if (deleteResult) {
+            if (deleteResult?.responseData?.error) {
+                AppToast.error(theme === "dark", deleteResult?.responseData?.message || "Erreur lors de la suppression")
+            } else {
+                reGetComments()
+                AppToast.success(theme === "dark", 'Commentaire supprimé avec succès')
+                setShowDeleteConfirm(null);
+            }
+        }
+    }, [deleteResult]);
 
     const handleDelete = async (id: string) => {
-        try {
-            const {error} = await supabase
-                .from('post_comments')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
-
-            toast.success('Commentaire supprimé avec succès');
-            // refresh
-            fetchComments();
-        } catch (error: any) {
-            console.error('Error deleting comment:', error);
-            toast.error(error.message || 'Erreur lors de la suppression');
-        }
-        setShowDeleteConfirm(null);
+        deleteComment({id: id})
     };
 
     const filteredComments = comments?.responseData?.data?.items?.filter(comment =>
@@ -98,7 +112,7 @@ const CommentsPage: React.FC = () => {
             const d = subMonths(now, i);
             const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
             const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
-            const count =  comments?.responseData?.data?.items?.filter(c => {
+            const count = comments?.responseData?.data?.items?.filter(c => {
                 const dt = new Date(c.created_at);
                 return dt >= monthStart && dt <= monthEnd;
             }).length;
@@ -109,8 +123,8 @@ const CommentsPage: React.FC = () => {
 
     const approvalDistribution = React.useMemo(() => {
         return [
-            {name: 'Approuvés', value:  comments?.responseData?.data?.totals?.active},
-            {name: 'En attente', value:  comments?.responseData?.data?.totals?.inactive},
+            {name: 'Approuvés', value: comments?.responseData?.data?.totals?.active},
+            {name: 'En attente', value: comments?.responseData?.data?.totals?.inactive},
         ];
     }, [comments]);
 
@@ -124,38 +138,15 @@ const CommentsPage: React.FC = () => {
         );
     }
 
-    const handleToggleApproval = async (comment: Comment) => {
-        try {
-            const {error} = await supabase
-                .from('post_comments')
-                .update({approved: !comment.approved})
-                .eq('id', comment.id);
-
-            if (error) throw error;
-
-            toast.success(comment.approved ? 'Commentaire rejeté' : 'Commentaire approuvé');
-            fetchComments();
-        } catch (error: any) {
-            console.error('Error toggling approval:', error);
-            toast.error(error.message || 'Erreur lors de la modification');
-        }
-    };
-
     const handleToggleVisibility = async (comment: Comment) => {
-        try {
-            const {error} = await supabase
-                .from('post_comments')
-                .update({is_visible: !comment.is_visible})
-                .eq('id', comment.id);
-
-            if (error) throw error;
-
-            toast.success(comment.is_visible ? 'Commentaire masqué' : 'Commentaire visible');
-            fetchComments();
-        } catch (error: any) {
-            console.error('Error toggling visibility:', error);
-            toast.error(error.message || 'Erreur lors de la modification');
+        if(!HasPermission(appPermissions.comments, appOps.update)){
+            toast.error("Vous n'avez pas la permission requise");
+            return
         }
+        updateComment({
+            id: comment.id,
+            status: isActive(comment) ? "0" : "1"
+        })
     };
 
     return (
@@ -327,7 +318,6 @@ const CommentsPage: React.FC = () => {
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                                 <div className="flex items-center justify-center space-x-2">
                                     <button
-                                        onClick={() => handleToggleApproval(comment)}
                                         className={`px-2 py-1 text-xs rounded-full ${isActive(comment) ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
                                         title={isActive(comment) ? 'Approuvé' : 'En attente'}
                                     >
@@ -356,7 +346,7 @@ const CommentsPage: React.FC = () => {
                                     >
                                         <Eye className="w-4 h-4"/>
                                     </button>
-                                    <button
+                                    {HasPermission(appPermissions.comments, appOps.delete) ? <button
                                         onClick={() => setShowDeleteConfirm(comment.id)}
                                         className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition border ${
                                             isDark
@@ -366,7 +356,7 @@ const CommentsPage: React.FC = () => {
                                         title="Supprimer"
                                     >
                                         <Trash2 className="w-4 h-4"/>
-                                    </button>
+                                    </button> : null}
                                 </div>
                             </td>
                         </tr>
@@ -690,7 +680,7 @@ const CommentsPage: React.FC = () => {
                                 onClick={() => handleDelete(showDeleteConfirm)}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
                             >
-                                Supprimer
+                                {isDeleting ? "Chargement ... " : "Supprimer"}
                             </button>
                         </div>
                     </motion.div>

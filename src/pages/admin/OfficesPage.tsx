@@ -21,6 +21,7 @@ import {HasPermission} from "../../utils/PermissionChecker.ts";
 import {appPermissions} from "../../constants/appPermissions.ts";
 import {appOps} from "../../constants";
 import OfficeMap from "../../components/maps/OfficeMap";
+import toast from "react-hot-toast";
 
 const emptyItem = {
     title: "",
@@ -103,6 +104,10 @@ const OfficesPage = () => {
 
 
     const handleToggleVisibility = (item: any) => {
+        if(!HasPermission(appPermissions.offices, appOps.update)){
+            toast.error("Vous n'avez pas la permission requise");
+            return
+        }
         updateItem({
             id: item.id,
             status: isActive(item) ? "0" : "1"
