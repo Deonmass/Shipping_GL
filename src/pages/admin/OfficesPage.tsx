@@ -248,7 +248,7 @@ const OfficesPage = () => {
                             key={item.id}
                             className={`${
                                 isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'
-                            } ${!item.is_visible ? (isDark ? 'bg-red-900/10' : 'bg-red-50') : ''}`}
+                            } ${!isActive(item) ? (isDark ? 'bg-red-900/10' : 'bg-red-50') : ''}`}
                         >
                             <td className="px-6 py-4">
                                 <div
