@@ -2,7 +2,6 @@ import React, {useState, useEffect} from 'react';
 import {motion} from 'framer-motion';
 import {
     Eye,
-    Edit,
     Trash2,
     X,
     AlertCircle,
@@ -12,7 +11,6 @@ import {
     Calendar,
     BarChart3
 } from 'lucide-react';
-import {supabase} from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import {format, subMonths} from 'date-fns';
 import {fr} from 'date-fns/locale';

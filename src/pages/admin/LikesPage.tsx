@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, Trash2, X, AlertCircle, Search, Heart, TrendingUp, Calendar, BarChart3, RefreshCw } from 'lucide-react';
+import {
+  Eye,
+  Trash2,
+  X,
+  AlertCircle,
+  Search,
+  Heart,
+  TrendingUp,
+  Calendar,
+  BarChart3,
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { format, subMonths } from 'date-fns';
@@ -9,6 +19,8 @@ import { StatsCard } from '../../components/admin/StatsCard';
 import { ChartPanel } from '../../components/admin/ChartPanel';
 import { ChartModal } from '../../components/admin/ChartModal';
 import { useOutletContext } from 'react-router-dom';
+import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
+import {UseGetPostLikes} from "../../services";
 
 interface Like {
   id: string;
@@ -32,140 +44,17 @@ interface Like {
   };
 }
 
-interface LikeStats {
-  total: number;
-  thisMonth: number;
-  avgPerPost: number;
-  trend: number;
-}
+const isActive = (u: any) =>
+    u?.status?.toString() === "1"
+
 
 const LikesPage: React.FC = () => {
   const { theme } = useOutletContext<{ theme: 'dark' | 'light' }>();
   const isDark = theme === 'dark';
-  const [likes, setLikes] = useState<Like[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
-  const [stats, setStats] = useState<LikeStats>({
-    total: 0,
-    thisMonth: 0,
-    avgPerPost: 0,
-    trend: 0
-  });
-  const [displayStats, setDisplayStats] = useState<LikeStats>({
-    total: 0,
-    thisMonth: 0,
-    avgPerPost: 0,
-    trend: 0,
-  });
 
-  useEffect(() => {
-    fetchLikes();
-  }, []);
-
-  // Animation douce des compteurs pendant le chargement
-  useEffect(() => {
-    if (!loading) {
-      setDisplayStats(stats);
-      return;
-    }
-
-    const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-    const jitter = (value: number, maxDelta: number, min: number, max: number) => {
-      const delta = (Math.random() * 2 - 1) * maxDelta;
-      return clamp(Math.round(value + delta), min, max);
-    };
-
-    const interval = setInterval(() => {
-      setDisplayStats(prev => ({
-        total: jitter(prev.total || 0, 20, 0, 999999),
-        thisMonth: jitter(prev.thisMonth || 0, 6, 0, 99999),
-        avgPerPost: jitter(prev.avgPerPost || 0, 2, 0, 100),
-        trend: jitter(prev.trend || 0, 4, -100, 100),
-      }));
-    }, 900);
-
-    return () => clearInterval(interval);
-  }, [loading, stats]);
-
-  const effectiveStats = loading ? displayStats : stats;
-
-  const calculateStats = async (likeList: Like[]) => {
-    const now = new Date();
-    const oneMonthAgo = subMonths(now, 1);
-    const twoMonthsAgo = subMonths(now, 2);
-
-    const thisMonth = likeList.filter(l => new Date(l.created_at) >= oneMonthAgo).length;
-    const lastMonth = likeList.filter(l => {
-      const date = new Date(l.created_at);
-      return date >= twoMonthsAgo && date < oneMonthAgo;
-    }).length;
-
-    const trend = lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : 0;
-
-    const { count, error: countError } = await supabase
-      .from('news_posts')
-      .select('*', { count: 'exact', head: true });
-
-    if (countError) console.error(countError);
-
-    const avgPerPost = count ? likeList.length / count : 0;
-
-    setStats({
-      total: likeList.length,
-      thisMonth,
-      avgPerPost: Math.round(avgPerPost * 10) / 10,
-      trend
-    });
-  };
-
-  const fetchLikes = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('post_likes')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      if (!data) return setLikes([]);
-
-      const likesWithPosts = await Promise.all(
-        data.map(async (like) => {
-          const { data: post, error: postError } = await supabase
-            .from('news_posts')
-            .select('id, title, short_description, content, image_url, author_name, category, created_at')
-            .eq('id', like.post_id)
-            .maybeSingle();
-
-          const { data: userProfile, error: userErr } = await supabase
-            .from('users')
-            .select('full_name, email')
-            .eq('id', like.user_id)
-            .maybeSingle();
-
-          if (postError) console.warn('Post not found:', postError);
-          if (userErr) console.warn('User not found:', userErr);
-
-          return {
-            ...like,
-            is_visible: like.is_visible !== false,
-            news_posts: post || { title: 'Post supprimé' },
-            user_info: userProfile || undefined
-          };
-        })
-      );
-
-      setLikes(likesWithPosts);
-      await calculateStats(likesWithPosts);
-    } catch (error: any) {
-      console.error(error);
-      toast.error('Erreur lors du chargement des likes');
-      setLikes([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { isPending: isGettingLikes, data: likes, refetch: reGetLikes} = UseGetPostLikes({format: "stats"})
 
   const handleDelete = async (id: string) => {
     try {
@@ -202,15 +91,12 @@ const LikesPage: React.FC = () => {
     }
   };
 
-  const filteredLikes = likes.filter(like =>
-    (like.user_info?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-    (like.user_info?.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-    (like.news_posts?.title?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-    like.user_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    like.post_id.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredLikes = likes?.responseData?.data?.items?.filter(like =>
+    (like.visitor_name?.toLowerCase().includes(searchTerm?.toLowerCase()) || false) ||
+    (like?.post_title?.toLowerCase().includes(searchTerm?.toLowerCase()) || false)
   );
 
-  const [showPostModal, setShowPostModal] = useState<Like | null>(null);
+  const [showPostModal, setShowPostModal] = useState<any | null>(null);
   const [expandedChart, setExpandedChart] = useState<{
     title: string;
     type: 'line' | 'bar' | 'pie';
@@ -226,7 +112,7 @@ const LikesPage: React.FC = () => {
       const d = subMonths(now, i);
       const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
       const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
-      const count = likes.filter(l => {
+      const count = likes?.responseData?.data?.items?.filter(l => {
         const dt = new Date(l.created_at);
         return dt >= monthStart && dt <= monthEnd;
       }).length;
@@ -236,15 +122,13 @@ const LikesPage: React.FC = () => {
   }, [likes]);
 
   const visibilityDistribution = React.useMemo(() => {
-    const visible = likes.filter(l => l.is_visible).length;
-    const hidden = likes.length - visible;
     return [
-      { name: 'Visible', value: visible },
-      { name: 'Non visible', value: hidden }
+      { name: 'Visible', value: likes?.responseData?.data?.totals?.active},
+      { name: 'Non visible', value: likes?.responseData?.data?.totals?.inactive }
     ];
   }, [likes]);
 
-  if (loading) {
+  if (isGettingLikes) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
@@ -254,60 +138,35 @@ const LikesPage: React.FC = () => {
 
   return (
     <div>
-      <div className="mb-6 mt-[60px] flex items-center justify-between">
-        <h1
-          className={`text-2xl font-bold flex items-center gap-3 ${
-            isDark ? 'text-white' : 'text-gray-900'
-          }`}
-        >
-          <Heart
-            className={`w-7 h-7 ${isDark ? 'text-pink-400' : 'text-pink-600'}`}
-          />
-          Gestion des likes
-        </h1>
-        <button
-          onClick={fetchLikes}
-          className={`px-4 py-2 rounded-lg flex items-center text-sm font-medium transition-colors border ${
-            isDark
-              ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600'
-              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 shadow-sm'
-          }`}
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Actualiser
-        </button>
-      </div>
+      <AdminPageHeader
+          Icon={<Heart
+              className={`w-7 h-7 ${isDark ? 'text-pink-400' : 'text-pink-600'}`}
+          />}
+          title=" Gestion des likes"
+          onRefresh={() => reGetLikes()}
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         <StatsCard
           title="Total likes"
-          value={effectiveStats.total}
+          value={likes?.responseData?.data?.items?.length || "-"}
           icon={Heart}
           className="bg-gradient-to-br from-pink-600 to-pink-700"
           iconClassName="text-white"
           titleClassName="text-white"
         />
         <StatsCard
-          title="Ce mois"
-          value={effectiveStats.thisMonth}
+          title="Visibles"
+          value={likes?.responseData?.data?.totals?.active || "-"}
           icon={Calendar}
           className="bg-gradient-to-br from-indigo-600 to-indigo-700"
           iconClassName="text-white"
           titleClassName="text-white"
         />
         <StatsCard
-          title="Moyenne par post"
-          value={effectiveStats.avgPerPost}
-          icon={BarChart3}
-          className="bg-gradient-to-br from-emerald-600 to-emerald-700"
-          iconClassName="text-white"
-          titleClassName="text-white"
-        />
-        <StatsCard
-          title="Tendance"
-          value={Math.abs(Math.round(effectiveStats.trend))}
+          title="Non Visibles"
+          value={likes?.responseData?.data?.totals?.inactive || "-"}
           icon={TrendingUp}
-          trend={{ value: effectiveStats.trend, label: '%' }}
           className="bg-gradient-to-br from-amber-600 to-amber-700"
           iconClassName="text-white"
           titleClassName="text-white"
@@ -379,7 +238,7 @@ const LikesPage: React.FC = () => {
             </tr>
           </thead>
           <tbody className={isDark ? 'divide-y divide-gray-700' : 'divide-y divide-gray-100'}>
-            {filteredLikes.map(like => (
+            {filteredLikes?.map(like => (
               <tr
                 key={like.id}
                 className={`${
@@ -392,14 +251,14 @@ const LikesPage: React.FC = () => {
                       isDark ? 'text-white' : 'text-gray-900'
                     }`}
                   >
-                    {like.user_info?.full_name || 'Utilisateur'}
+                    {like.visitor_name || 'Utilisateur'}
                   </div>
                   <div
                     className={`text-xs ${
                       isDark ? 'text-gray-400' : 'text-gray-500'
                     }`}
                   >
-                    {like.user_info?.email || like.user_id}
+                    {like.visitor_email || "-"}
                   </div>
                 </td>
 
@@ -412,7 +271,7 @@ const LikesPage: React.FC = () => {
                         : 'text-primary-600 hover:text-primary-700'
                     }`}
                   >
-                    {like.news_posts?.title || 'Post supprimé'}
+                    {like.post_title || 'Post non trouvé'}
                   </button>
                 </td>
 
@@ -427,9 +286,9 @@ const LikesPage: React.FC = () => {
                 <td className="px-6 py-4 text-center">
                   <button
                     onClick={() => handleToggleVisibility(like)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${like.is_visible ? 'bg-primary-600' : 'bg-gray-600'}`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isActive(like) ? 'bg-primary-600' : 'bg-gray-600'}`}
                   >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${like.is_visible ? 'translate-x-6' : 'translate-x-1'}`} />
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isActive(like) ? 'translate-x-6' : 'translate-x-1'}`} />
                   </button>
                 </td>
 
@@ -543,10 +402,10 @@ const LikesPage: React.FC = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            {showPostModal.news_posts?.image_url && (
+            {showPostModal.post_image_url && (
               <img
-                src={showPostModal.news_posts.image_url}
-                alt={showPostModal.news_posts.title}
+                src={showPostModal.post_image_url}
+                alt={showPostModal.post_title}
                 className="w-full h-64 object-cover"
               />
             )}
@@ -556,75 +415,10 @@ const LikesPage: React.FC = () => {
                   isDark ? 'text-white' : 'text-gray-900'
                 }`}
               >
-                {showPostModal.news_posts?.title}
+                {showPostModal.post_title}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-1 ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}
-                  >
-                    Auteur
-                  </label>
-                  <p className={isDark ? 'text-white' : 'text-gray-900'}>
-                    {showPostModal.news_posts?.author_name || '—'}
-                  </p>
-                </div>
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-1 ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}
-                  >
-                    Catégorie
-                  </label>
-                  <p className={isDark ? 'text-white' : 'text-gray-900 capitalize'}>
-                    {showPostModal.news_posts?.category || '—'}
-                  </p>
-                </div>
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-1 ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}
-                  >
-                    Créé le
-                  </label>
-                  <p className={isDark ? 'text-white' : 'text-gray-900'}>
-                    {showPostModal.news_posts?.created_at
-                      ? format(new Date(showPostModal.news_posts.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })
-                      : '—'}
-                  </p>
-                </div>
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-1 ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}
-                  >
-                    ID du Post
-                  </label>
-                  <p className={isDark ? 'text-white' : 'text-gray-900'}>
-                    {showPostModal.news_posts?.id || showPostModal.post_id}
-                  </p>
-                </div>
-              </div>
-              {showPostModal.news_posts?.short_description && (
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-1 ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}
-                  >
-                    Description courte
-                  </label>
-                  <p className={isDark ? 'text-white' : 'text-gray-900'}>
-                    {showPostModal.news_posts.short_description}
-                  </p>
-                </div>
-              )}
-              {showPostModal.news_posts?.content && (
+
+              {showPostModal.post_description && (
                 <div>
                   <label
                     className={`block text-sm font-medium mb-1 ${
@@ -638,7 +432,7 @@ const LikesPage: React.FC = () => {
                       isDark ? 'text-white' : 'text-gray-800'
                     }`}
                   >
-                    {showPostModal.news_posts.content}
+                    {showPostModal.post_description}
                   </div>
                 </div>
               )}
