@@ -866,14 +866,14 @@ const RecruitmentPage: React.FC = () => {
                                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Nos offres
                                         d'emploi</h2>
                                     <p className="text-gray-600 mt-1">
-                                        {filteredOffers.length} offre{filteredOffers.length !== 1 ? 's' : ''} disponible{filteredOffers.length !== 1 ? 's' : ''}
-                                        {filters.search || filters.location || filters.type || filters.category ? ' avec les filtres actuels' : ''}
+                                        {filteredOffers?.length} offre{filteredOffers?.length !== 1 ? 's' : ''} disponible{filteredOffers?.length !== 1 ? 's' : ''}
+                                        {filters?.search || filters?.location || filters?.type || filters?.category ? ' avec les filtres actuels' : ''}
                                     </p>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {filteredOffers.length > 0 ? (
+                                {filteredOffers?.length > 0 ? (
                                     filteredOffers?.map((offer, index) => (
                                         <motion.article
                                             key={offer.id}

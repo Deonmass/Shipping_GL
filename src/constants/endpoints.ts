@@ -9,6 +9,11 @@ const urls =  {
     openTeams: '/open/teams',
     openCategories: '/open/categories',
     openQuoteRequests: '/open/quote-requests',
+    openVisitors: '/open/visitor-accounts',
+    openPostComments: '/open/post-comments',
+    openPostLikes: '/open/post-likes',
+
+    connectedVisitors: '/visitor/visitor-accounts',
 
     login: '/login',
     logout: '/api/logout',
@@ -28,6 +33,7 @@ const urls =  {
     newsletters: '/api/newsletters',
     jobOffers: '/api/job-offers',
     teams: '/api/teams',
+    visitors: '/api/visitor-accounts',
 }
 
 export default urls
