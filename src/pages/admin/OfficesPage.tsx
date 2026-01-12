@@ -34,6 +34,14 @@ const emptyItem = {
 const isActive = (u: any) =>
     u?.status?.toString() === "1"
 
+const getCoordinate = (value: string, type : "lat" | "lng") => {
+    if(value) {
+        if(type === "lat") return  value.split(",")[0]
+        return  value.split(",")[1]
+    }
+    return ""
+}
+
 const OfficesPage = () => {
     const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
     const isDark = theme === 'dark';
@@ -114,6 +122,7 @@ const OfficesPage = () => {
             address_line_1: formData.address_line_1,
             address_line_2: formData.address_line_2,
             address_line_3: formData.address_line_3,
+            latlng: formData.latlng,
             is_hq: formData.is_hq,
         })
     }
@@ -134,6 +143,7 @@ const OfficesPage = () => {
             address_line_1: formData.address_line_1,
             address_line_2: formData.address_line_2,
             address_line_3: formData.address_line_3,
+            latlng: formData.latlng,
             is_hq: formData.is_hq,
         })
     }
@@ -141,12 +151,12 @@ const OfficesPage = () => {
 
     // Préparer les données pour la carte
     const officeLocations = offices?.responseData?.data
-        ?.filter((office: any) => office.latitude && office.longitude)
+        ?.filter((office: any) => office.latlng)
         .map((office: any) => ({
             id: office.id,
             name: office.title,
-            latitude: parseFloat(office.latitude),
-            longitude: parseFloat(office.longitude),
+            latitude: parseFloat(getCoordinate(office.latlng, "lat")),
+            longitude: parseFloat(getCoordinate(office.latlng, "lng")),
             address: [
                 office.address_line_1,
                 office.address_line_2,
@@ -346,7 +356,7 @@ const OfficesPage = () => {
                     >
                         <div className="flex justify-between items-center mb-4">
                             <h2 className={theme === 'dark' ? 'text-xl font-semibold text-white' : 'text-xl font-semibold text-gray-900'}>Ajouter
-                                un utilisateur</h2>
+                                un Bureau</h2>
                             <button
                                 onClick={() => {
                                     setShowAddModal(false);
@@ -415,7 +425,23 @@ const OfficesPage = () => {
                                     }
                                 />
                             </div>
-
+                            <div>
+                                <label
+                                    className={isDark ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
+                                    Latitude,Longitude
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="-4.322447,15.307045"
+                                    value={formData?.latlng}
+                                    onChange={(e) => setFormData({...formData, latlng: e.target.value})}
+                                    className={
+                                        isDark
+                                            ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                            : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                    }
+                                />
+                            </div>
                             <div>
                                 <label
                                     className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
@@ -552,6 +578,13 @@ const OfficesPage = () => {
                                     {showViewModal?.address_line_1 || '—'} <br/>
                                     {showViewModal?.address_line_2 || '—'} <br/>
                                     {showViewModal?.address_line_3 || '—'}
+                                </div>
+                                <div className={theme === 'dark' ? 'text-gray-400 mt-2' : 'text-gray-500 mt-2'}>Nom
+                                    Lat,Lng
+                                </div>
+                                <div
+                                    className={theme === 'dark' ? 'text-white font-medium' : 'text-gray-900 font-medium'}>
+                                    {showViewModal?.latlng || '—'}
                                 </div>
                                 <div
                                     className={theme === 'dark' ? 'text-gray-400 mt-2' : 'text-gray-500 mt-2'}>Description
@@ -691,7 +724,23 @@ const OfficesPage = () => {
                                     }
                                 />
                             </div>
-
+                            <div>
+                                <label
+                                    className={isDark ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
+                                    Latitude,Longitude
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="-4.322447,15.307045"
+                                    value={formData?.latlng}
+                                    onChange={(e) => setFormData({...formData, latlng: e.target.value})}
+                                    className={
+                                        isDark
+                                            ? 'w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                            : 'w-full bg-white text-gray-900 rounded-lg px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600'
+                                    }
+                                />
+                            </div>
                             <div>
                                 <label
                                     className={theme === 'dark' ? 'block text-sm text-gray-300 mb-1' : 'block text-sm text-gray-700 mb-1'}>
