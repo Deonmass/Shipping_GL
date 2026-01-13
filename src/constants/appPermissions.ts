@@ -14,6 +14,7 @@ export const appPermissions = {
     services: "12",
     devis: "13",
     team: "14",
+    likes: "15",
     post_likes: "15",
     db_logs: "16",
     jobOffers: "17",
@@ -22,7 +23,9 @@ export const appPermissions = {
     visitor_accounts: "20",
     menu_visibility: "21",
 
-    likes: "15",
+    cotation: "00",
+    appelOffre: "00",
+
     users_assign_roles: "00",
     users_permissions: "00",
     settings: "00",

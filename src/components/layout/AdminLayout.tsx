@@ -12,11 +12,12 @@ import {supabase} from '../../lib/supabase';
 import {formatDistanceToNow} from 'date-fns';
 import {fr} from 'date-fns/locale';
 import './AdminMenu.css';
-import {HasPermission} from "../../utils/PermissionChecker.ts";
+import {HasOneOfPermissions, HasPermission} from "../../utils/PermissionChecker.ts";
 import {appPermissions} from "../../constants/appPermissions.ts";
 import {UseLogout} from "../../services";
 import {getAuthData, removeAuthData} from "../../utils";
 import AppToast from "../../utils/AppToast.ts";
+import {appOps} from "../../constants";
 
 const ADMIN_UI_VERSION = '2025-11-21-menu-layout-v1';
 
@@ -669,7 +670,6 @@ const AdminLayout: React.FC = () => {
                         )}
 
 
-
                         {/* Menu Cotations & AO */}
                         <li className="relative mt-2">
                             <button
@@ -704,9 +704,12 @@ const AdminLayout: React.FC = () => {
                             </button>
 
                             {/* Sous-menus */}
-                            {activeMenu === 'cotations' && sidebarExpanded && (
+                            {HasOneOfPermissions([{id: appPermissions.cotation, ops: appOps.read}, {
+                                id: appPermissions.appelOffre,
+                                ops: appOps.read
+                            }]) && (
                                 <ul className="mt-1 space-y-1">
-                                    <li>
+                                    {HasPermission(appPermissions.cotation) ? <li>
                                         <Link
                                             to="/admin/cotations"
                                             className={`flex items-center ${sidebarExpanded ? 'justify-start pl-6' : 'justify-center'} p-2 rounded-lg text-sm ${
@@ -720,8 +723,8 @@ const AdminLayout: React.FC = () => {
                                             <FileText className="w-4 h-4 mr-2"/>
                                             <span>Cotations</span>
                                         </Link>
-                                    </li>
-                                    <li>
+                                    </li> : null}
+                                    {HasPermission(appPermissions.appelOffre) ? <li>
                                         <Link
                                             to="/admin/appels-offres"
                                             className={`flex items-center ${sidebarExpanded ? 'justify-start pl-6' : 'justify-center'} p-2 rounded-lg text-sm ${
@@ -735,7 +738,7 @@ const AdminLayout: React.FC = () => {
                                             <ClipboardList className="w-4 h-4 mr-2"/>
                                             <span>Appels d'offres</span>
                                         </Link>
-                                    </li>
+                                    </li> : null}
                                 </ul>
                             )}
                         </li>
