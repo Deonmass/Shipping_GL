@@ -371,7 +371,7 @@ const AdminLayout: React.FC = () => {
             keywords: ['catégorie']
         },
         {
-            key: 'menu_management',
+            key: appPermissions.menu_visibility,
             path: '/admin/menu-sites',
             icon: Menu,
             label: 'Menu du site',
@@ -520,7 +520,7 @@ const AdminLayout: React.FC = () => {
                         )}
 
                         {/* Tables group - Always visible */}
-                        {true && (
+                        {tableItems.filter(item => HasPermission(item?.key)) && (
                             <li className="relative mt-2">
                                 <button
                                     onClick={() => setTablesExpanded(!tablesExpanded)}
@@ -546,7 +546,7 @@ const AdminLayout: React.FC = () => {
                                 {tablesExpanded && (
                                     <ul className="mt-2 space-y-1">
                                         {tableItems
-                                            .filter(item => item.key === 'menu_management' || HasPermission(item?.key))
+                                            .filter(item => HasPermission(item?.key))
                                             .map((item) => {
                                                 const isQuoteRequests = item.key === 'quote_requests';
                                                 const quoteBadge = notificationCountsByType.quote || 0;
