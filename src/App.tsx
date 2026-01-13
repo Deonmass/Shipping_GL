@@ -50,6 +50,8 @@ import TeamsPage from "./pages/admin/TeamsPage.tsx";
 import MenuSitesPage from "./pages/admin/MenuSitesPage";
 import CotationsPage from './pages/admin/CotationsPage';
 import AppelsOffresPage from './pages/admin/AppelsOffresPage';
+import VisitorsPage from "./pages/admin/VisitorsPage.tsx";
+
 
 function App() {
     const location = useLocation();
@@ -122,6 +124,8 @@ function App() {
                         {/* Cotations & Appels d'offres */}
                         <Route path="cotations" element={<CotationsPage/>}/>
                         <Route path="appels-offres" element={<AppelsOffresPage/>}/>
+                      
+                        <Route path="visitors" element={<VisitorsPage/>}/>
 
                         <Route path="*" element={<NotFoundPage/>}/>
                     </Route>
