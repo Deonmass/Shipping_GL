@@ -4,7 +4,8 @@ import {
     BarChart3, Users, FileText, Settings,
     Bell, Search, LogOut, Handshake, ClipboardEditIcon,
     MessageSquare, Heart, Calendar, Tags, TrendingUp, ChevronDown, ChevronRight,
-    Mail, Shield, Menu, CheckCircle2, Sun, Moon, User, Home, X, Wrench, Building2
+    Mail, Shield, Menu, CheckCircle2, Sun, Moon, User, Home, X, Wrench, Building2,
+    ClipboardList
 } from 'lucide-react';
 import {supabase} from '../../lib/supabase';
 import {formatDistanceToNow} from 'date-fns';
@@ -48,6 +49,8 @@ const AdminLayout: React.FC = () => {
         const saved = localStorage.getItem('admin_theme');
         return saved === 'light' ? 'light' : 'dark';
     });
+    
+    const [activeMenu, setActiveMenu] = useState<string | null>(null);
     const [allowedMenuKeys, setAllowedMenuKeys] = useState<Set<string>>(new Set());
     const [menuPermissionsActive, setMenuPermissionsActive] = useState(false);
     const [isSidebarHoverOpen, setIsSidebarHoverOpen] = useState(false);
@@ -365,6 +368,13 @@ const AdminLayout: React.FC = () => {
             icon: Tags,
             label: 'Catégories',
             keywords: ['catégorie']
+        },
+        {
+            key: 'menu_management',
+            path: '/admin/menu-sites',
+            icon: Menu,
+            label: 'Menu du site',
+            keywords: ['menu', 'navigation', 'lien']
         }
     ];
 
@@ -501,8 +511,8 @@ const AdminLayout: React.FC = () => {
                             </li>
                         )}
 
-                        {/* Tables group */}
-                        {tableItems.filter(item => HasPermission(item?.key)) && (
+                        {/* Tables group - Always visible */}
+                        {true && (
                             <li className="relative mt-2">
                                 <button
                                     onClick={() => setTablesExpanded(!tablesExpanded)}
@@ -528,7 +538,7 @@ const AdminLayout: React.FC = () => {
                                 {tablesExpanded && (
                                     <ul className="mt-2 space-y-1">
                                         {tableItems
-                                            .filter(item => HasPermission(item?.key))
+                                            .filter(item => item.key === 'menu_management' || HasPermission(item?.key))
                                             .map((item) => {
                                                 const isQuoteRequests = item.key === 'quote_requests';
                                                 const quoteBadge = notificationCountsByType.quote || 0;
@@ -702,6 +712,102 @@ const AdminLayout: React.FC = () => {
                         )}
 
                         {/* Mises à jour - Menu masqué par demande utilisateur */}
+                        
+                        {/* Menu Cotations & AO */}
+                        <li className="relative mt-2">
+                            <button
+                                onClick={() => setActiveMenu(activeMenu === 'cotations' ? '' : 'cotations')}
+                                className={`w-full flex items-center ${
+                                    sidebarExpanded ? 'justify-between' : 'justify-center'
+                                } p-2 rounded-lg ${
+                                    activeMenu === 'cotations' || 
+                                    location.pathname.startsWith('/admin/cotations') || 
+                                    location.pathname.startsWith('/admin/appels-offres')
+                                        ? theme === 'dark'
+                                            ? 'bg-blue-900/40 text-blue-300'
+                                            : 'bg-blue-50 text-blue-600'
+                                        : `admin-menu-item ${theme}`
+                                }`}
+                            >
+                                <div className="flex items-center">
+                                    <FileText className="w-5 h-5" />
+                                    {sidebarExpanded && (
+                                        <span className="ml-3 whitespace-nowrap hidden md:inline">
+                                            Cotations & AO
+                                        </span>
+                                    )}
+                                </div>
+                                {sidebarExpanded && (
+                                    <ChevronDown
+                                        className={`w-4 h-4 transition-transform ${
+                                            activeMenu === 'cotations' ? 'transform rotate-180' : ''
+                                        }`}
+                                    />
+                                )}
+                            </button>
+
+                            {/* Sous-menus */}
+                            {activeMenu === 'cotations' && sidebarExpanded && (
+                                <ul className="mt-1 space-y-1">
+                                    <li>
+                                        <Link
+                                            to="/admin/cotations"
+                                            className={`flex items-center ${sidebarExpanded ? 'justify-start pl-6' : 'justify-center'} p-2 rounded-lg text-sm ${
+                                                location.pathname === '/admin/cotations'
+                                                    ? 'text-white bg-red-600'
+                                                    : theme === 'dark'
+                                                    ? 'text-gray-400 hover:text-white hover:bg-gray-700'
+                                                    : 'text-gray-700 hover:text-gray-900 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            <FileText className="w-4 h-4 mr-2" />
+                                            <span>Cotations</span>
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link
+                                            to="/admin/appels-offres"
+                                            className={`flex items-center ${sidebarExpanded ? 'justify-start pl-6' : 'justify-center'} p-2 rounded-lg text-sm ${
+                                                location.pathname === '/admin/appels-offres'
+                                                    ? 'text-white bg-red-600'
+                                                    : theme === 'dark'
+                                                    ? 'text-gray-400 hover:text-white hover:bg-gray-700'
+                                                    : 'text-gray-700 hover:text-gray-900 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            <ClipboardList className="w-4 h-4 mr-2" />
+                                            <span>Appels d'offres</span>
+                                        </Link>
+                                    </li>
+                                </ul>
+                            )}
+                        </li>
+
+                        {/* Menu du site */}
+                        <li className="relative mt-2">
+                            <button
+                                onClick={() => navigate('/admin/menu-sites')}
+                                className={`w-full flex items-center ${
+                                    sidebarExpanded ? 'justify-start' : 'justify-center'
+                                } p-2 rounded-lg ${
+                                    location.pathname === '/admin/menu-sites'
+                                        ? theme === 'dark'
+                                            ? 'bg-blue-900/40 text-blue-300'
+                                            : 'bg-blue-50 text-blue-600'
+                                        : `admin-menu-item ${theme}`
+                                }`}
+                            >
+                                <div className="flex items-center">
+                                    <Menu className="w-5 h-5" />
+                                    {sidebarExpanded && (
+                                        <span className="ml-3 whitespace-nowrap hidden md:inline">
+                                            Menu du site
+                                        </span>
+                                    )}
+                                </div>
+                            </button>
+                        </li>
+
                     </ul>
 
                     <div
@@ -742,9 +848,10 @@ const AdminLayout: React.FC = () => {
                                 <span className="ml-3 whitespace-nowrap hidden md:inline">
                   Retour au site
                 </span>
+                
                             )}
                         </button>
-                        
+
                         {/* Signature du compteur */}
                         <div className={`mt-3 text-center ${!sidebarExpanded ? 'px-1' : 'px-3'} ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} text-[8px]`}>
                             <div className="border-t border-gray-600/20 pt-2">

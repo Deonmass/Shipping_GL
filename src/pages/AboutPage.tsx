@@ -201,6 +201,9 @@ const AboutPage: React.FC = () => {
               <p className="text-gray-700 leading-relaxed text-lg">
                 {t('about.mission.paragraph2')}
               </p>
+              <p className="text-gray-700 leading-relaxed text-lg">
+                {t('about.mission.paragraph3')}
+              </p>
             </div>
           </motion.div>
         </div>

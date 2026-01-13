@@ -47,6 +47,9 @@ import JobOfferPage from './pages/admin/JobOfferPage';
 import MenuVisibilityPage from './pages/admin/MenuVisibilityPage';
 import OfficesPage from "./pages/admin/OfficesPage.tsx";
 import TeamsPage from "./pages/admin/TeamsPage.tsx";
+import MenuSitesPage from "./pages/admin/MenuSitesPage";
+import CotationsPage from './pages/admin/CotationsPage';
+import AppelsOffresPage from './pages/admin/AppelsOffresPage';
 
 function App() {
     const location = useLocation();
@@ -75,9 +78,9 @@ function App() {
                         <Route path="engagement" element={<EngagementPage/>}/>
                         <Route path="contact" element={<ContactPage/>}/>
                         <Route path="recrutement" element={<RecruitmentPage/>}>
-                            <Route index element={null}/>
-                            <Route path="offres" element={null}/>
-                            <Route path="cv" element={null}/>
+                        <Route index element={null}/>
+                        <Route path="offres" element={null}/>
+                        <Route path="cv" element={null}/>
                         </Route>
                         <Route path="*" element={<NotFoundPage/>}/>
                     </Route>
@@ -98,6 +101,7 @@ function App() {
                         </Route>
                         <Route path="team" element={<TeamsPage/>}/>
                         <Route path="partners" element={<AdminPartnersPage/>}/>
+                        <Route path="menu-sites" element={<MenuSitesPage/>}/>
                         <Route path="posts" element={<PostsPage/>}/>
                         <Route path="services" element={<AdminServicesPage/>}/>
                         <Route path="quote-requests" element={<AdminQuoteRequestsPage/>}/>
@@ -114,6 +118,10 @@ function App() {
                         <Route path="menu-visibility" element={<MenuVisibilityPage/>}/>
 
                         <Route path="offices" element={<OfficesPage/>}/>
+                        
+                        {/* Cotations & Appels d'offres */}
+                        <Route path="cotations" element={<CotationsPage/>}/>
+                        <Route path="appels-offres" element={<AppelsOffresPage/>}/>
 
                         <Route path="*" element={<NotFoundPage/>}/>
                     </Route>

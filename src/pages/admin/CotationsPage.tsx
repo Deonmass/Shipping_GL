@@ -1,0 +1,2991 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, Eye, XCircle, CheckCircle, X, AlertCircle, Edit, Search, Settings } from 'lucide-react';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
+import { Bar, Pie, Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement, Chart } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+
+// Enregistrer les composants nécessaires de Chart.js
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+  ChartDataLabels
+);
+
+// Créer une instance personnalisée de SweetAlert2
+const MySwal = withReactContent(Swal);
+
+// Fonction pour obtenir le thème actuel
+const getTheme = (): keyof typeof swalThemes => {
+  if (typeof window === 'undefined') return 'light';
+  return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+};
+
+// Configuration des thèmes
+const swalThemes = {
+  light: {
+    background: '#ffffff',
+    text: '#1a1a1a',
+    confirmButton: '#d33',
+    cancelButton: '#6b7280',
+  },
+  dark: {
+    background: '#1f2937',
+    text: '#f3f4f6',
+    confirmButton: '#ef4444',
+    cancelButton: '#4b5563',
+  },
+};
+
+// Types
+type Regime = 'exo_total' | 'exo_partiel' | 'full_tax';
+type TypeCotation = 'import' | 'export' | 'domestique';
+type ModeTransport = 'aerien' | 'maritime' | 'routier' | 'autre';
+type Statut = 'todo' | 'pending' | 'en_attente' | 'envoyee' | 'annulee' | 'gagne';
+
+interface Cotation {
+  id: string;
+  numero: string;
+  client: string;
+  regime: Regime;
+  services: string;
+  type: TypeCotation;
+  mode: ModeTransport;
+  dateReception: Date;
+  dateEnvoi: Date | null;
+  dateSoumissionValidation?: string;
+  dateSoumissionClient?: string;
+  dateAnnulation?: string;
+  raisonAnnulation?: string;
+  vente: number;
+  achat: number;
+  commentaire: string;
+  reference: string;
+  statut: Statut;
+  utilisateur: string;
+}
+
+const CotationsPage: React.FC = () => {
+  // Fonction utilitaire pour formater les nombres avec séparateurs de milliers
+  const formatNumber = (num: number): string => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  };
+
+  const chartRef = React.useRef<any>(null);
+  const [activeTab, setActiveTab] = useState<'statistiques' | 'analyse' | 'base'>('base');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const years = Array.from(
+    { length: 5 },
+    (_, i) => new Date().getFullYear() - i
+  );
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingCotation, setEditingCotation] = useState<Cotation | null>(null);
+  const [newCotation, setNewCotation] = useState<Omit<Cotation, 'id' | 'statut' | 'dateEnvoi'>>(
+    {
+      numero: '',
+      client: '',
+      regime: 'exo_total',
+      services: '',
+      type: 'import',
+      mode: 'maritime',
+      dateReception: new Date(),
+      vente: 0,
+      achat: 0,
+      commentaire: '',
+      reference: '',
+      utilisateur: ''
+    }
+  );
+  const [cotations, setCotations] = useState<Cotation[]>([]);
+  const [revenueByService, setRevenueByService] = useState<{service: string; revenue: number}[]>([]);
+  const [filteredCotations, setFilteredCotations] = useState<Cotation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [userFilter, setUserFilter] = useState<string>('all');
+  const [serviceFilter, setServiceFilter] = useState<string>('');
+  const [activeSeries, setActiveSeries] = useState<Record<string, boolean>>({
+    'À faire': true,
+    'En cours': true,
+    'En attente': true,
+    'Envoyée': true,
+    'Annulée': true
+  });
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [monthFilter, setMonthFilter] = useState<string>(new Date().getMonth().toString());
+  const [yearFilter, setYearFilter] = useState<string>(new Date().getFullYear().toString());
+  const [dateRange, setDateRange] = useState<{start: string, end: string}>({start: '', end: ''});
+
+  // État pour le formulaire
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedCotation, setSelectedCotation] = useState<Cotation | null>(null);
+  const [statusHistory, setStatusHistory] = useState<{statut: string, date: string, jours: number}[]>([]);
+  const [newStatus, setNewStatus] = useState<Statut>('todo');
+  const [statusDate, setStatusDate] = useState('');
+  const [cancelData, setCancelData] = useState({ date: '', raison: '' });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target as HTMLInputElement;
+    
+    setNewCotation(prev => ({
+      ...prev,
+      [name]: type === 'number' 
+        ? parseFloat(value) || 0 
+        : type === 'date' 
+          ? new Date(value)
+          : value
+    }));
+  };
+
+  const getLastStatusDate = (cotation: Cotation) => {
+    if (cotation.statut === 'annulee' && cotation.dateAnnulation) {
+      return new Date(cotation.dateAnnulation).toLocaleDateString('fr-FR');
+    } else if (cotation.statut === 'envoyee' && cotation.dateSoumissionClient) {
+      return new Date(cotation.dateSoumissionClient).toLocaleDateString('fr-FR');
+    } else if (cotation.statut === 'en_attente' && cotation.dateSoumissionValidation) {
+      return new Date(cotation.dateSoumissionValidation).toLocaleDateString('fr-FR');
+    } else {
+      return new Date(cotation.dateReception).toLocaleDateString('fr-FR');
+    }
+  };
+
+  const calculateProcessingTime = (cotation: Cotation) => {
+    const lastDate = cotation.statut === 'annulee' && cotation.dateAnnulation ? 
+      new Date(cotation.dateAnnulation) :
+      cotation.statut === 'envoyee' && cotation.dateSoumissionClient ? 
+      new Date(cotation.dateSoumissionClient) :
+      cotation.statut === 'en_attente' && cotation.dateSoumissionValidation ? 
+      new Date(cotation.dateSoumissionValidation) :
+      new Date();
+    
+    const receptionDate = new Date(cotation.dateReception);
+    const diffTime = Math.abs(lastDate.getTime() - receptionDate.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // Convertir en jours
+  };
+
+  // Fonction pour filtrer les cotations par année
+  const getCotationsByYear = (year: number) => {
+    return filteredCotations.filter(cotation => {
+      const date = new Date(cotation.dateReception);
+      return date.getFullYear() === year;
+    });
+  };
+
+  // Comptage des statuts pour le graphique circulaire
+  const getStatusStats = () => {
+    const statusCounts = {
+      todo: 0,
+      pending: 0,
+      en_attente: 0,
+      envoyee: 0,
+      annulee: 0,
+      gagne: 0
+    };
+
+    const cotationsAnnee = getCotationsByYear(selectedYear);
+    
+    cotationsAnnee.forEach(cotation => {
+      statusCounts[cotation.statut]++;
+    });
+
+    return statusCounts;
+  };
+
+  // Compter les cotations par client pour l'année sélectionnée
+  const getTopClients = () => {
+    const clientCounts: Record<string, number> = {};
+    
+    // Filtrer d'abord les cotations par année sélectionnée
+    const cotationsAnnee = getCotationsByYear(selectedYear);
+    
+    // Compter les cotations par client
+    cotationsAnnee.forEach(cotation => {
+      if (cotation.client) {
+        clientCounts[cotation.client] = (clientCounts[cotation.client] || 0) + 1;
+      }
+    });
+    
+    // Trier les clients par nombre de cotations (du plus élevé au plus bas)
+    return Object.entries(clientCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5); // Prendre les 5 premiers
+  };
+
+  // Données pour l'histogramme des meilleurs clients
+  const topClients = getTopClients();
+  const clientsData = {
+    labels: topClients.map(([client]) => client),
+    datasets: [{
+      label: 'Nombre de cotations',
+      data: topClients.map(([_, count]) => count),
+      backgroundColor: 'rgba(59, 130, 246, 0.8)',
+      borderColor: 'rgba(255, 255, 255, 0.8)',
+      borderWidth: 1,
+      hoverBackgroundColor: 'rgba(29, 100, 216, 0.9)',
+      hoverBorderColor: '#ffffff',
+      hoverBorderWidth: 2
+    }]
+  };
+
+  const clientsOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    backgroundColor: 'transparent',
+    plugins: {
+      legend: {
+        display: false
+      },
+      title: {
+        display: true,
+        text: '',
+        color: '#ffffff',
+        font: {
+          size: 14,
+          weight: 'bold'
+        },
+        padding: {
+          bottom: 10
+        }
+      },
+      datalabels: {
+        color: '#ffffff',
+        font: {
+          weight: 'bold',
+          size: 12
+        },
+        anchor: 'end',
+        align: 'top',
+        formatter: (value: number) => value > 0 ? value : ''
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#ffffff',
+        bodyColor: '#ffffff',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+        borderWidth: 1,
+        padding: 12,
+        displayColors: false,
+        callbacks: {
+          label: function(context: any) {
+            return `Cotations: ${context.raw}`;
+          },
+          labelColor: function() {
+            return {
+              borderColor: 'transparent',
+              backgroundColor: 'transparent'
+            };
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          color: '#ffffff',
+          stepSize: 1,
+          font: {
+            weight: '500'
+          }
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)',
+          borderDash: [5, 5]
+        },
+        border: {
+          dash: [4, 4],
+          color: 'rgba(255, 255, 255, 0.1)'
+        }
+      },
+      x: {
+        ticks: {
+          color: '#ffffff',
+          font: {
+            weight: '500'
+          }
+        },
+        grid: {
+          display: false
+        }
+      }
+    }
+  };
+
+  // Compter les cotations par type pour une année donnée
+  const getTypeStats = (year: number) => {
+    const typeCounts = {
+      import: 0,
+      export: 0,
+      domestique: 0
+    };
+
+    filteredCotations.forEach(cotation => {
+      const cotationYear = new Date(cotation.dateReception).getFullYear();
+      if (cotationYear === year && (cotation.type === 'import' || cotation.type === 'export' || cotation.type === 'domestique')) {
+        typeCounts[cotation.type]++;
+      }
+    });
+
+    return typeCounts;
+  };
+
+  // Interface pour les statistiques de transport
+  interface TransportStats {
+    mode: ModeTransport;
+    totalVente: number;
+    totalAchat: number;
+    marge: number;
+    margePourcentage: number;
+    count: number;
+  }
+
+  // Obtenir les statistiques financières par mode de transport
+  const getTransportStats = (): TransportStats[] => {
+    const stats: Record<ModeTransport, {
+      totalVente: number;
+      totalAchat: number;
+      count: number;
+    }> = {
+      aerien: { totalVente: 0, totalAchat: 0, count: 0 },
+      maritime: { totalVente: 0, totalAchat: 0, count: 0 },
+      routier: { totalVente: 0, totalAchat: 0, count: 0 },
+      autre: { totalVente: 0, totalAchat: 0, count: 0 }
+    };
+
+    filteredCotations.forEach(cotation => {
+      const mode = cotation.mode;
+      stats[mode].totalVente += cotation.vente || 0;
+      stats[mode].totalAchat += cotation.achat || 0;
+      stats[mode].count++;
+    });
+
+    return Object.entries(stats).map(([mode, data]) => ({
+      mode: mode as ModeTransport,
+      totalVente: data.totalVente,
+      totalAchat: data.totalAchat,
+      marge: data.totalVente - data.totalAchat,
+      margePourcentage: data.totalVente > 0 
+        ? ((data.totalVente - data.totalAchat) / data.totalVente) * 100 
+        : 0,
+      count: data.count
+    })).filter(item => item.count > 0); // Ne retourner que les modes avec des données
+  };
+
+  // Compter les cotations par mois
+  const getMonthlyStats = (yearFilter: number) => {
+    const monthlyCounts: Record<string, number> = {};
+    
+    // Créer un tableau avec les 12 mois de l'année sélectionnée
+    const monthsOfYear = Array.from({ length: 12 }, (_, i) => {
+      const date = new Date(yearFilter, i, 1); // i va de 0 à 11 (janvier à décembre)
+      return {
+        year: yearFilter,
+        month: i, // 0 à 11 (janvier à décembre)
+        label: date.toLocaleString('fr-FR', { month: 'short' }).substring(0, 3) // Format: 'jan'
+      };
+    });
+
+    // Initialiser tous les mois à 0
+    monthsOfYear.forEach(({ year, month }) => {
+      const key = `${year}-${month.toString().padStart(2, '0')}`;
+      monthlyCounts[key] = 0;
+    });
+
+    // Compter les cotations par mois
+    filteredCotations.forEach(cotation => {
+      const date = new Date(cotation.dateReception);
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      
+      // Ne compter que les cotations de l'année sélectionnée
+      if (year === yearFilter) {
+        const key = `${year}-${month.toString().padStart(2, '0')}`;
+        if (monthlyCounts.hasOwnProperty(key)) {
+          monthlyCounts[key]++;
+        }
+      }
+    });
+
+    return {
+      labels: monthsOfYear.map(({ label }) => label),
+      data: monthsOfYear.map(({ year, month }) => {
+        const key = `${year}-${month.toString().padStart(2, '0')}`;
+        return monthlyCounts[key] || 0;
+      })
+    };
+  };
+
+  // Données pour le graphique des cotations par mois
+  const monthlyStats = getMonthlyStats(selectedYear);
+  
+  // Création d'un dégradé pour l'arrière-plan
+  const createGradient = (ctx: any, color1: string, color2: string) => {
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, color1);
+    gradient.addColorStop(1, color2);
+    return gradient;
+  };
+
+  // Fonction pour obtenir les données mensuelles par statut
+  const getMonthlyStatsByStatus = (cotationsList: Cotation[], year: number) => {
+    // Initialiser les données pour chaque mois (0-11 pour janvier à décembre)
+    const monthsData = Array(12).fill(0).map(() => ({
+      todo: 0,
+      pending: 0,
+      en_attente: 0,
+      envoyee: 0,
+      annulee: 0,
+      gagne: 0
+    }));
+    
+    // Formater les mois pour l'affichage
+    const monthLabels = [
+      'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin',
+      'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'
+    ];
+    
+    // Filtrer les cotations pour l'année sélectionnée
+    const yearlyCotations = cotationsList.filter(cotation => {
+      const date = new Date(cotation.dateReception);
+      return date.getFullYear() === year;
+    });
+    
+    // Compter les cotations par statut et par mois
+    yearlyCotations.forEach(cotation => {
+      const date = new Date(cotation.dateReception);
+      const month = date.getMonth(); // 0-11
+      const status = cotation.statut;
+      
+      // Incrémenter le compteur pour le statut correspondant
+      if (status in monthsData[month]) {
+        monthsData[month][status]++;
+      }
+    });
+    
+    // Créer les tableaux de données pour chaque statut
+    const todoData = monthsData.map(m => m.todo);
+    const pendingData = monthsData.map(m => m.pending);
+    const enAttenteData = monthsData.map(m => m.en_attente);
+    const envoyeeData = monthsData.map(m => m.envoyee);
+    const annuleeData = monthsData.map(m => m.annulee);
+    const gagneData = monthsData.map(m => m.gagne);
+
+    return { 
+      monthLabels, 
+      todoData, 
+      pendingData, 
+      enAttenteData, 
+      envoyeeData, 
+      annuleeData,
+      gagneData
+    };
+  };
+  
+  // Données pour le graphique
+  const monthlyData = (canvas: any) => {
+    const ctx = canvas.getContext('2d');
+    
+    // Filtrer les cotations pour l'année sélectionnée
+    const yearlyFilteredCotations = filteredCotations.filter(cotation => {
+      return new Date(cotation.dateReception).getFullYear() === selectedYear;
+    });
+    
+    const { 
+      monthLabels, 
+      todoData, 
+      pendingData, 
+      enAttenteData, 
+      envoyeeData, 
+      annuleeData 
+    } = getMonthlyStatsByStatus(yearlyFilteredCotations, selectedYear);
+    
+    return {
+      labels: monthLabels,
+      datasets: [
+        {
+          label: 'À faire',
+          data: todoData,
+          borderColor: 'rgba(156, 163, 175, 1)',
+          backgroundColor: createGradient(ctx, 'rgba(156, 163, 175, 0.4)', 'rgba(156, 163, 175, 0.05)'),
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: 'rgba(156, 163, 175, 1)',
+          pointBorderColor: '#fff',
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(156, 163, 175, 1)',
+          pointHoverBorderWidth: 2,
+          pointHitRadius: 10,
+          pointBorderWidth: 2,
+          shadowColor: 'rgba(156, 163, 175, 0.5)',
+          shadowBlur: 15,
+          shadowOffsetX: 0,
+          shadowOffsetY: 10,
+          hidden: !activeSeries['À faire']
+        },
+        {
+          label: 'En cours',
+          data: pendingData,
+          borderColor: 'rgba(59, 130, 246, 1)',
+          backgroundColor: createGradient(ctx, 'rgba(59, 130, 246, 0.4)', 'rgba(59, 130, 246, 0.05)'),
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+          pointBorderColor: '#fff',
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(59, 130, 246, 1)',
+          pointHoverBorderWidth: 2,
+          pointHitRadius: 10,
+          pointBorderWidth: 2,
+          shadowColor: 'rgba(59, 130, 246, 0.5)',
+          shadowBlur: 15,
+          shadowOffsetX: 0,
+          shadowOffsetY: 10,
+          hidden: !activeSeries['En cours']
+        },
+        {
+          label: 'En attente',
+          data: enAttenteData,
+          borderColor: 'rgba(245, 158, 11, 1)',
+          backgroundColor: createGradient(ctx, 'rgba(245, 158, 11, 0.4)', 'rgba(245, 158, 11, 0.05)'),
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: 'rgba(245, 158, 11, 1)',
+          pointBorderColor: '#fff',
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(245, 158, 11, 1)',
+          pointHoverBorderWidth: 2,
+          pointHitRadius: 10,
+          pointBorderWidth: 2,
+          shadowColor: 'rgba(245, 158, 11, 0.5)',
+          shadowBlur: 15,
+          shadowOffsetX: 0,
+          shadowOffsetY: 10,
+          hidden: !activeSeries['En attente']
+        },
+        {
+          label: 'Envoyée',
+          data: envoyeeData,
+          borderColor: 'rgba(16, 185, 129, 1)',
+          backgroundColor: createGradient(ctx, 'rgba(16, 185, 129, 0.4)', 'rgba(16, 185, 129, 0.05)'),
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+          pointBorderColor: '#fff',
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(16, 185, 129, 1)',
+          pointHoverBorderWidth: 2,
+          pointHitRadius: 10,
+          pointBorderWidth: 2,
+          shadowColor: 'rgba(16, 185, 129, 0.5)',
+          shadowBlur: 15,
+          shadowOffsetX: 0,
+          shadowOffsetY: 10,
+          hidden: !activeSeries['Envoyée']
+        },
+        {
+          label: 'Annulée',
+          data: annuleeData,
+          borderColor: 'rgba(239, 68, 68, 1)',
+          backgroundColor: createGradient(ctx, 'rgba(239, 68, 68, 0.4)', 'rgba(239, 68, 68, 0.05)'),
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: 'rgba(239, 68, 68, 1)',
+          pointBorderColor: '#fff',
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(239, 68, 68, 1)',
+          pointHoverBorderWidth: 2,
+          pointHitRadius: 10,
+          pointBorderWidth: 2,
+          shadowColor: 'rgba(239, 68, 68, 0.5)',
+          shadowBlur: 15,
+          shadowOffsetX: 0,
+          shadowOffsetY: 10,
+          hidden: !activeSeries['Annulée']
+        }
+      ]
+    };
+  };
+
+  // Gestion du clic sur un élément de la légende
+  const toggleSeries = (label: string) => {
+    setActiveSeries(prev => ({
+      ...prev,
+      [label]: !prev[label]
+    }));
+  };
+
+  // Compter le nombre total de cotations par statut pour l'année sélectionnée
+  const getStatusCounts = () => {
+    const counts = {
+      'À faire': 0,
+      'En cours': 0,
+      'En attente': 0,
+      'Envoyée': 0,
+      'Annulée': 0
+    };
+
+    filteredCotations.forEach(cotation => {
+      const cotationYear = new Date(cotation.dateReception).getFullYear();
+      if (cotationYear === selectedYear) {
+        switch(cotation.statut) {
+          case 'todo': counts['À faire']++; break;
+          case 'pending': counts['En cours']++; break;
+          case 'en_attente': counts['En attente']++; break;
+          case 'envoyee': counts['Envoyée']++; break;
+          case 'annulee': counts['Annulée']++; break;
+        }
+      }
+    });
+
+    return counts;
+  };
+
+  const statusCounts = getStatusCounts();
+
+  // Options du graphique analytique moderne
+  const monthlyOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    backgroundColor: 'transparent',
+    layout: {
+      padding: {
+        top: 20,
+        bottom: 40,
+        left: 20,
+        right: 20
+      }
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    },
+    plugins: {
+      legend: {
+        display: false, // On désactive la légende par défaut de Chart.js
+        container: '#chart-legend', // On spécifie le conteneur personnalisé
+        fullSize: false,
+        labels: {
+          color: '#9CA3AF',
+          font: {
+            size: 12,
+            weight: '500'
+          },
+          padding: 20,
+          usePointStyle: true,
+          pointStyle: 'circle',
+          boxWidth: 8,
+          boxHeight: 8
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(17, 24, 39, 0.95)',
+        titleColor: '#F9FAFB',
+        bodyColor: '#E5E7EB',
+        borderColor: 'rgba(75, 85, 99, 0.5)',
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 8,
+        usePointStyle: true,
+        callbacks: {
+          label: function(context: any) {
+            const label = context.dataset.label || '';
+            const value = context.raw;
+            return ` ${label}: ${value} cotations`;
+          },
+          labelColor: function() {
+            return {
+              borderColor: 'transparent',
+              backgroundColor: 'transparent'
+            };
+          }
+        }
+      },
+      datalabels: {
+        display: function(context: any) {
+          // Afficher uniquement les points avec une valeur > 0
+          return context.dataset.data[context.dataIndex] > 0;
+        },
+        color: '#ffffff',
+        font: {
+          weight: 'bold',
+          size: 10
+        },
+        anchor: 'end',
+        align: 'top',
+        offset: -30, // Augmenter l'offset pour plus d'espace
+        padding: {
+          top: -20, // Ajout d'un padding en haut
+          bottom: 0,
+          left: 0,
+          right: 0
+        },
+        clip: false
+      },
+      crosshair: {
+        line: {
+          color: 'rgba(156, 163, 175, 0.3)',
+          width: 1,
+          dash: [4, 4]
+        },
+        sync: {
+          enabled: false
+        },
+        zoom: {
+          enabled: false
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(75, 85, 99, 0.2)',
+          borderDash: [4, 4],
+          drawBorder: false,
+        },
+        ticks: {
+          color: '#9CA3AF',
+          font: {
+            size: 11,
+            weight: '500'
+          },
+          padding: 8,
+          callback: function(value: any) {
+            return value % 10 === 0 ? value : '';
+          }
+        },
+        border: {
+          display: false
+        }
+      },
+      x: {
+        grid: {
+          display: false,
+          drawBorder: false
+        },
+        ticks: {
+          color: '#9CA3AF',
+          font: {
+            size: 11,
+            weight: '500'
+          },
+          padding: 10
+        },
+        border: {
+          display: false
+        }
+      }
+    },
+    elements: {
+      line: {
+        tension: 0.4,
+        borderWidth: 2
+      },
+      point: {
+        radius: 3,
+        hoverRadius: 6,
+        hoverBorderWidth: 2,
+        backgroundColor: function(context: any) {
+          return context.dataset.borderColor;
+        },
+        borderColor: '#fff',
+        borderWidth: 2
+      }
+    },
+    animation: {
+      duration: 1000,
+      easing: 'easeInOutQuart'
+    },
+    transitions: {
+      show: {
+        animations: {
+          x: {
+            from: 0
+          },
+          y: {
+            from: 0
+          }
+        }
+      },
+      hide: {
+        animations: {
+          x: {
+            to: 0
+          },
+          y: {
+            to: 0
+          }
+        }
+      }
+    }
+  };
+
+  // Création d'un composant Canvas pour le rendu du graphique
+  const ChartCanvas = ({ data, options }: { data: any, options: any }) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const chartRef = useRef<any>(null);
+    const legendContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      if (canvasRef.current) {
+        const ctx = canvasRef.current.getContext('2d');
+        if (ctx) {
+          // Détruire le graphique existant s'il y en a un
+          if (chartRef.current) {
+            chartRef.current.destroy();
+          }
+          
+          // Créer un nouveau graphique
+          chartRef.current = new Chart(ctx, {
+            type: 'line',
+            data: data(ctx.canvas),
+            options: options
+          });
+        }
+      }
+
+      // Nettoyage lors du démontage
+      return () => {
+        if (chartRef.current) {
+          chartRef.current.destroy();
+        }
+      };
+    }, [data, options]);
+
+    return (
+      <>
+        <div ref={legendContainerRef} id="chart-legend" className="mb-2"></div>
+        <canvas ref={canvasRef} style={{ width: '100%', height: 'calc(100% - 2rem)' }} />
+      </>
+    );
+  };
+
+  // Données pour le graphique circulaire des types
+  const typeStats = getTypeStats(selectedYear);
+  const typeData = {
+    labels: ['Import', 'Export', 'Domestique'],
+    datasets: [{
+      data: [
+        typeStats.import,
+        typeStats.export,
+        typeStats.domestique
+      ],
+      backgroundColor: [
+        'rgba(59, 130, 246, 0.7)',    // bleu pour Import
+        'rgba(16, 185, 129, 0.7)',    // vert pour Export
+        'rgba(139, 92, 246, 0.7)'     // violet pour Domestique
+      ],
+      borderColor: [
+        'rgba(59, 130, 246, 1)',
+        'rgba(16, 185, 129, 1)',
+        'rgba(139, 92, 246, 1)'
+      ],
+      borderWidth: 1
+    }]
+  };
+
+  const typeOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    backgroundColor: 'transparent',
+    plugins: {
+      legend: {
+        position: 'right' as const,
+        labels: {
+          color: '#ffffff',
+          font: {
+            size: 12,
+            weight: '500'
+          },
+          padding: 15
+        }
+      },
+      title: {
+        display: true,
+        text: '',
+        color: '#ffffff',
+        font: {
+          size: 14,
+          weight: 'bold'
+        },
+        padding: {
+          bottom: 10
+        }
+      },
+      tooltip: {
+        backgroundColor: '#ffffff',
+        titleColor: '#ffffff',
+        bodyColor: '#ffffff',
+        borderColor: '#ffffff',
+        borderWidth: 1,
+        padding: 10,
+        callbacks: {
+          label: function(context: any) {
+            const label = context.label || '';
+            const value = context.raw || 0;
+            const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+            const percentage = Math.round((value / total) * 100);
+            return `${label}: ${value} (${!isNaN(percentage) ? percentage : 0}%)`;
+          },
+          labelColor: function() {
+            return {
+              borderColor: 'transparent',
+              backgroundColor: 'transparent'
+            };
+          }
+        }
+      },
+      datalabels: {
+        formatter: (value: number) => {
+          const total = typeData.datasets[0].data.reduce((a, b) => a + b, 0);
+          const percentage = Math.round((value / total) * 100);
+          return value > 0 ? `${percentage}%` : '';
+        },
+        color: '#ffffff',
+        font: {
+          weight: 'bold' as const,
+          size: 12
+        },
+        textShadowBlur: 10,
+        textShadowColor: 'rgba(0, 0, 0, 0.8)'
+      }
+    }
+  };
+
+  // Données pour le graphique circulaire des statuts
+  const statusStats = getStatusStats();
+  const statusData = {
+    labels: ['À faire', 'En attente client', 'En attente validation', 'Envoyée', 'Annulée'],
+    datasets: [{
+      data: [
+        statusStats.todo,
+        statusStats.pending,
+        statusStats.en_attente,
+        statusStats.envoyee,
+        statusStats.annulee
+      ],
+      backgroundColor: [
+        'rgba(107, 114, 128, 0.7)',    // gris pour À faire
+        'rgba(59, 130, 246, 0.7)',     // bleu pour En attente client
+        'rgba(245, 158, 11, 0.7)',     // jaune pour En attente validation
+        'rgba(16, 185, 129, 0.7)',     // vert pour Envoyée
+        'rgba(239, 68, 68, 0.7)'       // rouge pour Annulée
+      ],
+      borderColor: [
+        'rgba(107, 114, 128, 1)',
+        'rgba(59, 130, 246, 1)',
+        'rgba(245, 158, 11, 1)',
+        'rgba(16, 185, 129, 1)',
+        'rgba(239, 68, 68, 1)'
+      ],
+      borderWidth: 1
+    }]
+  };
+
+  const statusOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    backgroundColor: 'transparent',
+    plugins: {
+      legend: {
+        position: 'right' as const,
+        labels: {
+          color: '#ffffff',
+          font: {
+            size: 12,
+            weight: '500'
+          },
+          padding: 15
+        }
+      },
+      tooltip: {
+        backgroundColor: getTheme() === 'dark' ? '#374151' : '#ffffff',
+        titleColor: getTheme() === 'dark' ? '#ffffff' : '#1f2937',
+        bodyColor: getTheme() === 'dark' ? '#e5e7eb' : '#4b5563',
+        borderColor: getTheme() === 'dark' ? '#4b5563' : '#e5e7eb',
+        borderWidth: 1,
+        padding: 10,
+        callbacks: {
+          label: function(context: any) {
+            const label = context.label || '';
+            const value = context.raw || 0;
+            const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+            const percentage = Math.round((value / total) * 100);
+            return `${label}: ${value} (${percentage}%)`;
+          },
+          labelColor: function() {
+            return {
+              borderColor: 'transparent',
+              backgroundColor: 'transparent'
+            };
+          }
+        }
+      },
+      datalabels: {
+        formatter: (value: number) => {
+          const total = statusData.datasets[0].data.reduce((a, b) => a + b, 0);
+          const percentage = Math.round((value / total) * 100);
+          return value > 0 ? `${percentage}%` : '';
+        },
+        color: '#ffffff',
+        font: {
+          weight: 'bold' as const,
+          size: 12
+        },
+        textShadowBlur: 10,
+        textShadowColor: getTheme() === 'dark' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.5)'
+      }
+    }
+  };
+
+  // Données de démonstration pour les cotations
+ const fetchCotations = () => {
+  setLoading(true);
+
+  const demoCotations: Cotation[] = [
+    /* ======================
+       ===== JANVIER 2026 =====
+       ====================== */
+    {
+      id: '2026-01',
+      numero: 'COT-2026-001',
+      client: 'Client A',
+      regime: 'exo_total',
+      type: 'import',
+      mode: 'aerien',
+      dateReception: new Date('2026-01-05'),
+      dateEnvoi: null,
+      statut: 'pending',
+      reference: 'REF-2026-01',
+      services: 'Aérien express',
+      commentaire: '',
+      vente: 1600,
+      achat: 1100,
+      utilisateur: 'Gedeon Massadi'
+    },
+    {
+      id: '2026-01-02',
+      numero: 'COT-2026-011',
+      client: 'Client B',
+      regime: 'exo_partiel',
+      type: 'export',
+      mode: 'maritime',
+      dateReception: new Date('2026-01-12').toISOString(),
+      dateEnvoi: null,
+      statut: 'envoyee',
+      reference: 'REF-2026-11',
+      services: 'Maritime complet',
+      commentaire: 'Prioritaire',
+      vente: 2200,
+      achat: 1600,
+      utilisateur: 'Felix Luaba'
+    },
+    {
+      id: '2026-01-03',
+      numero: 'COT-2026-012',
+      client: 'Client G',
+      regime: 'exo_total',
+      type: 'import',
+      mode: 'routier',
+      dateReception: new Date('2026-01-18').toISOString(),
+      dateEnvoi: null,
+      statut: 'en_attente',
+      reference: 'REF-2026-12',
+      services: 'Routier régional',
+      commentaire: '',
+      vente: 1200,
+      achat: 800,
+      utilisateur: 'Gedeon Massadi'
+    },
+    {
+      id: '2026-01-04',
+      numero: 'COT-2026-013',
+      client: 'Client D',
+      regime: 'exo_partiel',
+      type: 'export',
+      mode: 'aerien',
+      dateReception: new Date('2026-01-20').toISOString(),
+      dateEnvoi: null,
+      statut: 'annulee',
+      reference: 'REF-2026-13',
+      services: 'Aérien standard',
+      commentaire: 'Client indisponible',
+      vente: 2100,
+      achat: 1500,
+      utilisateur: 'Felix Luaba'
+    },
+    {
+      id: '2026-01-05',
+      numero: 'COT-2026-014',
+      client: 'Client K',
+      regime: 'exo_total',
+      type: 'import',
+      mode: 'maritime',
+      dateReception: new Date('2026-01-25').toISOString(),
+      dateEnvoi: null,
+      statut: 'envoyee',
+      reference: 'REF-2026-14',
+      services: 'Maritime groupage',
+      commentaire: '',
+      vente: 2300,
+      achat: 1650,
+      utilisateur: 'Gedeon Massadi'
+    },
+
+    /* ======================
+       ===== FÉVRIER 2026 =====
+       ====================== */
+    {
+      id: '2026-02-01',
+      numero: 'COT-2026-015',
+      client: 'Client K',
+      regime: 'exo_partiel',
+      type: 'import',
+      mode: 'routier',
+      dateReception: new Date('2026-02-03').toISOString(),
+      dateEnvoi: null,
+      statut: 'pending',
+      reference: 'REF-2026-15',
+      services: 'Routier national',
+      commentaire: '',
+      vente: 1300,
+      achat: 900,
+      utilisateur: 'Felix Luaba'
+    },
+    {
+      id: '2026-02-02',
+      numero: 'COT-2026-016',
+      client: 'Client G',
+      regime: 'exo_total',
+      type: 'import',
+      mode: 'aerien',
+      dateReception: new Date('2026-02-08').toISOString(),
+      dateEnvoi: null,
+      statut: 'envoyee',
+      reference: 'REF-2026-16',
+      services: 'Aérien prioritaire',
+      commentaire: 'Urgent',
+      vente: 2500,
+      achat: 1800,
+      utilisateur: 'Gedeon Massadi'
+    },
+    {
+      id: '2026-02-03',
+      numero: 'COT-2026-017',
+      client: 'Client H',
+      regime: 'exo_partiel',
+      type: 'import',
+      mode: 'maritime',
+      dateReception: new Date('2026-02-12').toISOString(),
+      dateEnvoi: null,
+      statut: 'en_attente',
+      reference: 'REF-2026-17',
+      services: 'Maritime',
+      commentaire: '',
+      vente: 2600,
+      achat: 1900,
+      utilisateur: 'Felix Luaba'
+    },
+    {
+      id: '2026-02-04',
+      numero: 'COT-2026-018',
+      client: 'Client I',
+      regime: 'exo_total',
+      type: 'import',
+      mode: 'routier',
+      dateReception: new Date('2026-02-18').toISOString(),
+      dateEnvoi: null,
+      statut: 'pending',
+      reference: 'REF-2026-18',
+      services: 'Routier express',
+      commentaire: '',
+      vente: 1150,
+      achat: 750,
+      utilisateur: 'Gedeon Massadi'
+    },
+    {
+      id: '2026-02-05',
+      numero: 'COT-2026-019',
+      client: 'Client G',
+      regime: 'exo_partiel',
+      type: 'import',
+      mode: 'aerien',
+      dateReception: new Date('2026-02-22').toISOString(),
+      dateEnvoi: null,
+      statut: 'envoyee',
+      reference: 'REF-2026-19',
+      services: 'Aérien standard',
+      commentaire: '',
+      vente: 2900,
+      achat: 2100,
+      utilisateur: 'Felix Luaba'
+    },
+  ];
+
+
+    setCotations(demoCotations);
+    setLoading(false);
+  };
+
+  // Charger les cotations au montage du composant
+  useEffect(() => {
+    fetchCotations();
+  }, []);
+
+  // Récupérer la liste des utilisateurs uniques pour le filtre
+  const getUniqueUsers = () => {
+    const users = new Set<string>();
+    cotations.forEach(cotation => {
+      if (cotation.utilisateur) {
+        users.add(cotation.utilisateur);
+      }
+    });
+    return Array.from(users);
+  };
+
+  // Récupérer la liste des services uniques pour le filtre
+  const getUniqueServices = () => {
+    const services = new Set<string>();
+    cotations.forEach(cotation => {
+      if (cotation.services) {
+        cotation.services.split(',').forEach(service => {
+          const trimmed = service.trim();
+          if (trimmed) services.add(trimmed);
+        });
+      }
+    });
+    return Array.from(services);
+  };
+
+  useEffect(() => {
+    let result = [...cotations];
+    
+    // Trier par date de réception (du plus récent au plus ancien)
+    result.sort((a, b) => new Date(b.dateReception).getTime() - new Date(a.dateReception).getTime());
+    
+    // Appliquer le filtre de statut
+    if (statusFilter !== 'all') {
+      result = result.filter(cotation => cotation.statut === statusFilter);
+    }
+
+    // Appliquer le filtre par utilisateur
+    if (userFilter && userFilter !== 'all') {
+      result = result.filter(cotation => cotation.utilisateur === userFilter);
+    }
+
+    // Appliquer le filtre par service
+    if (serviceFilter) {
+      result = result.filter(cotation => 
+        cotation.services && cotation.services.toLowerCase().includes(serviceFilter.toLowerCase())
+      );
+    }
+    
+    // Appliquer le filtre de date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (dateFilter === 'today') {
+      result = result.filter(cotation => 
+        new Date(cotation.dateReception).toDateString() === today.toDateString()
+      );
+    } else if (dateFilter === 'week') {
+      const lastWeek = new Date(today);
+      lastWeek.setDate(today.getDate() - 7);
+      result = result.filter(cotation => 
+        new Date(cotation.dateReception) >= lastWeek
+      );
+    } else if (dateFilter === 'month') {
+      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      result = result.filter(cotation => 
+        new Date(cotation.dateReception) >= firstDayOfMonth
+      );
+    } else if (dateFilter === 'specific-month') {
+      const month = parseInt(monthFilter);
+      const year = parseInt(yearFilter);
+      const startDate = new Date(year, month, 1);
+      const endDate = new Date(year, month + 1, 0);
+      endDate.setHours(23, 59, 59, 999);
+      
+      result = result.filter(cotation => {
+        const cotationDate = new Date(cotation.dateReception);
+        return cotationDate >= startDate && cotationDate <= endDate;
+      });
+    } else if (dateFilter === 'specific-year') {
+      const year = parseInt(yearFilter);
+      const startDate = new Date(year, 0, 1);
+      const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
+      
+      result = result.filter(cotation => {
+        const cotationDate = new Date(cotation.dateReception);
+        return cotationDate >= startDate && cotationDate <= endDate;
+      });
+    } else if (dateFilter === 'custom-range' && dateRange.start && dateRange.end) {
+      const startDate = new Date(dateRange.start);
+      const endDate = new Date(dateRange.end);
+      endDate.setHours(23, 59, 59, 999);
+      
+      result = result.filter(cotation => {
+        const cotationDate = new Date(cotation.dateReception);
+        return cotationDate >= startDate && cotationDate <= endDate;
+      });
+    }
+    
+    // Appliquer la recherche
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(cotation => 
+        cotation.numero?.toLowerCase().includes(term) ||
+        cotation.client?.toLowerCase().includes(term) ||
+        cotation.reference?.toLowerCase().includes(term) ||
+        cotation.services?.toLowerCase().includes(term)
+      );
+    }
+    
+    setFilteredCotations(result);
+  }, [cotations, searchTerm, statusFilter, dateFilter, monthFilter, yearFilter, dateRange, userFilter, serviceFilter]);
+
+  useEffect(() => {
+    const revenueData = calculateRevenueByService(filteredCotations);
+    setRevenueByService(revenueData);
+  }, [filteredCotations]);
+
+  const deleteCotation = async (id: string) => {
+    const theme = getTheme();
+    const themeConfig = swalThemes[theme];
+
+    const result = await MySwal.fire({
+      title: 'Êtes-vous sûr ?',
+      text: 'Voulez-vous vraiment supprimer cette cotation ?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: themeConfig.confirmButton,
+      cancelButtonColor: themeConfig.cancelButton,
+      confirmButtonText: 'Oui, supprimer',
+      cancelButtonText: 'Annuler',
+      background: themeConfig.background,
+      color: themeConfig.text,
+      customClass: {
+        popup: 'dark:bg-gray-800',
+        title: 'dark:text-white',
+        htmlContainer: 'dark:text-gray-300',
+        confirmButton: 'dark:bg-red-600 dark:hover:bg-red-700',
+        cancelButton: 'dark:bg-gray-600 dark:hover:bg-gray-500',
+      },
+    });
+
+    if (result.isConfirmed) {
+      setCotations(cotations.filter(c => c.id !== id));
+      MySwal.fire({
+        title: 'Supprimé !',
+        text: 'La cotation a été supprimée avec succès.',
+        icon: 'success',
+        background: themeConfig.background,
+        color: themeConfig.text,
+        customClass: {
+          popup: 'dark:bg-gray-800',
+          title: 'dark:text-white',
+          htmlContainer: 'dark:text-gray-300',
+          confirmButton: 'dark:bg-red-600 dark:hover:bg-red-700',
+        },
+      });
+    }
+  };
+
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setNewStatus(e.target.value as Statut);
+  };
+
+  const handleStatusSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedCotation && statusDate) {
+      const updated = cotations.map(c => 
+        c.id === selectedCotation.id 
+          ? { 
+              ...c, 
+              statut: newStatus,
+              dateDerniereModification: new Date().toISOString(),
+              ...(newStatus === 'pending' && { dateEnAttenteClient: statusDate }),
+              ...(newStatus === 'en_attente' && { dateSoumissionValidation: statusDate }),
+              ...(newStatus === 'envoyee' && { dateSoumissionClient: statusDate }),
+              ...(newStatus === 'annulee' && { 
+                dateAnnulation: statusDate,
+                raisonAnnulation: 'Modifié via le panneau des statuts' 
+              })
+            }
+          : c
+      );
+      setCotations(updated);
+      setShowStatusModal(false);
+      setStatusDate('');
+    }
+  };
+
+  const openStatusModal = (cotation: Cotation) => {
+    setSelectedCotation(cotation);
+    
+    // Créer l'historique des statuts
+    const history = [];
+    const creationDate = new Date(cotation.dateReception);
+    
+    // Date de création
+    history.push({
+      statut: 'Création',
+      date: creationDate.toLocaleDateString('fr-FR'),
+      jours: 0
+    });
+
+    // Autres dates de statut
+    if (cotation.dateSoumissionValidation) {
+      const date = new Date(cotation.dateSoumissionValidation);
+      history.push({
+        statut: 'En attente de validation',
+        date: date.toLocaleDateString('fr-FR'),
+        jours: Math.ceil((date.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24))
+      });
+    }
+    
+    if (cotation.dateSoumissionClient) {
+      const date = new Date(cotation.dateSoumissionClient);
+      history.push({
+        statut: 'Envoyée au client',
+        date: date.toLocaleDateString('fr-FR'),
+        jours: Math.ceil((date.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24))
+      });
+    }
+    
+    if (cotation.dateAnnulation) {
+      const date = new Date(cotation.dateAnnulation);
+      history.push({
+        statut: 'Annulée',
+        date: date.toLocaleDateString('fr-FR'),
+        jours: Math.ceil((date.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24)),
+        raison: cotation.raisonAnnulation
+      });
+    }
+    
+    setStatusHistory(history);
+    setNewStatus(cotation.statut);
+    setShowStatusModal(true);
+  };
+
+  const openDetailsModal = (cotation: Cotation) => {
+    setSelectedCotation(cotation);
+    setShowDetailsModal(true);
+  };
+
+  const getStatutBadge = (statut: Statut) => {
+    const statutClasses = {
+      todo: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white text-[9.199px]',
+      pending: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 text-[9.199px]',
+      gagne: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100  text-[9.199px]',
+      en_attente: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 text-[9.199px]',
+      envoyee: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 text-[9.199px]',
+      annulee: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 text-[9.199px]'
+    };
+    const statutLabels = {
+      todo: 'À faire',
+      pending: 'En attente client',
+      gagne: 'Gagnée',
+      en_attente: 'En attente validation',
+      envoyee: 'Envoyée',
+      annulee: 'Annulée'
+    };
+    return (
+      <span className={`px-3 py-1 text-sm rounded-full ${statutClasses[statut]}`}>
+        {statutLabels[statut]}
+      </span>
+    );
+  };
+
+  const handleEditCotation = (cotation: Cotation) => {
+    setEditingCotation(cotation);
+    setNewCotation({
+      numero: cotation.numero,
+      client: cotation.client,
+      regime: cotation.regime,
+      services: cotation.services,
+      type: cotation.type,
+      mode: cotation.mode,
+      dateReception: new Date(cotation.dateReception),
+      vente: cotation.vente,
+      achat: cotation.achat,
+      commentaire: cotation.commentaire,
+      reference: cotation.reference
+    });
+    setShowAddForm(true);
+  };
+
+  const handleAddCotation = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingCotation) {
+      const updated = cotations.map(c => 
+        c.id === editingCotation.id 
+          ? { 
+              ...c, 
+              ...newCotation,
+              dateDerniereModification: new Date().toISOString()
+            }
+          : c
+      );
+      setCotations(updated);
+      setEditingCotation(null);
+    } else {
+      const newId = `NEW-${new Date().getTime()}`;
+      const newCotation: Cotation = {
+        id: newId,
+        ...newCotation,
+        dateCreation: new Date().toISOString(),
+        dateDerniereModification: new Date().toISOString(),
+        statut: 'todo'
+      };
+      setCotations([...cotations, newCotation]);
+    }
+    setShowAddForm(false);
+    setNewCotation({
+      numero: '',
+      client: '',
+      regime: 'exo_total',
+      services: '',
+      type: 'import',
+      mode: 'maritime',
+      dateReception: new Date(),
+      vente: 0,
+      achat: 0,
+      commentaire: '',
+      reference: '',
+      utilisateur: ''
+    });
+  };
+
+  const getStatsByUser = () => {
+    const userStats: Record<string, { 
+      total: number; 
+      import: number; 
+      export: number; 
+      domestique: number;
+      totalVente: number;
+      totalAchat: number;
+      marge: number;
+      margePourcentage: number;
+    }> = {};
+
+    filteredCotations.forEach(cotation => {
+      if (!cotation.utilisateur) return;
+      
+      if (!userStats[cotation.utilisateur]) {
+        userStats[cotation.utilisateur] = { 
+          total: 0, 
+          import: 0, 
+          export: 0, 
+          domestique: 0,
+          totalVente: 0,
+          totalAchat: 0,
+          marge: 0,
+          margePourcentage: 0
+        };
+      }
+
+      userStats[cotation.utilisateur].total++;
+      userStats[cotation.utilisateur][cotation.type] = 
+        (userStats[cotation.utilisateur][cotation.type] || 0) + 1;
+      userStats[cotation.utilisateur].totalVente += cotation.vente || 0;
+      userStats[cotation.utilisateur].totalAchat += cotation.achat || 0;
+      userStats[cotation.utilisateur].marge = userStats[cotation.utilisateur].totalVente - userStats[cotation.utilisateur].totalAchat;
+      userStats[cotation.utilisateur].margePourcentage = userStats[cotation.utilisateur].totalVente > 0 
+        ? (userStats[cotation.utilisateur].marge / userStats[cotation.utilisateur].totalVente) * 100 
+        : 0;
+    });
+
+    return Object.entries(userStats).map(([utilisateur, stats]) => ({
+      utilisateur,
+      ...stats
+    }));
+  };
+
+  const getServiceStats = () => {
+    const serviceStats: Record<string, { 
+      service: string; 
+      totalVente: number; 
+      totalAchat: number; 
+      marge: number; 
+      margePourcentage: number;
+      count: number;
+    }> = {};
+
+    filteredCotations.forEach(cotation => {
+      if (cotation.services) {
+        const services = cotation.services.split(',').map(s => s.trim());
+        services.forEach(service => {
+          if (!service) return;
+          
+          if (!serviceStats[service]) {
+            serviceStats[service] = {
+              service,
+              totalVente: 0,
+              totalAchat: 0,
+              marge: 0,
+              margePourcentage: 0,
+              count: 0
+            };
+          }
+          
+          serviceStats[service].totalVente += cotation.vente || 0;
+          serviceStats[service].totalAchat += cotation.achat || 0;
+          serviceStats[service].marge = serviceStats[service].totalVente - serviceStats[service].totalAchat;
+          serviceStats[service].margePourcentage = serviceStats[service].totalVente > 0
+            ? (serviceStats[service].marge / serviceStats[service].totalVente) * 100
+            : 0;
+          serviceStats[service].count++;
+        });
+      }
+    });
+
+    return Object.values(serviceStats).sort((a, b) => b.totalVente - a.totalVente);
+  };
+
+  const calculateRevenueByService = (cots: Cotation[]) => {
+    const serviceRevenue: Record<string, number> = {};
+    
+    cots.forEach(cotation => {
+      if (cotation.statut === 'validée' || cotation.statut === 'facturée') {
+        const services = cotation.services.split(',').map(s => s.trim());
+        const revenue = cotation.vente - cotation.achat;
+        
+        services.forEach(service => {
+          if (!service) return;
+          serviceRevenue[service] = (serviceRevenue[service] || 0) + revenue;
+        });
+      }
+    });
+
+    // Convert to array and sort by revenue (descending)
+    const result = Object.entries(serviceRevenue)
+      .map(([service, revenue]) => ({ service, revenue }))
+      .sort((a, b) => b.revenue - a.revenue);
+
+    return result;
+  };
+
+  return (
+    <div className="p-6 mt-10">
+      
+    <div className="flex flex-col sticky top-0 z-10">
+
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Gestion des cotations</h2>
+      </div>
+
+      {/* Onglets */}
+      <div className="bg-white dark:bg-gray-900 pt-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+        <ul className="flex flex-wrap -mb-px">
+          <li className="mr-2">
+            <button
+              onClick={() => setActiveTab('statistiques')}
+              className={`inline-block p-4 border-b-2 rounded-t-lg ${
+                activeTab === 'statistiques'
+                  ? 'text-red-600 border-red-600 dark:text-red-400 dark:border-red-400'
+                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white border-transparent hover:border-gray-300 dark:hover:border-gray-200'
+              }`}
+            >
+              Statistiques
+            </button>
+          </li>
+          <li className="mr-2">
+            <button
+              onClick={() => setActiveTab('analyse')}
+              className={`inline-block p-4 border-b-2 rounded-t-lg ${
+                activeTab === 'analyse'
+                  ? 'text-red-600 border-red-600 dark:text-red-400 dark:border-red-400'
+                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white border-transparent hover:border-gray-300 dark:hover:border-gray-200'
+              }`}
+              aria-current="page"
+            >
+              Analyse
+            </button>
+          </li>
+          <li className="mr-2">
+            <button
+              onClick={() => setActiveTab('base')}
+              className={`inline-block p-4 border-b-2 rounded-t-lg ${
+                activeTab === 'base'
+                  ? 'text-red-600 border-red-600 dark:text-red-400 dark:border-red-400'
+                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white border-transparent hover:border-gray-300 dark:hover:border-gray-200'
+              }`}
+            >
+              Base de données
+            </button>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+      {/* Contenu des onglets */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        {activeTab === 'statistiques' && (
+          <div className="p-6">
+            {/* Graphique des cotations par mois */}
+            <div className="mb-8">
+              <div className="bg-white dark:bg-[#111827] p-4 rounded-lg shadow">
+                <div className="flex flex-col">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-white">Cotations par mois</h2>
+                    <div className="flex items-center">
+                      <div className="flex flex-wrap gap-2 mr-4">
+                        {[
+                          { label: 'À faire', color: 'bg-gray-400' },
+                          { label: 'En cours', color: 'bg-blue-500' },
+                          { label: 'En attente', color: 'bg-yellow-500' },
+                          { label: 'Envoyée', color: 'bg-green-500' },
+                          { label: 'Annulée', color: 'bg-red-500' },
+                          { label: 'Gagnée', color: 'bg-green-500' }
+                        ].map((item) => (
+                          <div 
+                            key={item.label} 
+                            className={`flex items-center cursor-pointer transition-opacity ${!activeSeries[item.label] ? 'opacity-40' : ''}`}
+                            onClick={() => toggleSeries(item.label)}
+                          >
+                            <span className={`w-3 h-3 rounded-full ${item.color} mr-1`}></span>
+                            <div className="flex items-baseline">
+                              <span className="text-xs text-gray-600 dark:text-gray-300 mr-1">{item.label}</span>
+                              <span className="text-xs text-gray-400 dark:text-gray-500">({statusCounts[item.label]})</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-sm text-gray-600 dark:text-gray-300 mr-2">Année :</span>
+                        <select 
+                          value={selectedYear}
+                          onChange={(e) => setSelectedYear(Number(e.target.value))}
+                          className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 h-9"
+                        >
+                          {years.map((year) => (
+                            <option key={year} value={year}>
+                              {year}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="h-80 w-full">
+                  <ChartCanvas 
+                    data={monthlyData} 
+                    options={monthlyOptions} 
+                  />
+                </div>
+              </div>
+            </div>
+
+            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Statistiques des cotations</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg h-64">
+                <div className="flex justify-between items-center mb-0">
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">Répartition par statut</h3>
+                  <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-2 py-1 rounded">
+                    {selectedYear}
+                  </span>
+                </div>
+                <div className="h-52">
+                  <Pie data={statusData} options={statusOptions} />
+                </div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg h-64">
+                <div className="flex justify-between items-center mb-0">
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">Top clients</h3>
+                  <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-2 py-1 rounded">
+                    {selectedYear}
+                  </span>
+                </div>
+                <div className="h-52">
+                  <Bar data={clientsData} options={clientsOptions} />
+                </div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg h-64">
+                <div className="flex justify-between items-center mb-0">
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">Répartition par type</h3>
+                  <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-2 py-1 rounded">
+                    {selectedYear}
+                  </span>
+                </div>
+                <div className="h-52">
+                  <Pie data={typeData} options={typeOptions} />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'analyse' && (
+          <div className="p-6">
+            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Analyse des cotations</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+                <h3 className="font-medium mb-4 text-gray-900 dark:text-white">Chiffre d'affaire par service</h3>
+                
+                <div className="mt-6 overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                    <thead className="bg-gray-100 dark:bg-gray-600">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          Service
+                        </th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          Ventes
+                        </th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          Achats
+                        </th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          Marge
+                        </th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Marge %
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-black-900 divide-y divide-black-200 dark:divide-black-600">
+                      {(() => {
+                        const transportStats = getServiceStats();
+                        const totalVente = transportStats.reduce((sum, s) => sum + s.totalVente, 0);
+                        const totalAchat = transportStats.reduce((sum, s) => sum + s.totalAchat, 0);
+                        const totalMarge = totalVente - totalAchat;
+                        const totalMargePourcentage = totalVente > 0 ? (totalMarge / totalVente) * 100 : 0;
+                        
+                        return (
+                          <>
+                            {transportStats.map((stat, index) => (
+                          <tr key={index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-700' : 'bg-gray-50 dark:bg-gray-600'}>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white capitalize">
+                              {stat.service}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
+                              {formatNumber(stat.totalVente)} $
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">
+                              {formatNumber(stat.totalAchat)} $
+                            </td>
+                            <td className={`px-4 py-2 whitespace-nowrap text-sm text-right font-medium ${
+                              stat.marge >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {formatNumber(stat.marge)} $
+                            </td>
+                            <td className={`px-4 py-2 whitespace-nowrap text-sm text-right font-medium ${
+                              stat.margePourcentage >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {stat.margePourcentage.toFixed(1)}%
+                            </td>
+                          </tr>
+                            ))}
+                            {/* Ligne de total */}
+                            <tr className="bg-[#1f2937] font-semibold">
+                              <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-white">
+                                Total
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-white">
+                                {formatNumber(totalVente)} $
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-white">
+                                {formatNumber(totalAchat)} $
+                              </td>
+                              <td className={`px-4 py-2 whitespace-nowrap text-sm text-right font-medium ${
+                                totalMarge >= 0 ? 'text-green-400' : 'text-red-400'
+                              }`}>
+                                {formatNumber(totalMarge)} $
+                              </td>
+                              <td className={`px-4 py-2 whitespace-nowrap text-sm text-right font-medium ${
+                                totalMargePourcentage >= 0 ? 'text-green-400' : 'text-red-400'
+                              }`}>
+                                {totalMargePourcentage.toFixed(1)}%
+                              </td>
+                            </tr>
+                          </>
+                        );
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+                <h3 className="font-medium mb-4 text-gray-900 dark:text-white">Chiffre d'affaire par mode</h3>
+                
+                <div className="mt-6 overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                    <thead className="bg-gray-100 dark:bg-gray-600">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          Mode
+                        </th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          Ventes
+                        </th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          Achats
+                        </th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          Marge
+                        </th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Marge %
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-black-900 divide-y divide-black-200 dark:divide-black-600">
+                      {(() => {
+                        const transportStats = getTransportStats();
+                        const totalVente = transportStats.reduce((sum, s) => sum + s.totalVente, 0);
+                        const totalAchat = transportStats.reduce((sum, s) => sum + s.totalAchat, 0);
+                        const totalMarge = totalVente - totalAchat;
+                        const totalMargePourcentage = totalVente > 0 ? (totalMarge / totalVente) * 100 : 0;
+                        
+                        return (
+                          <>
+                            {transportStats.map((stat, index) => (
+                          <tr key={index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-700' : 'bg-gray-50 dark:bg-gray-600'}>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white capitalize">
+                              {stat.mode}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
+                              {formatNumber(stat.totalVente)} $
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">
+                              {formatNumber(stat.totalAchat)} $
+                            </td>
+                            <td className={`px-4 py-2 whitespace-nowrap text-sm text-right font-medium ${
+                              stat.marge >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {formatNumber(stat.marge)} $
+                            </td>
+                            <td className={`px-4 py-2 whitespace-nowrap text-sm text-right font-medium ${
+                              stat.margePourcentage >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {stat.margePourcentage.toFixed(1)}%
+                            </td>
+                          </tr>
+                            ))}
+                            {/* Ligne de total */}
+                            <tr className="bg-[#1f2937] font-semibold">
+                              <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-white">
+                                Total
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-white">
+                                {formatNumber(totalVente)} $
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-white">
+                                {formatNumber(totalAchat)} $
+                              </td>
+                              <td className={`px-4 py-2 whitespace-nowrap text-sm text-right font-medium ${
+                                totalMarge >= 0 ? 'text-green-400' : 'text-red-400'
+                              }`}>
+                                {formatNumber(totalMarge)} $
+                              </td>
+                              <td className={`px-4 py-2 whitespace-nowrap text-sm text-right font-medium ${
+                                totalMargePourcentage >= 0 ? 'text-green-400' : 'text-red-400'
+                              }`}>
+                                {totalMargePourcentage.toFixed(1)}%
+                              </td>
+                            </tr>
+                          </>
+                        );
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div className="mt-8">
+              <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-white">Statistiques par utilisateur</h3>
+              <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Utilisateur
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Total
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Import
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Export
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Domestique
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Vente
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Achat
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Marge
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Marge %
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {(() => {
+                        const userStats = getStatsByUser();
+                        const totals = userStats.reduce((acc, stat) => ({
+                          total: acc.total + stat.total,
+                          import: acc.import + (stat.import || 0),
+                          export: acc.export + (stat.export || 0),
+                          domestique: acc.domestique + (stat.domestique || 0),
+                          totalVente: acc.totalVente + stat.totalVente,
+                          totalAchat: acc.totalAchat + stat.totalAchat,
+                          marge: acc.marge + stat.marge
+                        }), { 
+                          total: 0, 
+                          import: 0,  
+                          export: 0, 
+                          domestique: 0, 
+                          totalVente: 0,
+                          totalAchat: 0,
+                          marge: 0
+                        });
+                        
+                        return (
+                          <>
+                            {userStats.map((stat, index) => (
+                              <tr key={index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                  {stat.utilisateur}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                  {stat.total}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                  {stat.import || 0}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                  {stat.export || 0}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                  {stat.domestique || 0}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                  {formatNumber(stat.totalVente)} $
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                  {formatNumber(stat.totalAchat)} $
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                  {formatNumber(stat.marge)} $
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                  {stat.margePourcentage.toFixed(2)}%
+                                </td>
+                              </tr>
+                            ))}
+                            {/* Ligne de total */}
+                            <tr className="bg-[#1f2937] font-semibold">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                                Total
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                                {totals.total}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                                {totals.import}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                                {totals.export}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                                {totals.domestique}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                                {formatNumber(totals.totalVente)} $
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                                {formatNumber(totals.totalAchat)} $
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                                {formatNumber(totals.marge)} $
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                                {totals.totalVente > 0 ? ((totals.marge / totals.totalVente) * 100).toFixed(2) + '%' : '0.00%'}
+                              </td>
+                            </tr>
+                          </>
+                        );
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'base' && (
+          <div>
+            <div className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des cotations ({filteredCotations.length})</h2>
+              <button
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
+              >
+                <Plus className="w-6 h-6 mr-0" />
+                
+              </button>
+            </div>
+
+            {showAddForm && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                      {editingCotation ? 'Modifier la cotation' : 'Nouvelle cotation'}
+                    </h3>
+                    <button
+                      onClick={() => setShowAddForm(false)}
+                      className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                    >
+                      <XCircle className="h-6 w-6" />
+                    </button>
+                  </div>
+                  <form onSubmit={handleAddCotation} className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">N° Cotation</label>
+                      <input
+                        type="text"
+                        name="numero"
+                        value={newCotation.numero}
+                        onChange={handleChange}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Client</label>
+                      <input
+                        type="text"
+                        name="client"
+                        value={newCotation.client}
+                        onChange={handleChange}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Régime</label>
+                      <select
+                        name="regime"
+                        value={newCotation.regime}
+                        onChange={handleChange}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="exo_total">Exonération totale</option>
+                        <option value="exo_partiel">Exonération partielle</option>
+                        <option value="full_tax">TVA pleine</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Services</label>
+                      <input
+                        type="text"
+                        name="services"
+                        value={newCotation.services}
+                        onChange={handleChange}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Type</label>
+                      <select
+                        name="type"
+                        value={newCotation.type}
+                        onChange={handleChange}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="import">Import</option>
+                        <option value="export">Export</option>
+                        <option value="domestique">Domestique</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Mode de transport</label>
+                      <select
+                        name="mode"
+                        value={newCotation.mode}
+                        onChange={handleChange}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="aerien">Aérien</option>
+                        <option value="maritime">Maritime</option>
+                        <option value="routier">Routier</option>
+                        <option value="autre">Autre</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Date de réception</label>
+                      <input
+                        type="date"
+                        name="dateReception"
+                        value={newCotation.dateReception.toISOString().split('T')[0]}
+                        onChange={(e) => 
+                          setNewCotation({...newCotation, dateReception: new Date(e.target.value)})
+                        }
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Prix de vente ($)</label>
+                      <input
+                        type="number"
+                        name="vente"
+                        value={newCotation.vente}
+                        onChange={handleChange}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        step="0.01"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Prix d'achat ($)</label>
+                      <input
+                        type="number"
+                        name="achat"
+                        value={newCotation.achat}
+                        onChange={handleChange}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        step="0.01"
+                        min="0"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium mb-1">Référence</label>
+                      <input
+                        type="text"
+                        name="reference"
+                        value={newCotation.reference}
+                        onChange={handleChange}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="md:col-span-3">
+                      <label className="block text-sm font-medium mb-1">Commentaire</label>
+                      <textarea
+                        name="commentaire"
+                        value={newCotation.commentaire}
+                        onChange={handleChange}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-2 md:col-span-3 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddForm(false)}
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                      >
+                        Enregistrer
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'base' && (
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex flex-wrap items-end gap-2 mb-4">
+                  {/* Barre de recherche */}
+                  <div className="relative flex-shrink min-w-[100px] w-100 ">
+                    <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                      <Search className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Rechercher..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="block w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  
+                  {/* Filtre de statut */}
+                  <div className="w-48 flex-shrink-0">
+                    <select
+                      className="block w-full pl-2 pr-8 py-1.5 text-sm border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                      <option value="all">Tous les statuts</option>
+                      <option value="todo">À faire</option>
+                      <option value="pending">En attente client</option>
+                      <option value="en_attente">En attente validation</option>
+                      <option value="envoyee">Envoyée</option>
+                      <option value="annulee">Annulée</option>
+                      <option value="gagne">Gagnée</option>
+                    </select>
+                  </div>
+                  
+                  {/* Filtre de date */}
+                  <div className="w-48 flex-shrink-0">
+                    <select
+                      className="block w-full pl-2 pr-8 py-1.5 text-sm border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      value={dateFilter}
+                      onChange={(e) => setDateFilter(e.target.value)}
+                    >
+                      <option value="all">Toutes les dates</option>
+                      <option value="today">Aujourd'hui</option>
+                      <option value="week">7 derniers jours</option>
+                      <option value="month">Ce mois-ci</option>
+                      <option value="specific-month">Mois spécifique</option>
+                      <option value="specific-year">Année spécifique</option>
+                      <option value="custom-range">Période personnalisée</option>
+                    </select>
+                  </div>
+
+                  {/* Filtres de date avancés */}
+                  {dateFilter === 'specific-month' && (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={monthFilter}
+                        onChange={(e) => setMonthFilter(e.target.value)}
+                        className="w-32 pl-2 pr-8 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      >
+                        {Array.from({length: 12}, (_, i) => (
+                          <option key={i} value={i}>
+                            {new Date(0, i).toLocaleString('fr-FR', {month: 'long'})}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={yearFilter}
+                        onChange={(e) => setYearFilter(e.target.value)}
+                        className="w-32 pl-2 pr-8 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      >
+                        {Array.from({length: 5}, (_, i) => {
+                          const year = new Date().getFullYear() - 2 + i;
+                          return <option key={year} value={year}>{year}</option>;
+                        })}
+                      </select>
+                    </div>
+                  )}
+
+                  {dateFilter === 'specific-year' && (
+                    <div className="flex-1">
+                      <select
+                        value={yearFilter}
+                        onChange={(e) => setYearFilter(e.target.value)}
+                        className="w-32 pl-2 pr-8 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      >
+                        {Array.from({length: 5}, (_, i) => {
+                          const year = new Date().getFullYear() - 2 + i;
+                          return <option key={year} value={year}>{year}</option>;
+                        })}
+                      </select>
+                    </div>
+                  )}
+
+                  {dateFilter === 'custom-range' && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center">
+                        <span className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap mr-1">Du</span>
+                        <input
+                          type="date"
+                          value={dateRange.start}
+                          onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
+                          className="w-36 pl-2 pr-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          max={dateRange.end || new Date().toISOString().split('T')[0]}
+                        />
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap mx-1">Au</span>
+                        <input
+                          type="date"
+                          value={dateRange.end}
+                          onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
+                          className="w-36 pl-2 pr-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          min={dateRange.start}
+                          max={new Date().toISOString().split('T')[0]}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Filtre par utilisateur */}
+                  <div className="w-48 flex-shrink-0">
+                    <select
+                      className="block w-full pl-2 pr-8 py-1.5 text-sm border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      value={userFilter}
+                      onChange={(e) => setUserFilter(e.target.value)}
+                    >
+                      <option value="all">Tous les utilisateurs</option>
+                      {getUniqueUsers().map(user => (
+                        <option key={user} value={user}>{user}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Filtre par service */}
+                  <div className="w-48 flex-shrink-0">
+                    <select
+                      className="block w-full pl-2 pr-8 py-1.5 text-sm border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      value={serviceFilter}
+                      onChange={(e) => setServiceFilter(e.target.value)}
+                    >
+                      <option value="">Tous les services</option>
+                      {getUniqueServices().map(service => (
+                        <option key={service} value={service}>{service}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Tableau des cotations */}
+            <div className="w-full">
+              <table className="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      N° Cotation
+                    </th>
+                    <th className="w-1/6 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Client
+                    </th>
+                    <th className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Service
+                    </th>
+                    <th className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Date réception
+                    </th>
+                    <th className="w-36 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Dernier statut
+                    </th>
+                    <th className="w-20 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      TT (j)
+                    </th>
+                    <th className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Utilisateur
+                    </th>
+                    <th className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Statut
+                    </th>
+                    <th className="w-40 px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {filteredCotations.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                        Aucune cotation pour le moment
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredCotations.map((cotation) => (
+                      <tr key={cotation.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white truncate">
+                          <div className="truncate" title={cotation.numero}>
+                            {cotation.numero}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-300">
+                          <div className="truncate" title={cotation.client}>
+                            {cotation.client}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-300">
+                          <div className="truncate" title={cotation.services}>
+                            {cotation.services}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-300">
+                          <div className="truncate">
+                            {cotation.type.charAt(0).toUpperCase() + cotation.type.slice(1)}
+                            <span className="ml-1 text-xs text-gray-400">
+                              ({cotation.mode === 'aerien' ? 'Aér' :
+                                 cotation.mode === 'maritime' ? 'Mar' :
+                                 cotation.mode === 'routier' ? 'Rout' : 'Autre'})
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-300">
+                          {new Date(cotation.dateReception).toLocaleDateString('fr-FR')}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-300">
+                          <div className="truncate" title={getLastStatusDate(cotation)}>
+                            {getLastStatusDate(cotation)}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-center text-gray-500 dark:text-gray-300">
+                          {calculateProcessingTime(cotation)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-300">
+                          {cotation.utilisateur || '-'}
+                        </td>
+                        <td className="px-0 py-0 ">
+                          <div 
+                            className="w-full cursor-pointer hover:opacity-80 transition-opacity flex justify-left"
+                            onClick={() => openStatusModal(cotation)}
+                          >
+                            {getStatutBadge(cotation.statut, 'text-[1px] py-0 px-0')}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                          <div className="flex items-center justify-end space-x-1">
+                            <button
+                              onClick={() => openDetailsModal(cotation)}
+                              className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                              title="Voir les détails"
+                            >
+                              <Eye className="w-6 h-6" />
+                            </button>
+                            <button
+                              onClick={() => handleEditCotation(cotation)}
+                              className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
+                              title="Modifier"
+                            >
+                              <Edit className="w-6 h-6" />
+                            </button>
+                            <button
+                              onClick={() => deleteCotation(cotation.id)}
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="w-6 h-6" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modal de gestion des statuts */}
+      {showStatusModal && selectedCotation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  Historique des statuts - {selectedCotation.numero}
+                </h3>
+                <button
+                  onClick={() => setShowStatusModal(false)}
+                  className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="mb-6 overflow-auto max-h-96">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Statut
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Jours écoulés
+                      </th>
+                      {selectedCotation.statut === 'annulee' && (
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Raison
+                        </th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {statusHistory.map((item, index) => (
+                      <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                          {item.statut}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                          {item.date}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                          {item.jours} j
+                        </td>
+                        {selectedCotation.statut === 'annulee' && item.raison && (
+                          <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                            {item.raison}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <form onSubmit={handleStatusSubmit} className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+                <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4">Modifier le statut</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Nouveau statut
+                    </label>
+                    <select
+                      value={newStatus}
+                      onChange={handleStatusChange}
+                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="todo">À faire</option>
+                      <option value="pending">En attente client</option>
+                      <option value="en_attente">En attente validation</option>
+                      <option value="envoyee">Envoyée</option>
+                      <option value="annulee">Annulée</option>
+                      <option value="gagne">Gagnée</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      value={statusDate}
+                      onChange={(e) => setStatusDate(e.target.value)}
+                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                    />
+                  </div>
+                  {newStatus === 'annulee' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Raison de l'annulation
+                      </label>
+                      <input
+                        type="text"
+                        value={cancelData.raison}
+                        onChange={(e) => setCancelData({...cancelData, raison: e.target.value})}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        required={newStatus === 'annulee'}
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowStatusModal(false)}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Enregistrer les modifications
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de détails de la cotation */}
+      {showDetailsModal && selectedCotation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Détails de la cotation</h3>
+                  {selectedCotation.numero && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">N° {selectedCotation.numero}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-80px)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Numéro</h4>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedCotation.numero}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Client</h4>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedCotation.client}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Régime</h4>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                    {selectedCotation.regime === 'exo_total' ? 'Exonération totale' : 
+                     selectedCotation.regime === 'exo_partiel' ? 'Exonération partielle' : 'TVA pleine'}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Type</h4>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white capitalize">
+                    {selectedCotation.type}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Mode de transport</h4>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white capitalize">
+                    {selectedCotation.mode}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Date de réception</h4>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                    {new Date(selectedCotation.dateReception).toLocaleDateString('fr-FR')}
+                  </p>
+                </div>
+                {selectedCotation.dateSoumissionValidation && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Date de soumission en validation</h4>
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                      {new Date(selectedCotation.dateSoumissionValidation).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                )}
+                {selectedCotation.dateSoumissionClient && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Date d'envoi au client</h4>
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                      {new Date(selectedCotation.dateSoumissionClient).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                )}
+                {selectedCotation.dateAnnulation && (
+                  <>
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Date d'annulation</h4>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                        {new Date(selectedCotation.dateAnnulation).toLocaleDateString('fr-FR')}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Raison de l'annulation</h4>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                        {selectedCotation.raisonAnnulation || 'Non spécifiée'}
+                      </p>
+                    </div>
+                  </>
+                )}
+                <div className="md:col-span-1">
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Services</h4>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                    {selectedCotation.services || 'Aucun service spécifié'}
+                  </p>
+                </div>
+                <div className="md:col-span-1">
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Référence</h4>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                    {selectedCotation.reference || 'Non spécifiée'}
+                  </p>
+                </div>
+                <div className="md:col-span-2">
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Commentaires</h4>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white whitespace-pre-line">
+                    {selectedCotation.commentaire || 'Aucun commentaire'}
+                  </p>
+                </div>
+              </div>
+                
+              <div className="md:col-span-2">
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Récapitulatif financier</h4>
+                <div className="overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Rubriques</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Montant</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      <tr>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Prix de vente HT</td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
+                          {selectedCotation.vente.toLocaleString('fr-FR', { style: 'currency', currency: 'USD' })}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Prix d'achat HT</td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
+                          {selectedCotation.achat.toLocaleString('fr-FR', { style: 'currency', currency: 'USD' })}
+                        </td>
+                      </tr>
+                      <tr className="border-t border-gray-200 dark:border-gray-700">
+                        <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">Marge brute</td>
+                        <td className={`px-4 py-2 whitespace-nowrap text-sm font-semibold text-right ${
+                          (selectedCotation.vente - selectedCotation.achat) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                        }`}>
+                          {(selectedCotation.vente - selectedCotation.achat).toLocaleString('fr-FR', { style: 'currency', currency: 'USD' })}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">Marge brute (%)</td>
+                        <td className={`px-4 py-2 whitespace-nowrap text-sm font-semibold text-right ${
+                          (selectedCotation.vente > 0 && ((selectedCotation.vente - selectedCotation.achat) / selectedCotation.vente * 100) < 15) 
+                            ? 'text-red-600 dark:text-red-400' 
+                            : 'text-green-600 dark:text-green-400'
+                        }`}>
+                          {selectedCotation.vente > 0 ? ((selectedCotation.vente - selectedCotation.achat) / selectedCotation.vente * 100).toFixed(2) : '0.00'}%
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="md:col-span-2 mt-4">
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Historique des status</h4>
+                <div className="overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Statut
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Détails
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {selectedCotation.dateReception && (
+                        <tr>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              selectedCotation.statut === 'todo' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                            }`}>
+                              {selectedCotation.statut === 'todo' ? 'À faire' :
+                               selectedCotation.statut === 'en_attente' ? 'En attente' :
+                               selectedCotation.statut === 'envoyee' ? 'Envoyée' :
+                               selectedCotation.statut === 'annulee' ? 'Annulée' : 'En cours'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                            {new Date(selectedCotation.dateReception).toLocaleDateString('fr-FR')}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                            Réception de la demande
+                          </td>
+                        </tr>
+                      )}
+                      {selectedCotation.dateSoumissionValidation && (
+                        <tr>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                              En validation
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                            {new Date(selectedCotation.dateSoumissionValidation).toLocaleDateString('fr-FR')}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                            Soumis pour validation
+                          </td>
+                        </tr>
+                      )}
+                      {selectedCotation.dateSoumissionClient && (
+                        <tr>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                              Envoyée
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                            {new Date(selectedCotation.dateSoumissionClient).toLocaleDateString('fr-FR')}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                            Envoyé au client
+                          </td>
+                        </tr>
+                      )}
+                      {selectedCotation.dateAnnulation && (
+                        <tr>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                              Annulée
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                            {new Date(selectedCotation.dateAnnulation).toLocaleDateString('fr-FR')}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                            {selectedCotation.raisonAnnulation || 'Annulation sans raison spécifiée'}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-3 bg-gray-50 dark:bg-gray-700/50 text-right sm:px-6 rounded-b-lg">
+              <button
+                type="button"
+                className="inline-flex justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                onClick={() => setShowDetailsModal(false)}
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CotationsPage;

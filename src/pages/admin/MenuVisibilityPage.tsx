@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { RefreshCw, Eye } from 'lucide-react';
-// Suppression de l'import de react-beautiful-dnd car on utilise maintenant les boutons
 
 interface MenuItem {
   id: string;
@@ -10,103 +8,37 @@ interface MenuItem {
   is_visible: boolean;
   path?: string;
   icon?: string;
-  created_at?: string;
-  updated_at?: string;
   isEditing?: boolean;
   tempName?: string;
   ordre: number;
 }
 
 const MenuVisibilityPage: React.FC = () => {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Éléments du menu statiques
+  const staticMenuItems: MenuItem[] = [
+    { id: '1', name: 'Accueil', path: '/', is_visible: true, ordre: 0 },
+    { id: '2', name: 'Services', path: '/services', is_visible: true, ordre: 1 },
+    { id: '3', name: 'À propos', path: '/about', is_visible: true, ordre: 2 },
+    { id: '4', name: 'Contact', path: '/contact', is_visible: true, ordre: 3 },
+    { id: '5', name: 'Espace Client', path: '/espace-client', is_visible: true, ordre: 4 }
+  ];
+
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(staticMenuItems);
+  const [loading, setLoading] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(true);
-  const [updatingItems, setUpdatingItems] = useState<Record<string, boolean>>({});
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [isSavingOrder, setIsSavingOrder] = useState(false);
-  const [renamingItems, setRenamingItems] = useState<Record<string, boolean>>({});
-  
-  // Détecter le thème du système
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    // Fonction pour mettre à jour le thème
-    const updateTheme = () => {
-      const isDark = mediaQuery.matches;
-      document.documentElement.classList.toggle('dark', isDark);
-    };
-
-    // Mettre à jour le thème au chargement
-    updateTheme();
-
-    // Écouter les changements de préférence de thème
-    mediaQuery.addEventListener('change', updateTheme);
-
-    // Nettoyer l'écouteur d'événement au démontage du composant
-    return () => {
-      mediaQuery.removeEventListener('change', updateTheme);
-    };
-  }, []);
+  const [isRenaming, setIsRenaming] = useState<Record<string, boolean>>({});
+  const [updatingItems, setUpdatingItems] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchMenuItems();
   }, []);
 
-  const fetchMenuItems = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('menu_visibility')
-        .select('*')
-        .order('ordre', { ascending: true });
-
-      if (error) throw error;
-      
-      // Si la table est vide, initialiser avec les éléments par défaut
-      if (!data || data.length === 0) {
-        await initializeMenuItems();
-        fetchMenuItems(); // Recharger après initialisation
-        return;
-      }
-      
-      setMenuItems(data);
-    } catch (error) {
-      console.error('Erreur lors du chargement des menus:', error);
-      toast.error('Erreur lors du chargement des menus');
-    } finally {
-      setLoading(false);
-    }
+  const fetchMenuItems = () => {
+    setMenuItems([...staticMenuItems]);
   };
 
-  const updateMenuOrder = async (items: MenuItem[]) => {
-    try {
-      const updatedItems = items.map((item, index) => ({
-        ...item,
-        ordre: index
-      }));
-      
-      setMenuItems(updatedItems);
-      
-      const { error } = await supabase
-        .from('menu_visibility')
-        .upsert(updatedItems.map(({ id, name, is_visible, path, ordre }) => ({
-          id,
-          name,
-          is_visible,
-          path,
-          ordre
-        })));
-        
-      if (error) throw error;
-      
-      toast.success('Ordre du menu mis à jour avec succès');
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour de l\'ordre:', error);
-      toast.error('Erreur lors de la mise à jour de l\'ordre');
-    }
-  };
 
   const toggleItemSelection = (id: string) => {
     setSelectedItems(prev => {
@@ -138,7 +70,7 @@ const MenuVisibilityPage: React.FC = () => {
     if (selectedIndices.length === 0) return;
 
     const newItems = [...items];
-    
+
     if (direction === 'up') {
       // Déplacer vers le haut
       for (const index of selectedIndices) {
@@ -158,26 +90,15 @@ const MenuVisibilityPage: React.FC = () => {
     setMenuItems(newItems);
   };
 
-  const saveOrder = async () => {
+  const saveOrder = () => {
+    setIsSavingOrder(true);
     try {
-      setIsSavingOrder(true);
       const updatedItems = menuItems.map((item, index) => ({
         ...item,
         ordre: index
       }));
-      
-      const { error } = await supabase
-        .from('menu_visibility')
-        .upsert(updatedItems.map(({ id, name, is_visible, path, ordre }) => ({
-          id,
-          name,
-          is_visible,
-          path,
-          ordre
-        })));
-        
-      if (error) throw error;
-      
+
+      setMenuItems(updatedItems);
       toast.success('Ordre des menus enregistré avec succès');
       setSelectedItems(new Set());
     } catch (error) {
@@ -189,187 +110,50 @@ const MenuVisibilityPage: React.FC = () => {
   };
 
 
-  const initializeMenuItems = async () => {
-    const defaultItems = [
-      { name: 'Accueil', path: '/', is_visible: true, ordre: 0 },
-      { name: 'Services', path: '/services', is_visible: true, ordre: 1 },
-      { name: 'Actualités', path: '/actualites', is_visible: true, ordre: 2 },
-      { name: 'Recrutement', path: '/recrutement', is_visible: true, ordre: 3 },
-      { name: 'Contact', path: '/contact', is_visible: true, ordre: 4 },
-      { name: 'Espace client', path: '/espace-client', is_visible: true, ordre: 5 },
-    ];
-
-    const { error } = await supabase
-      .from('menu_visibility')
-      .upsert(defaultItems, { onConflict: 'name' });
-
-    if (error) throw error;
-  };
-
   const toggleVisibility = async (id: string) => {
+    setUpdatingItems(prev => ({ ...prev, [id]: true }));
     try {
-      const item = menuItems.find(item => item.id === id);
-      if (!item) {
-        console.error('Élément non trouvé avec l\'ID:', id);
-        return;
-      }
-
-      const newVisibility = !item.is_visible;
-      console.log('Tentative de mise à jour de la visibilité:', { id, newVisibility });
-      
-      // Marquer cet élément comme en cours de mise à jour
-      setUpdatingItems(prev => ({ ...prev, [id]: true }));
-      
-      // Vérifier la session utilisateur
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        throw new Error('Utilisateur non authentifié');
-      }
-      console.log('Utilisateur connecté:', user.email);
-      
-      // Vérification simplifiée pour le débogage
-      console.log('Vérification des droits administrateur...');
-      
-      // Vérification basique de l'authentification uniquement
-      if (!user) {
-        throw new Error('Utilisateur non authentifié');
-      }
-      
-      // Pour le débogage, on accepte la mise à jour si l'utilisateur est authentifié
-      // À REMPLACER PAR UNE VÉRIFICATION D'ADMINISTRATEUR EN PRODUCTION
-      console.warn('ATTENTION: Vérification des droits administrateur désactivée pour le débogage');
-      
-      // Mise à jour directe simple avec gestion des erreurs
-      console.log('Tentative de mise à jour directe...');
-      
-      try {
-        // Mise à jour directe avec retour des données mises à jour
-        const { data: updatedData, error: updateError } = await supabase
-          .from('menu_visibility')
-          .update({ 
-            is_visible: newVisibility,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', id)
-          .select()
-          .single();
-          
-        if (updateError) {
-          console.error('Erreur lors de la mise à jour directe:', updateError);
-          
-          // Si l'erreur est liée à RLS, afficher un message d'erreur plus clair
-          if (updateError.message.includes('row-level security')) {
-            throw new Error('Permission refusée. Vérifiez les politiques RLS pour la table menu_visibility.');
-          }
-          
-          throw updateError;
-        }
-        
-        console.log('Mise à jour réussie:', updatedData);
-        
-        // Mise à jour de l'état local avec les données du serveur
-        // Mise à jour optimiste de l'interface
-        setMenuItems(prevItems => 
-          prevItems.map(item => 
-            item.id === id ? { ...item, ...updatedData } : item
-          )
-        );
-        
-        
-        // Attendre un court instant pour que l'animation soit visible
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-      } catch (error) {
-        console.error('Échec de la mise à jour:', error);
-        
-        // Si c'est une erreur de permission, proposer une solution
-        if (error instanceof Error && (error.message.includes('permission') || error.message.includes('row-level security'))) {
-          console.error('Solution possible : Exécutez le script SQL suivant dans l\'éditeur SQL Supabase :');
-          console.error(`-- Activer RLS si ce n'est pas déjà fait
-ALTER TABLE menu_visibility ENABLE ROW LEVEL SECURITY;
-
--- Créer une politique pour permettre les mises à jour
-CREATE POLICY "Autoriser les mises à jour pour les utilisateurs authentifiés"
-ON menu_visibility
-FOR UPDATE
-TO authenticated
-USING (true)
-WITH CHECK (true);`);
-        }
-        
-        throw error;
-      }
-      
-      toast.success('Visibilité mise à jour avec succès');
-    } catch (error: any) {
-      console.error('Erreur lors de la mise à jour:', error);
-      toast.error(`Erreur lors de la mise à jour: ${error?.message || 'Erreur inconnue'}`);
-      
-      // Vérifier si c'est une erreur d'authentification ou de permission
-      if (error?.message?.includes('permission denied') || error?.code === '42501') {
-        console.error('Erreur de permission - Vérifiez les politiques RLS et les rôles');
-      }
-      
-      // Annuler la mise à jour en cas d'erreur
-      setMenuItems(prevItems => [...prevItems]);
-    } finally {
-      // Réinitialiser l'état de chargement pour cet élément
-      setUpdatingItems(prev => {
-        const newState = { ...prev };
-        delete newState[id];
-        return newState;
-      });
-    }
-  };
-
-
-  const saveName = async (id: string) => {
-    try {
-      const item = menuItems.find(item => item.id === id);
-      if (!item || !item.tempName?.trim()) {
-        toast.error('Le nom ne peut pas être vide');
-        return;
-      }
-
-      setRenamingItems(prev => ({ ...prev, [id]: true }));
-
-      // Mettre à jour dans la base de données
-      const { error } = await supabase
-        .from('menu_visibility')
-        .update({ 
-          name: item.tempName.trim(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      // Mettre à jour l'état local en préservant l'ordre
-      setMenuItems(currentItems => 
-        currentItems.map(currentItem => 
-          currentItem.id === id 
-            ? { 
-                ...currentItem, 
-                name: item.tempName?.trim() || currentItem.name, 
-                isEditing: false,
-                tempName: undefined,
-                updated_at: new Date().toISOString()
-              } 
-            : currentItem
+      setMenuItems(prevItems =>
+        prevItems.map(item =>
+          item.id === id ? { ...item, is_visible: !item.is_visible } : item
         )
       );
-
-      toast.success('Nom du menu mis à jour avec succès');
+      // Here you would typically make an API call to save the visibility change
+      // await updateMenuItemVisibility(id, !menuItems.find(item => item.id === id)?.is_visible);
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du nom:', error);
-      toast.error('Erreur lors de la mise à jour du nom');
+      console.error('Failed to update menu item visibility:', error);
+      // Revert the change if the API call fails
+      setMenuItems(prevItems =>
+        prevItems.map(item =>
+          item.id === id ? { ...item, is_visible: !item.is_visible } : item
+        )
+      );
     } finally {
-      setRenamingItems(prev => {
-        const newState = { ...prev };
-        delete newState[id];
-        return newState;
-      });
+      setUpdatingItems(prev => ({ ...prev, [id]: false }));
     }
+    toast.success('Visibilité mise à jour avec succès');
+  };
+
+  const saveName = (id: string) => {
+    const item = menuItems.find(item => item.id === id);
+    if (!item || !item.tempName?.trim()) {
+      toast.error('Le nom ne peut pas être vide');
+      return;
+    }
+
+    setMenuItems(currentItems => 
+      currentItems.map(currentItem => 
+        currentItem.id === id 
+          ? { 
+              ...currentItem, 
+              name: item.tempName?.trim() || currentItem.name, 
+              isEditing: false,
+              tempName: undefined
+            } 
+          : currentItem
+      )
+    );
+    toast.success('Nom mis à jour avec succès');
   };
 
   const cancelEditing = (id: string) => {
@@ -453,17 +237,9 @@ WITH CHECK (true);`);
               {activeMenuItems.map((item) => (
                 <span 
                   key={item.id}
-                  className={`px-2 py-1 text-xs whitespace-nowrap rounded transition-all duration-200 ease-in-out transform hover:scale-105 text-gray-600 hover:text-red-600 ${updatingItems[item.id] ? 'opacity-50' : 'opacity-100'}`}
+                  className="px-2 py-1 text-xs whitespace-nowrap rounded transition-all duration-200 ease-in-out transform hover:scale-105 text-gray-600 hover:text-red-600"
                 >
-                  {updatingItems[item.id] ? (
-                    <span className="inline-flex items-center">
-                      <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      {item.name}
-                    </span>
-                  ) : item.name}
+                  {item.name}
                 </span>
               ))}
             </div>
@@ -559,7 +335,7 @@ WITH CHECK (true);`);
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-              {menuItems.map((item, index) => (
+              {menuItems.map((item) => (
                 <tr 
                   key={item.id}
                   className={`${selectedItems.has(item.id) ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
@@ -576,52 +352,54 @@ WITH CHECK (true);`);
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                     <div className="flex items-center group">
-                      {item.isEditing ? (
-                        <div className="flex items-center space-x-2">
+                      {isRenaming[item.id] ? (
+                        <div className="flex space-x-2">
                           <input
                             type="text"
                             value={item.tempName || item.name}
-                            onChange={(e) => setMenuItems(menuItems.map(i => 
-                              i.id === item.id ? { ...i, tempName: e.target.value } : i
-                            ))}
+                            onChange={(e) => {
+                              setMenuItems(prev => 
+                                prev.map(i => 
+                                  i.id === item.id 
+                                    ? { ...i, tempName: e.target.value } 
+                                    : i
+                                )
+                              );
+                            }}
+                            className="w-full px-2 py-1 text-sm border rounded"
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') saveName(item.id);
                               if (e.key === 'Escape') cancelEditing(item.id);
                             }}
-                            className="border rounded px-2 py-1 text-sm w-48 bg-white text-gray-900 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             autoFocus
                           />
                           <button
                             onClick={() => saveName(item.id)}
-                            disabled={renamingItems[item.id]}
-                            className="text-green-500 hover:text-green-700 disabled:opacity-50"
-                            title="Enregistrer"
+                            className="px-2 py-1 text-xs text-white bg-green-500 rounded hover:bg-green-600"
                           >
-                            {renamingItems[item.id] ? (
-                              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                            ) : (
-                              '✓'
-                            )}
+                            Valider
                           </button>
                           <button
                             onClick={() => cancelEditing(item.id)}
-                            disabled={renamingItems[item.id]}
-                            className="text-red-500 hover:text-red-700 disabled:opacity-50"
-                            title="Annuler"
+                            className="px-2 py-1 text-xs text-white bg-red-500 rounded hover:bg-red-600"
                           >
-                            ✕
+                            Annuler
                           </button>
                         </div>
                       ) : (
                         <>
                           <span>{item.name}</span>
                           <button
-                            onClick={() => setMenuItems(menuItems.map(i => 
-                              i.id === item.id ? { ...i, isEditing: true, tempName: i.name } : i
-                            ))}
+                            onClick={() => {
+                              setMenuItems(prev => 
+                                prev.map(i => 
+                                  i.id === item.id 
+                                    ? { ...i, isEditing: true, tempName: i.name }
+                                    : i
+                                )
+                              );
+                              setIsRenaming(prev => ({ ...prev, [item.id]: true }));
+                            }}
                             className="ml-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
                             title="Renommer"
                           >

@@ -194,13 +194,16 @@
     "subtitle": "Votre partenaire logistique de confiance en Afrique et dans le monde",
     "mission": {
       "title": "Notre Mission",
-      "description": "Chez SHIPPING GL, notre mission est de fournir des solutions logistiques intégrées de classe mondiale qui simplifient les opérations commerciales de nos clients. Nous nous engageons à offrir un service fiable, efficace et personnalisé qui répond parfaitement aux besoins spécifiques de chaque client.",
-      "details": "Notre mission s'étend au-delà de la simple prestation de services logistiques. Nous nous engageons à être un catalyseur du développement économique en Afrique en facilitant les échanges commerciaux, en créant des emplois locaux et en contribuant au renforcement des infrastructures logistiques du continent. Nous croyons fermement que la logistique est un pilier essentiel du développement économique et nous nous efforçons d'être à l'avant-garde de cette transformation."
+      "paragraph1": "En nous concentrant sur nos opérations, nous aidons nos partenaires à planifier efficacement leurs objectifs et à atteindre leurs buts.",
+      "paragraph2": "Jouer un rôle crucial pour maintenir les envois en mouvement rapide et fluide dans une région vaste et difficile.",
+      "paragraph3": "Ceci au bénéfice des entreprises de la région en améliorant l'efficacité et en réduisant les retards."
     },
     "vision": {
       "title": "Notre Vision",
-      "description": "Notre vision est de devenir le partenaire logistique de référence en Afrique, reconnu pour l'excellence de nos services, notre intégrité et notre innovation constante dans le domaine de la logistique et du commerce international.",
-      "details": "Notre vision s'articule autour de trois piliers fondamentaux : l'excellence opérationnelle, l'innovation technologique et l'impact social positif. Nous aspirons à créer un écosystème logistique intégré qui connecte l'Afrique au monde, facilite les échanges intra-africains et contribue à la prospérité économique du continent. Nous voulons être reconnus non seulement pour nos performances, mais aussi pour notre contribution au développement durable de l'Afrique."
+      "description": "Redéfinir la logistique en connectant efficacement la région des Grands Lacs au monde.",
+      "paragraph1": "La vision de SHIPPING GL est de transformer la manière dont les marchandises sont transportées, stockées et livrées dans notre région, en améliorant continuellement l’efficacité opérationnelle, en réduisant les coûts et en renforçant la satisfaction de nos clients.",
+      "paragraph2": "Nous aspirons à devenir un acteur majeur de l’industrie logistique, reconnu pour sa fiabilité, sa transparence et son engagement envers le développement durable, tout en assurant une connexion fluide entre la région des Grands Lacs et le reste du monde.",
+      "paragraph3": "À long terme, notre objectif est de bâtir une chaîne d’approvisionnement mondiale intégrée et performante, permettant aux entreprises internationales de fret et de logistique de servir leurs clients de la région des Grands Lacs de manière efficace, rapide et économiquement optimale."
     },
     "values": {
       "title": "Nos Valeurs",
@@ -232,8 +235,8 @@
       }
     },
     "statement": {
-      "title": "Notre déclaration",
-      "paragraph1": "SHIPPING GL veut agir de manière durable, dans le respect des règles et réglementations, des différences culturelles et de l'environnement."
+      "title": "Notre Déclaration",
+      "paragraph1": "SHIPPING GL souhaite agir de manière durable, dans le respect des règles et réglementations, des différences culturelles et de l'environnement."
     },
     "team": {
       "title": "Notre Équipe",
