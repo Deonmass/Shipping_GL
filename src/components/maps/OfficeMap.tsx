@@ -9,25 +9,49 @@ interface Office {
 }
 
 interface OfficeMapProps {
-  offices: Office[];
+  offices?: Office[];
   className?: string;
+  showRDC?: boolean;
 }
 
-const OfficeMap: React.FC<OfficeMapProps> = ({ offices, className = '' }) => {
+const OfficeMap: React.FC<OfficeMapProps> = ({ offices = [], className = '', showRDC = true }) => {
+  // Coordonnées des villes de RDC
+  const rdcCities = [
+    { name: 'Kinshasa', lat: -4.4419, lng: 15.2663 },
+    { name: 'Lubumbashi', lat: -11.6642, lng: 27.4826 },
+    { name: 'Goma', lat: -1.6508, lng: 29.2344 }
+  ];
+
   // Si nous avons des bureaux, créons un lien de carte statique OpenStreetMap
   const getMapUrl = () => {
+    // Si showRDC est vrai, afficher la carte de la RDC avec les villes marquées
+    if (showRDC) {
+      // Bornes pour zoomer sur la RDC
+      const bounds = {
+        minLng: 12.0,
+        maxLng: 32.0,
+        minLat: -14.0,
+        maxLat: 6.0
+      };
+      
+      // Créer des marqueurs rouges pour les villes de RDC
+      const markers = rdcCities.map(city => 
+        `markers=${city.lat},${city.lng}`
+      ).join('&');
+      
+      return `https://www.openstreetmap.org/export/embed.html?bbox=${bounds.minLng},${bounds.minLat},${bounds.maxLng},${bounds.maxLat}&layer=mapnik&${markers}&marker-color=ff0000&marker-size=l`;
+    }
+
+    // Comportement original si showRDC est faux
     if (offices.length === 0) {
-      // Carte du monde par défaut si aucun bureau
       return 'https://www.openstreetmap.org/export/embed.html?bbox=-180,-60,180,85&layer=mapnik';
     }
     
-    // Si un seul bureau, centrer sur ce bureau
     if (offices.length === 1) {
       const office = offices[0];
       return `https://www.openstreetmap.org/export/embed.html?bbox=${office.longitude-5},${office.latitude-5},${office.longitude+5},${office.latitude+5}&layer=mapnik&marker=${office.latitude},${office.longitude}`;
     }
     
-    // Si plusieurs bureaux, calculer les bornes
     const lats = offices.map(o => o.latitude);
     const lngs = offices.map(o => o.longitude);
     const bounds = {
@@ -37,7 +61,6 @@ const OfficeMap: React.FC<OfficeMapProps> = ({ offices, className = '' }) => {
       maxLng: Math.max(...lngs) + 1,
     };
     
-    // Créer des marqueurs pour chaque bureau
     const markers = offices.map(o => `markers=${o.latitude},${o.longitude}`).join('&');
     
     return `https://www.openstreetmap.org/export/embed.html?bbox=${bounds.minLng},${bounds.minLat},${bounds.maxLng},${bounds.maxLat}&layer=mapnik&${markers}`;

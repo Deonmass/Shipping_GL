@@ -5,6 +5,7 @@ import {
     Bell, Search, LogOut, Handshake, ClipboardEditIcon,
     MessageSquare, Heart, Calendar, Tags, TrendingUp, ChevronDown, ChevronRight,
     Mail, Shield, Menu, CheckCircle2, Sun, Moon, User, Home, X, Wrench, Building2,
+    ClipboardList,
     UserRoundSearch, CircleUserRoundIcon
 } from 'lucide-react';
 import {supabase} from '../../lib/supabase';
@@ -49,6 +50,8 @@ const AdminLayout: React.FC = () => {
         const saved = localStorage.getItem('admin_theme');
         return saved === 'light' ? 'light' : 'dark';
     });
+
+    const [activeMenu, setActiveMenu] = useState<string | null>(null);
     const [allowedMenuKeys, setAllowedMenuKeys] = useState<Set<string>>(new Set());
     const [menuPermissionsActive, setMenuPermissionsActive] = useState(false);
     const [isSidebarHoverOpen, setIsSidebarHoverOpen] = useState(false);
@@ -233,10 +236,10 @@ const AdminLayout: React.FC = () => {
             keywords: ['commentaires']
         },
         {
-            key: appPermissions.likes, 
-            path: '/admin/likes', 
-            icon: Heart, 
-            label: 'Likes', 
+            key: appPermissions.likes,
+            path: '/admin/likes',
+            icon: Heart,
+            label: 'Likes',
             keywords: ['likes']
         },
         {
@@ -279,15 +282,15 @@ const AdminLayout: React.FC = () => {
 
     const searchItems = [
         {
-            key: appPermissions.dashboard, 
-            label: 'Dashboard', 
-            path: '/admin/dashboard', 
+            key: appPermissions.dashboard,
+            label: 'Dashboard',
+            path: '/admin/dashboard',
             keywords: ['accueil', 'home']
         },
         {
-            key: appPermissions.users, 
-            label: 'Utilisateurs', 
-            path: '/admin/users', 
+            key: appPermissions.users,
+            label: 'Utilisateurs',
+            path: '/admin/users',
             keywords: ['users', 'comptes']
         },
         {
@@ -320,12 +323,12 @@ const AdminLayout: React.FC = () => {
 
     // Vérification des permissions pour les notifications
     console.log('Permissions des notifications:', {
-      'post_likes': HasPermission(appPermissions.post_likes),
-      'comments': HasPermission(appPermissions.comments),
-      'posts': HasPermission(appPermissions.posts),
-      'partners': HasPermission(appPermissions.partners)
+        'post_likes': HasPermission(appPermissions.post_likes),
+        'comments': HasPermission(appPermissions.comments),
+        'posts': HasPermission(appPermissions.posts),
+        'partners': HasPermission(appPermissions.partners)
     });
-    
+
     const effectiveSearchItems = searchItems.filter((item) => !item.key || HasPermission(item.key));
 
     const filteredSearchItems = searchQuery
@@ -347,17 +350,17 @@ const AdminLayout: React.FC = () => {
             label: 'Permissions des rôles'
         },
         {
-            key: appPermissions.team, 
+            key: appPermissions.team,
             path: '/admin/team',
             icon: CircleUserRoundIcon,
-            label: 'Equipe Dirigeante', 
+            label: 'Equipe Dirigeante',
             keywords: ['equipe', 'membre']
         },
         {
-            key: appPermissions.offices, 
-            path: '/admin/offices', 
-            icon: Building2, 
-            label: 'Bureaux', 
+            key: appPermissions.offices,
+            path: '/admin/offices',
+            icon: Building2,
+            label: 'Bureaux',
             keywords: ['bureaux']
         },
         {
@@ -372,7 +375,7 @@ const AdminLayout: React.FC = () => {
             path: '/admin/visitors',
             icon: UserRoundSearch,
             label: 'Comptes Visiteurs',
-            keywords: ['visiteurs', 'utilisateurs' ]
+            keywords: ['visiteurs', 'utilisateurs']
         }
     ];
 
@@ -453,7 +456,7 @@ const AdminLayout: React.FC = () => {
                         )}
 
                         {/* Users group */}
-                        {userItems.filter(item => HasPermission(item.key)).length > 0 && (
+                        {userItems.filter(item => HasPermission(item.key)) && (
                             <li className="relative">
                                 <button
                                     onClick={() => setUsersExpanded(!usersExpanded)}
@@ -509,7 +512,7 @@ const AdminLayout: React.FC = () => {
                             </li>
                         )}
 
-                        {/* Tables group */}
+                        {/* Tables group - Always visible */}
                         {tableItems.filter(item => HasPermission(item?.key)) && (
                             <li className="relative mt-2">
                                 <button
@@ -665,6 +668,104 @@ const AdminLayout: React.FC = () => {
                             </li>
                         )}
 
+
+
+                        {/* Menu Cotations & AO */}
+                        <li className="relative mt-2">
+                            <button
+                                onClick={() => setActiveMenu(activeMenu === 'cotations' ? '' : 'cotations')}
+                                className={`w-full flex items-center ${
+                                    sidebarExpanded ? 'justify-between' : 'justify-center'
+                                } p-2 rounded-lg ${
+                                    activeMenu === 'cotations' ||
+                                    location.pathname.startsWith('/admin/cotations') ||
+                                    location.pathname.startsWith('/admin/appels-offres')
+                                        ? theme === 'dark'
+                                            ? 'bg-blue-900/40 text-blue-300'
+                                            : 'bg-blue-50 text-blue-600'
+                                        : `admin-menu-item ${theme}`
+                                }`}
+                            >
+                                <div className="flex items-center">
+                                    <FileText className="w-5 h-5"/>
+                                    {sidebarExpanded && (
+                                        <span className="ml-3 whitespace-nowrap hidden md:inline">
+                                            Cotations & AO
+                                        </span>
+                                    )}
+                                </div>
+                                {sidebarExpanded && (
+                                    <ChevronDown
+                                        className={`w-4 h-4 transition-transform ${
+                                            activeMenu === 'cotations' ? 'transform rotate-180' : ''
+                                        }`}
+                                    />
+                                )}
+                            </button>
+
+                            {/* Sous-menus */}
+                            {activeMenu === 'cotations' && sidebarExpanded && (
+                                <ul className="mt-1 space-y-1">
+                                    <li>
+                                        <Link
+                                            to="/admin/cotations"
+                                            className={`flex items-center ${sidebarExpanded ? 'justify-start pl-6' : 'justify-center'} p-2 rounded-lg text-sm ${
+                                                location.pathname === '/admin/cotations'
+                                                    ? 'text-white bg-red-600'
+                                                    : theme === 'dark'
+                                                        ? 'text-gray-400 hover:text-white hover:bg-gray-700'
+                                                        : 'text-gray-700 hover:text-gray-900 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            <FileText className="w-4 h-4 mr-2"/>
+                                            <span>Cotations</span>
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link
+                                            to="/admin/appels-offres"
+                                            className={`flex items-center ${sidebarExpanded ? 'justify-start pl-6' : 'justify-center'} p-2 rounded-lg text-sm ${
+                                                location.pathname === '/admin/appels-offres'
+                                                    ? 'text-white bg-red-600'
+                                                    : theme === 'dark'
+                                                        ? 'text-gray-400 hover:text-white hover:bg-gray-700'
+                                                        : 'text-gray-700 hover:text-gray-900 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            <ClipboardList className="w-4 h-4 mr-2"/>
+                                            <span>Appels d'offres</span>
+                                        </Link>
+                                    </li>
+                                </ul>
+                            )}
+                        </li>
+
+                        {/* Menu du site */}
+                        {HasPermission(appPermissions.menu_visibility) && (<li className="relative mt-2">
+                            <button
+                                onClick={() => navigate('/admin/menu-sites')}
+                                className={`w-full flex items-center ${
+                                    sidebarExpanded ? 'justify-start' : 'justify-center'
+                                } p-2 rounded-lg ${
+                                    location.pathname === '/admin/menu-sites'
+                                        ? theme === 'dark'
+                                            ? 'bg-blue-900/40 text-blue-300'
+                                            : 'bg-blue-50 text-blue-600'
+                                        : `admin-menu-item ${theme}`
+                                }`}
+                            >
+                                <div className="flex items-center">
+                                    <Menu className="w-5 h-5"/>
+                                    {sidebarExpanded && (
+                                        <span className="ml-3 whitespace-nowrap hidden md:inline">
+                                            Menu du site
+                                        </span>
+                                    )}
+                                </div>
+                            </button>
+                        </li>)}
+
+
                         {HasPermission(appPermissions.reports) && (
                             <li className="relative">
                                 <Link
@@ -709,7 +810,6 @@ const AdminLayout: React.FC = () => {
                             </li>
                         )}
 
-                        {/* Mises à jour - Menu masqué par demande utilisateur */}
                     </ul>
 
                     <div
@@ -750,11 +850,13 @@ const AdminLayout: React.FC = () => {
                                 <span className="ml-3 whitespace-nowrap hidden md:inline">
                   Retour au site
                 </span>
+
                             )}
                         </button>
-                        
+
                         {/* Signature du compteur */}
-                        <div className={`mt-3 text-center ${!sidebarExpanded ? 'px-1' : 'px-3'} ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} text-[8px]`}>
+                        <div
+                            className={`mt-3 text-center ${!sidebarExpanded ? 'px-1' : 'px-3'} ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} text-[8px]`}>
                             <div className="border-t border-gray-600/20 pt-2">
                                 <div>Powered by DigitalEdge</div>
                                 <div className="font-medium">Deon Mass</div>

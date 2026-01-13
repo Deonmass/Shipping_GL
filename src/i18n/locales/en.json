@@ -194,11 +194,16 @@
     "subtitle": "Your trusted logistics partner in Africa and worldwide",
     "mission": {
       "title": "Our Mission",
-      "description": "At SHIPPING GL, our mission is to provide world-class integrated logistics solutions that simplify our clients' business operations. We are committed to delivering reliable, efficient and personalized service that perfectly meets the specific needs of each client."
+      "paragraph1": "By focusing on our operations, we help our partners efficiently plan their goals and meet their objectives.",
+      "paragraph2": "To play a crucial role in keeping consignments moving quickly and smoothly in a challenging and vast region.",
+      "paragraph3": "This to the benefit of businesses in the region by improving efficiency and reducing delays."
     },
     "vision": {
       "title": "Our Vision",
-      "description": "Our vision is to become the reference logistics partner in Africa, recognized for the excellence of our services, our integrity and our constant innovation in logistics and international trade."
+      "description": "Redefining logistics by effectively connecting the Great Lakes region to the world.",
+      "paragraph1": "SHIPPING GL’s vision is to make a difference in the way goods are transported, stored, and delivered in our region, by focusing on, and improve, efficiency, reduce costs, and enhance our customer satisfaction.",
+      "paragraph2": "We strive to become a leading player in the logistics industry, that connects the Great Lakes region to the world and vice versa, known for its reliability, transparency, and commitment to sustainability.",
+      "paragraph3": "Ultimately, to create a seamless and interconnected global supply chain that enables other global freight forwarding businesses to connect with their Great Lakes customers in the most efficient and cost-effective manner possible."
     },
     "values": {
       "title": "Our Values",
@@ -231,7 +236,7 @@
     },
     "statement": {
       "title": "Our Statement",
-      "paragraph1": "SHIPPING GL aims to operate sustainably, respecting rules and regulations, cultural differences and the environment."
+      "paragraph1": "SHIPPING GL wants to do this in a sustainable manner, with respect for rules and regulations, for cultural differences and for the environment"
     },
     "team": {
       "title": "Our Team",

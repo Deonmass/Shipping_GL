@@ -20,9 +20,8 @@ export const appPermissions = {
     dashboard: "18",
     reports: "19",
     visitor_accounts: "20",
+    menu_visibility: "21",
 
-
-    menu_visibility: "00",
     likes: "15",
     users_assign_roles: "00",
     users_permissions: "00",
