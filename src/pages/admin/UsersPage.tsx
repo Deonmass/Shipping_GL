@@ -113,7 +113,7 @@ const UsersPage: React.FC = () => {
 
     const tableContainerRef = useRef<HTMLDivElement>(null);
 
-    const {isPending: isGettingUsers, data: users, refetch: reGetUsers} = UseGetUsersStats()
+    const {isPending: isGettingUsers, data: users, refetch: reGetUsers, isRefetching: isReGettingUsers} = UseGetUsersStats()
     const {data: roles} = UseGetRoles({noPermission: 1})
     const {isPending: isAddingUser, data: addUserResult, mutate: addUser} = UseAddUser()
     const {isPending: isUpdatingUser, data: updateUserResult, mutate: updateUser} = UseUpdateUser()
@@ -514,6 +514,7 @@ const UsersPage: React.FC = () => {
                 <AdminPageHeader
                     Icon={<Users className={`w-6 h-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}/>}
                     title="Gestion des Utilisateurs"
+                    isRefreshing={isReGettingUsers}
                     onRefresh={() => reGetUsers()}
                     onAdd={HasPermission(appPermissions.users, appOps.create) ? () => {
                         setFormData(emptyUser);

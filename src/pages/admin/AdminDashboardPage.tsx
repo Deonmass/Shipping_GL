@@ -10,9 +10,9 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, Legend, Cell, Area, AreaChart, PieChart, Pie, LabelList
 } from 'recharts';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase.ts';
 import { useNavigate } from 'react-router-dom';
-import { ChartModal } from '../components/admin/ChartModal';
+import { ChartModal } from '../../components/admin/ChartModal.tsx';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 

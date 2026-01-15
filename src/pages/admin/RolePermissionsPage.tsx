@@ -13,6 +13,7 @@ import {
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
 import {permissionsOperations} from "../../constants";
 import AppToast from "../../utils/AppToast.ts";
+import {getAuthData} from "../../utils";
 
 const CheckInput = ({isDark, permissions, ops, role, permission, onChange}: {
     isDark: boolean,
@@ -70,12 +71,14 @@ const RolePermissionsPage: React.FC = () => {
     const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
     const isDark = theme === 'dark';
 
-    const {data: roles, isPending: isGettingRoles, refetch: reGetRoles} = UseGetRoles()
+    const {user: connectedUser} = getAuthData()
+
+    const {data: roles, isLoading: isGettingRoles, refetch: reGetRoles, isRefetching: isReGettingRoles} = UseGetRoles()
     const {data: addResult, mutate: addRole, isPending: isAddingRole} = UseAddRole()
     const {data: updateResult, mutate: updateRole, isPending: isUpdatingRole} = UseUpdateRole()
     const {data: deleteResult, mutate: deleteRole, isPending: isDeletingRole} = UseDeleteRole()
-    const {data: permissions, isPending: isGettingPermissions} = UseGetAppPermissions()
-    const {data: rolesPermissions, isPending: isGettingRolesPermissions, refetch: reGetRolePermissions} = UseGetRolesPermissions({format: "array"})
+    const {data: permissions, isPending: isGettingPermissions, refetch: reGetAppPermissions, isRefetching: isReGettingAppPermissions} = UseGetAppPermissions()
+    const {data: rolesPermissions, isPending: isGettingRolesPermissions, refetch: reGetRolePermissions, isRefetching: isReGettingRolePermissions} = UseGetRolesPermissions({format: "array"})
     const {data: updateRolePermissionResult, mutate: updateRolePermissions, isPending: isUpdatingRolePermissions} = UseUpdateRolePermissions()
 
     const [permissionStatus, setPermissionStatus] = useState<any>();
@@ -157,7 +160,7 @@ const RolePermissionsPage: React.FC = () => {
                         role_id: item?.role_id,
                         permission_id: item?.permission_id,
                         permission_ops: item?.permission_ops,
-                        created_by: "1",
+                        created_by: connectedUser?.id,
                     }
                 })
             }
@@ -211,7 +214,7 @@ const RolePermissionsPage: React.FC = () => {
                         role_id: opsValue.role_id,
                         permission_id: opsValue.permission_id,
                         permission_ops: opsValue.new_permissions,
-                        created_by: "1",
+                        created_by: connectedUser?.id,
                     },
                 },
             }
@@ -236,7 +239,10 @@ const RolePermissionsPage: React.FC = () => {
                 title="Gestion des Permissions"
                 onRefresh={async () => {
                     await reGetRoles()
+                    await reGetRolePermissions()
+                    await reGetAppPermissions()
                 }}
+                isRefreshing={isReGettingRoles || isReGettingAppPermissions || isReGettingRolePermissions}
             />
 
             {/* Légende dynamique */}

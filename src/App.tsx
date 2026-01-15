@@ -26,7 +26,7 @@ import ContactPage from './pages/ContactPage';
 import RecruitmentPage from './pages/RecruitmentPage';
 
 // Admin Pages
-import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage.tsx';
 import AdminPartnersPage from './pages/admin/PartnersPage';
 import AdminReportsPage from './pages/admin/ReportsPage';
 import AdminSettingsPage from './pages/admin/SettingsPage';

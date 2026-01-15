@@ -8,12 +8,13 @@ type PropsType = {
     onExport?: () => void
     onRefresh?: () => void
     onAdd?: () => void
+    isRefreshing?: boolean
 }
 
 const AdminPageHeader = (props: PropsType) => {
     const { theme } = useOutletContext<{ theme: 'dark' | 'light' }>();
     const isDark = theme === 'dark';
-    const {onExport, onRefresh, onAdd, title, Icon} = props
+    const {onExport, onRefresh, onAdd, title, Icon, isRefreshing} = props
 
     return (
         <div className="mb-6 mt-[60px] flex items-center justify-between">
@@ -45,8 +46,8 @@ const AdminPageHeader = (props: PropsType) => {
                             : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 shadow-sm'
                     }`}
                 >
-                    <RefreshCw className="w-4 h-4 mr-2"/>
-                    Actualiser
+                    <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`}/>
+                    {isRefreshing ? "Actualisation ..." : "Actualiser"}
                 </button> : null}
 
                 {onAdd ? <button

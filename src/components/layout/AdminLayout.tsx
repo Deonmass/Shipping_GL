@@ -4,9 +4,9 @@ import {
     BarChart3, Users, FileText, Settings,
     Bell, Search, LogOut, Handshake, ClipboardEditIcon,
     MessageSquare, Heart, Calendar, Tags, TrendingUp, ChevronDown, ChevronRight,
-    Mail, Shield, Menu, CheckCircle2, Sun, Moon, User, Home, X, Wrench, Building2,
+    Mail, Menu, CheckCircle2, Sun, Moon, User, Home, X, Wrench, Building2,
     ClipboardList,
-    UserRoundSearch, CircleUserRoundIcon
+    UserRoundSearch, CircleUserRoundIcon, Table2Icon
 } from 'lucide-react';
 import {supabase} from '../../lib/supabase';
 import {formatDistanceToNow} from 'date-fns';
@@ -33,15 +33,6 @@ const AdminLayout: React.FC = () => {
     });
     const [notificationCount, setNotificationCount] = useState(0);
     const [recentNotifications, setRecentNotifications] = useState<any[]>([]);
-    const [notificationCountsByType, setNotificationCountsByType] = useState<Record<string, number>>({
-        like: 0,
-        comment: 0,
-        post: 0,
-        partner: 0,
-        other: 0,
-        update: 0,
-        quote: 0,
-    });
     const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -53,10 +44,7 @@ const AdminLayout: React.FC = () => {
     });
 
     const [activeMenu, setActiveMenu] = useState<string | null>(null);
-    const [allowedMenuKeys, setAllowedMenuKeys] = useState<Set<string>>(new Set());
-    const [menuPermissionsActive, setMenuPermissionsActive] = useState(false);
     const [isSidebarHoverOpen, setIsSidebarHoverOpen] = useState(false);
-    const [notificationsExpanded, setNotificationsExpanded] = useState(true);
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -114,71 +102,6 @@ const AdminLayout: React.FC = () => {
         localStorage.setItem('admin_theme', theme);
     }, [theme]);
 
-    useEffect(() => {
-        const loadNotificationCount = async () => {
-            try {
-                const {count, error} = await supabase
-                    .from('admin_notifications')
-                    .select('id', {count: 'exact', head: true})
-                    .eq('is_read', false);
-
-                if (error) {
-                    console.warn('[AdminLayout] Error loading notification count:', error);
-                    setNotificationCount(0);
-                    return;
-                }
-
-                setNotificationCount(count || 0);
-
-                // Per-type unread counts (likes, comments, posts, partners, other, updates)
-                const types = ['like', 'comment', 'post', 'partner', 'other', 'update', 'quote'];
-                const perTypeCounts: Record<string, number> = {
-                    like: 0,
-                    comment: 0,
-                    post: 0,
-                    partner: 0,
-                    other: 0,
-                    update: 0,
-                };
-
-                for (const t of types) {
-                    const {count: typeCount, error: typeError} = await supabase
-                        .from('admin_notifications')
-                        .select('id', {count: 'exact', head: true})
-                        .eq('is_read', false)
-                        .eq('type', t);
-
-                    if (typeError) {
-                        console.warn('[AdminLayout] Error loading notification count for type', t, typeError);
-                    } else {
-                        perTypeCounts[t] = typeCount || 0;
-                    }
-                }
-
-                setNotificationCountsByType(perTypeCounts);
-
-                const {data: recent, error: recentError} = await supabase
-                    .from('admin_notifications')
-                    .select('*')
-                    .order('created_at', {ascending: false})
-                    .limit(5);
-
-                if (recentError) {
-                    console.warn('[AdminLayout] Error loading recent notifications:', recentError);
-                } else {
-                    setRecentNotifications(recent || []);
-                }
-            } catch (e) {
-                console.error('[AdminLayout] Unexpected error loading notification count:', e);
-                setNotificationCount(0);
-            }
-        };
-
-        loadNotificationCount();
-
-        const interval = setInterval(loadNotificationCount, 30000);
-        return () => clearInterval(interval);
-    }, []);
 
 
     const handleLogout = async () => {
@@ -259,28 +182,6 @@ const AdminLayout: React.FC = () => {
         },
     ];
 
-    const notificationTypeKeys: Record<string, string> = {
-        like: 'notifications_like',
-        comment: 'notifications_comment',
-        post: 'notifications_post',
-        partner: 'notifications_partner',
-        other: 'notifications_other',
-        quote: 'notifications_quote',
-    };
-
-    const notificationItems = [
-        {key: appPermissions.post_likes, type: 'like', label: 'Likes'},
-        {key: appPermissions.comments, type: 'comment', label: 'Commentaires'},
-        {key: appPermissions.posts, type: 'post', label: 'Posts'},
-        {key: appPermissions.partners, type: 'partner', label: 'Partenaires'},
-    ];
-
-    const canSeeNotificationType = (type: string): boolean => {
-        if (!menuPermissionsActive) return true;
-        const key = notificationTypeKeys[type] || notificationTypeKeys.other;
-        return allowedMenuKeys.has(key);
-    };
-
     const searchItems = [
         {
             key: appPermissions.dashboard,
@@ -321,14 +222,6 @@ const AdminLayout: React.FC = () => {
         // Items du bloc "tables"
         ...tableItems,
     ];
-
-    // Vérification des permissions pour les notifications
-    console.log('Permissions des notifications:', {
-        'post_likes': HasPermission(appPermissions.post_likes),
-        'comments': HasPermission(appPermissions.comments),
-        'posts': HasPermission(appPermissions.posts),
-        'partners': HasPermission(appPermissions.partners)
-    });
 
     const effectiveSearchItems = searchItems.filter((item) => !item.key || HasPermission(item.key));
 
@@ -377,6 +270,13 @@ const AdminLayout: React.FC = () => {
             icon: UserRoundSearch,
             label: 'Comptes Visiteurs',
             keywords: ['visiteurs', 'utilisateurs']
+        },
+        {
+            key: appPermissions.menu_visibility,
+            path: '/admin/menu-sites',
+            icon: Menu,
+            label: 'Menu du Site',
+            keywords: ['menu', 'site', "visibilité"]
         }
     ];
 
@@ -392,10 +292,6 @@ const AdminLayout: React.FC = () => {
     };
 
     const sidebarExpanded = isSidebarOpen || isSidebarHoverOpen;
-
-    const searchParams = new URLSearchParams(location.search);
-    const selectedNotificationType =
-        location.pathname === '/admin/notifications' ? (searchParams.get('type') || 'other') : null;
 
     const logoSrc = sidebarExpanded
         ? theme === 'dark'
@@ -525,7 +421,7 @@ const AdminLayout: React.FC = () => {
                                     }`}
                                 >
                                     <div className="flex items-center">
-                                        <FileText className="w-5 h-5"/>
+                                        <Table2Icon className="w-5 h-5"/>
                                         {sidebarExpanded && (
                                             <span className="ml-3 whitespace-nowrap hidden md:inline">Tables</span>
                                         )}
@@ -543,7 +439,6 @@ const AdminLayout: React.FC = () => {
                                             .filter(item => HasPermission(item?.key))
                                             .map((item) => {
                                                 const isQuoteRequests = item.key === 'quote_requests';
-                                                const quoteBadge = notificationCountsByType.quote || 0;
 
                                                 return (
                                                     <li key={item.path} className="relative">
@@ -575,90 +470,6 @@ const AdminLayout: React.FC = () => {
                                     </span>
                                                                     )}
                                 </span>
-                                                            )}
-                                                        </Link>
-                                                    </li>
-                                                );
-                                            })}
-                                    </ul>
-                                )}
-                            </li>
-                        )}
-
-                        {/* Notifications group */}
-                        {notificationItems.filter(item => HasPermission(item.key)).length > 0 && (
-                            <li className="relative mt-2">
-                                <button
-                                    onClick={() => setNotificationsExpanded(!notificationsExpanded)}
-                                    className={`w-full flex items-center ${
-                                        sidebarExpanded ? 'justify-between' : 'justify-center'
-                                    } p-2 rounded-lg ${
-                                        `admin-menu-item ${theme}`
-                                    }`}
-                                >
-                                    <div className="flex items-center">
-                                        <Bell className="w-5 h-5"/>
-                                        {sidebarExpanded && (
-                                            <span
-                                                className="ml-3 whitespace-nowrap hidden md:inline">Notifications</span>
-                                        )}
-                                    </div>
-                                    {sidebarExpanded && (
-                                        <span className="hidden md:inline">
-                      {notificationsExpanded ? <ChevronDown className="w-4 h-4"/> : <ChevronRight className="w-4 h-4"/>}
-                    </span>
-                                    )}
-                                </button>
-
-                                {notificationsExpanded && (
-                                    <ul className="mt-2 space-y-1">
-                                        {notificationItems
-                                            .filter(item => HasPermission(item.key))
-                                            .map((item) => {
-                                                const isActive =
-                                                    location.pathname === '/admin/notifications' && selectedNotificationType === item.type;
-
-                                                const badge = notificationCountsByType[item.type] || 0;
-
-                                                return (
-                                                    <li key={item.key} className="relative">
-                                                        <Link
-                                                            to={{
-                                                                pathname: '/admin/notifications',
-                                                                search: `?type=${item.type}`
-                                                            }}
-                                                            className={`flex items-center ${
-                                                                sidebarExpanded ? 'justify-start pl-6' : 'justify-center'
-                                                            } p-2 rounded-lg text-sm ${
-                                                                isActive
-                                                                    ? 'text-white bg-red-600'
-                                                                    : sidebarExpanded
-                                                                        ? theme === 'dark'
-                                                                            ? 'text-gray-400 hover:text-white hover:bg-gray-700'
-                                                                            : 'text-gray-700 hover:text-gray-900 hover:bg-slate-100'
-                                                                        : theme === 'dark'
-                                                                            ? 'text-primary-400 hover:text-white hover:bg-gray-700'
-                                                                            : 'text-primary-600 hover:text-primary-700 hover:bg-slate-100'
-                                                            }`}
-                                                        >
-                                                            <Bell className="w-4 h-4"/>
-                                                            {sidebarExpanded && (
-                                                                <>
-                                  <span className="ml-3 whitespace-nowrap flex-1">
-                                    {item.label}
-                                  </span>
-                                                                    {badge > 0 && (
-                                                                        <span
-                                                                            className={`ml-2 inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded-full text-[11px] font-semibold border ${
-                                                                                isActive
-                                                                                    ? 'bg-white text-red-600 border-white'
-                                                                                    : 'bg-red-600 text-white border-red-600'
-                                                                            }`}
-                                                                        >
-                                      {badge}
-                                    </span>
-                                                                    )}
-                                                                </>
                                                             )}
                                                         </Link>
                                                     </li>
@@ -745,32 +556,6 @@ const AdminLayout: React.FC = () => {
                                 </ul>
                             )}
                         </li>
-
-                        {/* Menu du site */}
-                        {HasPermission(appPermissions.menu_visibility) && (<li className="relative mt-2">
-                            <button
-                                onClick={() => navigate('/admin/menu-sites')}
-                                className={`w-full flex items-center ${
-                                    sidebarExpanded ? 'justify-start' : 'justify-center'
-                                } p-2 rounded-lg ${
-                                    location.pathname === '/admin/menu-sites'
-                                        ? theme === 'dark'
-                                            ? 'bg-blue-900/40 text-blue-300'
-                                            : 'bg-blue-50 text-blue-600'
-                                        : `admin-menu-item ${theme}`
-                                }`}
-                            >
-                                <div className="flex items-center">
-                                    <Menu className="w-5 h-5"/>
-                                    {sidebarExpanded && (
-                                        <span className="ml-3 whitespace-nowrap hidden md:inline">
-                                            Menu du site
-                                        </span>
-                                    )}
-                                </div>
-                            </button>
-                        </li>)}
-
 
                         {HasPermission(appPermissions.reports) && (
                             <li className="relative">
@@ -977,9 +762,6 @@ const AdminLayout: React.FC = () => {
                                             {recentNotifications.map((notif) => {
                                                 const notifType: string = notif.type || 'other';
 
-                                                if (!canSeeNotificationType(notifType)) {
-                                                    return null;
-                                                }
 
                                                 const typeColor = theme === 'dark'
                                                     ? notifType === 'like'

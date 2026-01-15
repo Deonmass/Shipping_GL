@@ -22,8 +22,8 @@ export const appPermissions = {
     reports: "19",
     visitor_accounts: "20",
     menu_visibility: "21",
-    cotation: "22",
-    appelOffre: "23",
+    cotation: "00",
+    appelOffre: "00",
 
     users_assign_roles: "00",
     users_permissions: "00",
