@@ -17,7 +17,8 @@ export {
     UseGetAppPermissions,
     UseUpdateRolePermissions,
     UseGetUsersStats,
-    UseToggleUserStatus
+    UseToggleUserStatus,
+    UseGetDashboardStats
 } from "./queries/UsersQueries.ts"
 
 export {

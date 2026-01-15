@@ -20,6 +20,7 @@ const urls =  {
     users: '/api/users',
     roles: '/api/roles',
     offices: '/api/offices',
+    dashboard: '/api/dashboard',
     appPermissions: '/api/app-permissions',
     rolesPermissions: '/api/role-default-permissions',
     categories: '/api/categories',

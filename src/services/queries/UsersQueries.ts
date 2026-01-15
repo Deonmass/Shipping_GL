@@ -54,6 +54,13 @@ export const UseGetAppPermissions = (options?: GetQueryParams) => UseGetQuery({
     endpoint: endpoints.appPermissions,
 })
 
+
+export const UseGetDashboardStats = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "DashboardStats",
+    options: options,
+    endpoint: endpoints.dashboard,
+})
+
 // export const UseGetAppPermissionOps = (options?: GetQueryParams) => UseGetQuery({
 //     identifier: "AppPermissionsOps",
 //     options: options,
