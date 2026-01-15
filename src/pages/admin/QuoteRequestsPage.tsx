@@ -29,10 +29,6 @@ interface QuoteRequestRow {
     processed_at?: string | null;
 }
 
-interface QuoteStats {
-    total: number;
-    byService: Record<string, number>;
-}
 
 const isActive = (u: any) =>
     u?.status?.toString() === "1"
@@ -42,7 +38,7 @@ const isProcessed = (u: any) =>
 
 
 const AdminQuoteRequestsPage: React.FC = () => {
-    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>() || { theme: 'dark'};
+    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>() || {theme: 'dark'};
     const isDark = theme === 'dark';
     const {user: connectedUser} = getAuthData()
 
@@ -55,9 +51,9 @@ const AdminQuoteRequestsPage: React.FC = () => {
         isLoading: isGettingRequests,
         refetch: reGetRequests
     } = UseGetQuoteRequests({format: "stats"})
-    const {data: services, isLoading: isGettingServices} = UseGetServices({noPermission: 1})
-    const {data: deleteResult, isPending: isDeleting, mutate: deleteRequest} = UseDeleteQuoteRequests()
-    const {data: updateResult, isPending: isUpdating, mutate: updateRequest} = UseUpdateQuoteRequests()
+    const {data: services,} = UseGetServices({noPermission: 1})
+    const {data: deleteResult, mutate: deleteRequest} = UseDeleteQuoteRequests()
+    const {data: updateResult, mutate: updateRequest} = UseUpdateQuoteRequests()
 
     useEffect(() => {
         if (updateResult) {
@@ -101,7 +97,12 @@ const AdminQuoteRequestsPage: React.FC = () => {
             color: theme === 'dark' ? '#ffffff' : '#111827',
         });
         if (result.isConfirmed) {
-            updateRequest({id: row.id, status: "2", processed_at: format(new Date(), 'yyyy/MM/dd HH:mm:ss'), processed_by: connectedUser?.id});
+            updateRequest({
+                id: row.id,
+                status: "2",
+                processed_at: format(new Date(), 'yyyy/MM/dd HH:mm:ss'),
+                processed_by: connectedUser?.id
+            });
         }
     };
 
@@ -325,7 +326,7 @@ const AdminQuoteRequestsPage: React.FC = () => {
                                         <div className="flex flex-col gap-1">
                         <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                                isProcessed(row) 
+                                isProcessed(row)
                                     ? 'bg-emerald-100 text-emerald-800'
                                     : !isActive(row)
                                         ? 'bg-amber-100 text-amber-800'
@@ -355,17 +356,18 @@ const AdminQuoteRequestsPage: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div className="flex items-center justify-end gap-2">
-                                            {!isProcessed(row) && HasPermission(appPermissions.devis, appOps.update) ? <button
-                                                onClick={() => handleToggleStatus(row)}
-                                                className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border text-xs font-medium transition ${
-                                                    row.status === 'done'
-                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                                        : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                                                }`}
-                                                title={row.status === 'done' ? 'Marquer comme nouvelle' : 'Marquer comme traitée'}
-                                            >
-                                                <CheckCircle2 className="w-4 h-4"/>
-                                            </button> : null}
+                                            {!isProcessed(row) && HasPermission(appPermissions.devis, appOps.update) ?
+                                                <button
+                                                    onClick={() => handleToggleStatus(row)}
+                                                    className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border text-xs font-medium transition ${
+                                                        row.status === 'done'
+                                                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                            : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                                    }`}
+                                                    title={row.status === 'done' ? 'Marquer comme nouvelle' : 'Marquer comme traitée'}
+                                                >
+                                                    <CheckCircle2 className="w-4 h-4"/>
+                                                </button> : null}
                                             <button
                                                 onClick={() => setSelectedRequest(row)}
                                                 className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border text-xs font-medium transition ${
