@@ -27,7 +27,7 @@ const isActive = (u: any) =>
     u?.status?.toString() === "1"
 
 const VisitorsPage = () => {
-    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
+    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>() || { theme: 'dark'};
     const isDark = theme === 'dark';
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<any>();
     const [showViewModal, setShowViewModal] = useState<any>(null);

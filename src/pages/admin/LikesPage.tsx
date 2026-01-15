@@ -52,7 +52,7 @@ const isActive = (u: any) =>
 
 
 const LikesPage: React.FC = () => {
-  const { theme } = useOutletContext<{ theme: 'dark' | 'light' }>();
+  const { theme } = useOutletContext<{ theme: 'dark' | 'light' }>() || { theme: 'dark'};
   const isDark = theme === 'dark';
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);

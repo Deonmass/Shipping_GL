@@ -52,7 +52,7 @@ const isActive = (u: any) =>
 
 
 const EventsPage: React.FC = () => {
-    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
+    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>() || { theme: 'dark'};
     const isDark = theme === 'dark';
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
     const [searchTerm, setSearchTerm] = useState('');

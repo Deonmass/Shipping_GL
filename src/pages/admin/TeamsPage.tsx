@@ -46,7 +46,7 @@ const isActive = (u: any) =>
     u?.status?.toString() === "1"
 
 const TeamsPage: React.FC = () => {
-    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
+    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>() || { theme: 'dark'};
     const isDark = theme === 'dark';
     const [selectedPartner, setSelectedPartner] = useState<TeamFormData | null>(null);
     const [searchTerm, setSearchTerm] = useState('');

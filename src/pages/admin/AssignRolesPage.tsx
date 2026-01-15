@@ -25,7 +25,7 @@ interface Role {
 }
 
 const AssignRolesPage: React.FC = () => {
-  const { theme } = useOutletContext<{ theme: 'dark' | 'light' }>();
+  const { theme } = useOutletContext<{ theme: 'dark' | 'light' }>() || { theme: 'dark'};
   const isDark = theme === 'dark';
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);

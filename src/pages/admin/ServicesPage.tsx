@@ -41,7 +41,7 @@ const isFavorite = (u: any) =>
     u?.favorite?.toString() === "1"
 
 const AdminServicesPage: React.FC = () => {
-    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
+    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>() || { theme: 'dark'};
     const isDark = theme === 'dark';
     const [searchTerm, setSearchTerm] = useState('');
     const [groupBy, setGroupBy] = useState('');

@@ -61,7 +61,7 @@ const isPinned = (u: any) =>
     u?.status?.toString() === "2"
 
 const PostsPage: React.FC = () => {
-    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
+    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>() || { theme: 'dark'};
     const isDark = theme === 'dark';
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
     const [searchTerm, setSearchTerm] = useState('');

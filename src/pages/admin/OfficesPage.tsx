@@ -44,7 +44,7 @@ const getCoordinate = (value: string, type : "lat" | "lng") => {
 }
 
 const OfficesPage = () => {
-    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
+    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>() || { theme: 'dark'};
     const isDark = theme === 'dark';
 
     const [formData, setFormData] = useState<any>(emptyItem);

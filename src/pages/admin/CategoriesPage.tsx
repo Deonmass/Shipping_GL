@@ -23,7 +23,7 @@ interface Category {
 const emptyItem: Category = {name: '', slug: '', type: 'news', description: ''}
 
 const CategoriesPage: React.FC = () => {
-    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
+    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>() || { theme: 'dark'};
     const isDark = theme === 'dark';
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
     const [searchTerm, setSearchTerm] = useState('');

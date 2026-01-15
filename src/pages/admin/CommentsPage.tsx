@@ -50,7 +50,7 @@ const isActive = (u: any) =>
     u?.status?.toString() === "1"
 
 const CommentsPage: React.FC = () => {
-    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
+    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>() || { theme: 'dark'};
     const isDark = theme === 'dark';
     const [selectedComment, setSelectedComment] = useState<any | null>(null);
     const [searchTerm, setSearchTerm] = useState('');

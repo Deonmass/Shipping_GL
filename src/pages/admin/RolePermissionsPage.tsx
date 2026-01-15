@@ -68,7 +68,7 @@ const CheckInput = ({isDark, permissions, ops, role, permission, onChange}: {
 }
 
 const RolePermissionsPage: React.FC = () => {
-    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>();
+    const {theme} = useOutletContext<{ theme: 'dark' | 'light' }>() || { theme: 'dark'};
     const isDark = theme === 'dark';
 
     const {user: connectedUser} = getAuthData()

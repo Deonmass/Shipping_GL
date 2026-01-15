@@ -30,7 +30,6 @@ export const HasOneOfPermissions = (_permissions: PermissionObject[]) => {
             const hasPermission = userPermissions[_permission.id];
             const ops = hasPermission.permission_ops.split(",")
             const canOperate = ops.indexOf(_permission.ops?.toString())
-            console.log("canOperate", canOperate)
             return canOperate > -1
             break;
         }

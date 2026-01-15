@@ -64,7 +64,7 @@ const isActive = (u: any) =>
 const JobOfferPage: React.FC = () => {
     // ... (le reste du code du composant)
     const context = useOutletContext<OutletContext>();
-    const theme = context?.theme || 'light';
+    const theme = context?.theme || 'dark';
 
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [isModalOpen, setIsModalOpen] = useState<"add" | "edit" | null>(null);

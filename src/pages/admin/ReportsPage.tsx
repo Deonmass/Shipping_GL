@@ -24,7 +24,7 @@ interface Report {
 }
 
 const ReportsPage: React.FC = () => {
-  const { theme } = useOutletContext<{ theme: 'dark' | 'light' }>();
+  const { theme } = useOutletContext<{ theme: 'dark' | 'light' }>() || { theme: 'dark'};
   const isDark = theme === 'dark';
   // DB-only persistence (no storage bucket)
   const [searchTerm, setSearchTerm] = useState('');

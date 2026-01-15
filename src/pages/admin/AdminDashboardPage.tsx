@@ -7,8 +7,8 @@ import {
   RefreshCw
 } from 'lucide-react';
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
-  ResponsiveContainer, Legend, Cell, Area, AreaChart, PieChart, Pie, LabelList
+   XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Area, AreaChart, LabelList
 } from 'recharts';
 import { supabase } from '../../lib/supabase.ts';
 import { useNavigate } from 'react-router-dom';
