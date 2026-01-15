@@ -8,6 +8,7 @@ import AdminContextProvider from "./contexts/AdminContext";
 import Layout from './components/layout/Layout';
 import AdminLayout from './components/layout/AdminLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import NotAllowedRoute from './components/NotAllowedRoute';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -51,6 +52,9 @@ import MenuSitesPage from "./pages/admin/MenuSitesPage";
 import CotationsPage from './pages/admin/CotationsPage';
 import AppelsOffresPage from './pages/admin/AppelsOffresPage';
 import VisitorsPage from "./pages/admin/VisitorsPage.tsx";
+import NotAllowedPage from "./pages/admin/NotAllowedPage.tsx";
+import {appPermissions} from "./constants/appPermissions.ts";
+import {appOps} from "./constants";
 
 
 function App() {
@@ -80,9 +84,9 @@ function App() {
                         <Route path="engagement" element={<EngagementPage/>}/>
                         <Route path="contact" element={<ContactPage/>}/>
                         <Route path="recrutement" element={<RecruitmentPage/>}>
-                        <Route index element={null}/>
-                        <Route path="offres" element={null}/>
-                        <Route path="cv" element={null}/>
+                            <Route index element={null}/>
+                            <Route path="offres" element={null}/>
+                            <Route path="cv" element={null}/>
                         </Route>
                         <Route path="*" element={<NotFoundPage/>}/>
                     </Route>
@@ -93,6 +97,7 @@ function App() {
                             <AdminLayout/>
                         </ProtectedRoute>
                     }>
+                        <Route path="not-allowed" element={<NotAllowedPage/>}/>
                         <Route path="dashboard" element={<AdminDashboardPage/>}/>
                         <Route path="users">
                             <Route index element={<AdminUsersPage/>}/>
@@ -101,11 +106,25 @@ function App() {
                             <Route path="assign-roles" element={<AssignRolesPage/>}/>
                             <Route path="permissions" element={<RolePermissionsPage/>}/>
                         </Route>
-                        <Route path="team" element={<TeamsPage/>}/>
-                        <Route path="partners" element={<AdminPartnersPage/>}/>
-                        <Route path="menu-sites" element={<MenuSitesPage/>}/>
-                        <Route path="posts" element={<PostsPage/>}/>
-                        <Route path="services" element={<AdminServicesPage/>}/>
+                        <Route element={<NotAllowedRoute permissions={[{id: appPermissions.team, ops: appOps.read}]}/>}>
+                            <Route path="team" element={<TeamsPage/>}/>
+                        </Route>
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.partners, ops: appOps.read}]}/>}>
+                            <Route path="partners" element={<AdminPartnersPage/>}/>
+                        </Route>
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.menu_visibility, ops: appOps.read}]}/>}>
+                            <Route path="menu-sites" element={<MenuSitesPage/>}/>
+                        </Route>
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.posts, ops: appOps.read}]}/>}>
+                            <Route path="posts" element={<PostsPage/>}/>
+                        </Route>
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.services, ops: appOps.read}]}/>}>
+                            <Route path="services" element={<AdminServicesPage/>}/>
+                        </Route>
                         <Route path="quote-requests" element={<AdminQuoteRequestsPage/>}/>
                         <Route path="candidatures" element={<CandidaturePage/>}/>
                         <Route path="offres-emploi" element={<JobOfferPage/>}/>
@@ -120,11 +139,11 @@ function App() {
                         <Route path="menu-visibility" element={<MenuVisibilityPage/>}/>
 
                         <Route path="offices" element={<OfficesPage/>}/>
-                        
+
                         {/* Cotations & Appels d'offres */}
                         <Route path="cotations" element={<CotationsPage/>}/>
                         <Route path="appels-offres" element={<AppelsOffresPage/>}/>
-                      
+
                         <Route path="visitors" element={<VisitorsPage/>}/>
 
                         <Route path="*" element={<NotFoundPage/>}/>
