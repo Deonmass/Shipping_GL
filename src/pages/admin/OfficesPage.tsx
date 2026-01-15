@@ -174,6 +174,7 @@ const OfficesPage = () => {
             <AdminPageHeader
                 Icon={<Building2 className="w-6 h-6 text-primary-500"/>}
                 title="Gestion des Bureaux"
+                isRefreshing={isReGettingOffices}
                 onRefresh={() => reGetOffices()}
                 onAdd={HasPermission(appPermissions.offices, appOps.create) ? () => {
                     setFormData(emptyItem);
@@ -187,7 +188,7 @@ const OfficesPage = () => {
             </div>
 
             {
-                isGettingOffices || isReGettingOffices ? (
+                isGettingOffices  ? (
                     <div className="flex items-center justify-center min-h-screen">
                         <div
                             className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>

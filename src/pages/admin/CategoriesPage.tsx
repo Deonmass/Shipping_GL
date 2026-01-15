@@ -40,6 +40,7 @@ const CategoriesPage: React.FC = () => {
 
     const {
         isPending: isGettingCategories,
+        isRefetching: isReGettingCategories,
         data: categories,
         refetch: reGetCategories
     } = UseGetCategories({format: "stats"})
@@ -181,7 +182,7 @@ const CategoriesPage: React.FC = () => {
                 <AdminPageHeader
                     title="Gestion des catégories"
                     Icon={<Tag className={isDark ? 'w-7 h-7 text-white' : 'w-7 h-7 text-primary-500'}/>}
-                    //onExport={handleExportToExcel}
+                    isRefreshing={isReGettingCategories}
                     onRefresh={reGetCategories}
                     onAdd={HasPermission(appPermissions.categories, appOps.create) ? () => {
                         handleAdd()

@@ -63,7 +63,7 @@ const TeamsPage: React.FC = () => {
     const [formData, setFormData] = useState<TeamFormData>(emptyItem);
     const [showStatusConfirm, setShowStatusConfirm] = useState<TeamFormData | null>(null);
 
-    const {isPending: isGettingPartners, data: partners, refetch: reGetPartners} = UseGetTeams({format: "stats"})
+    const {isPending: isGettingPartners, data: partners, refetch: reGetPartners, isRefetching: isReGettingPartners} = UseGetTeams({format: "stats"})
     const {data: addResult, isPending: isAdding, mutate: addPartner} = UseAddTeam()
     const {data: updateResult, isPending: isUpdating, mutate: updatePartner} = UseUpdateTeam()
     const {data: deleteResult, isPending: isDeleting, mutate: deletePartner} = UseDeleteTeam()
@@ -242,6 +242,7 @@ const TeamsPage: React.FC = () => {
                     }`}
                 />}
                 title="Equipe Dirigeante"
+                isRefreshing={isReGettingPartners}
                 onRefresh={() => reGetPartners()}
                 onAdd={HasPermission(appPermissions.team, appOps.create) ? () => {
                     setFormData(emptyItem);
