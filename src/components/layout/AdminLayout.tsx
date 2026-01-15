@@ -672,7 +672,10 @@ const AdminLayout: React.FC = () => {
 
                         {/* Menu Cotations & AO */}
                         <li className="relative mt-2">
-                            <button
+                            {HasOneOfPermissions([{id: appPermissions.cotation, ops: appOps.read}, {
+                                id: appPermissions.appelOffre,
+                                ops: appOps.read
+                            }]) ? <button
                                 onClick={() => setActiveMenu(activeMenu === 'cotations' ? '' : 'cotations')}
                                 className={`w-full flex items-center ${
                                     sidebarExpanded ? 'justify-between' : 'justify-center'
@@ -701,13 +704,13 @@ const AdminLayout: React.FC = () => {
                                         }`}
                                     />
                                 )}
-                            </button>
+                            </button> : null}
 
                             {/* Sous-menus */}
                             {HasOneOfPermissions([{id: appPermissions.cotation, ops: appOps.read}, {
                                 id: appPermissions.appelOffre,
                                 ops: appOps.read
-                            }]) && (
+                            }]) && activeMenu === 'cotations' && sidebarExpanded &&  (
                                 <ul className="mt-1 space-y-1">
                                     {HasPermission(appPermissions.cotation) ? <li>
                                         <Link

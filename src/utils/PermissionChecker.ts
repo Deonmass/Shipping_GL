@@ -1,6 +1,7 @@
 import {getAuthData} from "../utils";
 import type {PermissionObject} from "../types";
 import {appPermissions} from "../constants/appPermissions.ts";
+import {appOps} from "../constants";
 
 export const HasPermission = (permissionId: number | string, operation: number = 1) => {
     const {permissions: userPermissions, user} = getAuthData()
@@ -16,7 +17,6 @@ export const HasPermission = (permissionId: number | string, operation: number =
     return false
 }
 
-
 export const HasOneOfPermissions = (_permissions: PermissionObject[]) => {
     const {permissions: userPermissions, user} = getAuthData()
     //if(user?.role_id?.toString() === "1") return true;
@@ -30,6 +30,7 @@ export const HasOneOfPermissions = (_permissions: PermissionObject[]) => {
             const hasPermission = userPermissions[_permission.id];
             const ops = hasPermission.permission_ops.split(",")
             const canOperate = ops.indexOf(_permission.ops?.toString())
+            console.log("canOperate", canOperate)
             return canOperate > -1
             break;
         }
@@ -37,3 +38,4 @@ export const HasOneOfPermissions = (_permissions: PermissionObject[]) => {
     }
     return false
 }
+
