@@ -13,6 +13,7 @@ export const appPermissions = {
     newsletter: "11",
     services: "12",
     devis: "13",
+    quoteRequests: "13",
     team: "14",
     likes: "15",
     post_likes: "15",

@@ -99,13 +99,17 @@ function App() {
                     }>
                         <Route path="not-allowed" element={<NotAllowedPage/>}/>
                         <Route path="dashboard" element={<AdminDashboardPage/>}/>
-                        <Route path="users">
-                            <Route index element={<AdminUsersPage/>}/>
-                            <Route path="visitors" element={<AdminUsersPage/>}/>
-                            <Route path="admins" element={<AdminUsersPage/>}/>
-                            <Route path="assign-roles" element={<AssignRolesPage/>}/>
-                            <Route path="permissions" element={<RolePermissionsPage/>}/>
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.users, ops: appOps.read}]}/>}>
+                            <Route path="users" element={<AdminUsersPage/>}/>
                         </Route>
+                        <Route path="users/visitors" element={<AdminUsersPage/>}/>
+                        <Route path="users/admins" element={<AdminUsersPage/>}/>
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.users_permissions, ops: appOps.read}]}/>}>
+                        </Route>
+                        <Route path="users/assign-roles" element={<AssignRolesPage/>}/>
+                        <Route path="users/permissions" element={<RolePermissionsPage/>}/>
                         <Route element={<NotAllowedRoute permissions={[{id: appPermissions.team, ops: appOps.read}]}/>}>
                             <Route path="team" element={<TeamsPage/>}/>
                         </Route>
@@ -125,27 +129,59 @@ function App() {
                             permissions={[{id: appPermissions.services, ops: appOps.read}]}/>}>
                             <Route path="services" element={<AdminServicesPage/>}/>
                         </Route>
-                        <Route path="quote-requests" element={<AdminQuoteRequestsPage/>}/>
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.devis, ops: appOps.read}]}/>}>
+                            <Route path="quote-requests" element={<AdminQuoteRequestsPage/>}/>
+                        </Route>
                         <Route path="candidatures" element={<CandidaturePage/>}/>
-                        <Route path="offres-emploi" element={<JobOfferPage/>}/>
-                        <Route path="likes" element={<LikesPage/>}/>
-                        <Route path="comments" element={<CommentsPage/>}/>
-                        <Route path="events" element={<EventsPage/>}/>
-                        <Route path="categories" element={<CategoriesPage/>}/>
-                        <Route path="newsletter" element={<NewsletterPage/>}/>
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.jobOffers, ops: appOps.read}]}/>}>
+                            <Route path="offres-emploi" element={<JobOfferPage/>}/>
+                        </Route>
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.post_likes, ops: appOps.read}]}/>}>
+                            <Route path="likes" element={<LikesPage/>}/>
+                        </Route>
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.comments, ops: appOps.read}]}/>}>
+                            <Route path="comments" element={<CommentsPage/>}/>
+                        </Route>
+                        <Route
+                            element={<NotAllowedRoute permissions={[{id: appPermissions.events, ops: appOps.read}]}/>}>
+                            <Route path="events" element={<EventsPage/>}/>
+                        </Route>
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.categories, ops: appOps.read}]}/>}>
+                            <Route path="categories" element={<CategoriesPage/>}/>
+                        </Route>
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.newsletter, ops: appOps.read}]}/>}>
+                            <Route path="newsletter" element={<NewsletterPage/>}/>
+                        </Route>
                         <Route path="reports" element={<AdminReportsPage/>}/>
                         <Route path="settings" element={<AdminSettingsPage/>}/>
                         <Route path="notifications" element={<NotificationsPage/>}/>
-                        <Route path="menu-visibility" element={<MenuVisibilityPage/>}/>
-
-                        <Route path="offices" element={<OfficesPage/>}/>
-
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.menu_visibility, ops: appOps.read}]}/>}>
+                            <Route path="menu-visibility" element={<MenuVisibilityPage/>}/>
+                        </Route>
+                        <Route
+                            element={<NotAllowedRoute permissions={[{id: appPermissions.offices, ops: appOps.read}]}/>}>
+                            <Route path="offices" element={<OfficesPage/>}/>
+                        </Route>
                         {/* Cotations & Appels d'offres */}
-                        <Route path="cotations" element={<CotationsPage/>}/>
-                        <Route path="appels-offres" element={<AppelsOffresPage/>}/>
-
-                        <Route path="visitors" element={<VisitorsPage/>}/>
-
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.cotation, ops: appOps.read}]}/>}>
+                            <Route path="cotations" element={<CotationsPage/>}/>
+                        </Route>
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.appelOffre, ops: appOps.read}]}/>}>
+                            <Route path="appels-offres" element={<AppelsOffresPage/>}/>
+                        </Route>
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.visitor_accounts, ops: appOps.read}]}/>}>
+                            <Route path="visitors" element={<VisitorsPage/>}/>
+                        </Route>
                         <Route path="*" element={<NotFoundPage/>}/>
                     </Route>
                 </Routes>

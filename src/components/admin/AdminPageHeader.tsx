@@ -12,7 +12,7 @@ type PropsType = {
 }
 
 const AdminPageHeader = (props: PropsType) => {
-    const { theme } = useOutletContext<{ theme: 'dark' | 'light' }>();
+    const { theme } = useOutletContext<{ theme: 'dark' | 'light' }>() || { theme: 'dark'};
     const isDark = theme === 'dark';
     const {onExport, onRefresh, onAdd, title, Icon, isRefreshing} = props
 
