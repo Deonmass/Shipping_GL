@@ -44,3 +44,18 @@ export const removeAuthData = () => {
     AppStorage.removeItem(localStorageKeys.permissions)
     AppStorage.clearAll()
 }
+
+export const setAuthVisitor = (data: any) => {
+    AppStorage.setItem(localStorageKeys.visitor, JSON.stringify(data))
+}
+
+export const getAuthVisitorData = (): any => {
+    let visitor: any = AppStorage.getItem(localStorageKeys.visitor)
+    visitor = visitor ? JSON.parse(visitor) : null
+    return visitor
+}
+
+export const removeAuthVisitorData = () => {
+    AppStorage.removeItem(localStorageKeys.visitor)
+    AppStorage.clearAll()
+}

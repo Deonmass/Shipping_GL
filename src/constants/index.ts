@@ -4,6 +4,8 @@ export const localStorageKeys = {
     token: 'ldSAywaJOSdlaAhreab3342jkhvzx02HdHHDgsaosxkjbzpsnsgfas',
     user: 'Udg2lashjdvskiu21e937sakshlxba93wbs93',
     permissions: 'Hpagdb9273kjhvxlauhgedlkhxszx83ksbnp',
+    visitorToken: 'ldSaaBEox30d[hcddjnbdKDIOUJejdnxqpsnxu4BDSHJjzopfoitJDOIHRfdvdk',
+    visitor: '6kasdbvuGSKbxkhedfdHdln93hdnLHdjZpadddjoerirxD',
 }
 
 export const cacheTime = {

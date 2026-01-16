@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Ship, Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import {UseLoginVisitor} from "../services";
 import {toast} from "react-hot-toast";
+import {setAuthVisitor} from "../utils";
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
-  const { signIn, user } = useAuth();
-  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,7 +24,9 @@ const LoginPage: React.FC = () => {
       } else {
         //signIn(email, password);
         toast.success('Connexion reussie.');
-        navigate('/');
+        setAuthVisitor(loginResult?.responseData?.data)
+        //navigate('/');
+        window.location.href = "/"
       }
     }
   }, [loginResult]);
