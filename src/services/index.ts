@@ -124,4 +124,6 @@ export {
     UseLogoutVisitor,
     UseUpdateVisitor,
     UseVisitorCommentPost,
+    UseVisitorUpdateProfile,
+    UseVisitorUpdatePassword
 } from "./queries/VisitorQueries.ts"

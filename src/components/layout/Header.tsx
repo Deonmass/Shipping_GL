@@ -184,7 +184,7 @@ const Header: React.FC = () => {
 
                         {visitor ? (
                             <div className="flex flex-row items-center gap-2 pl-4">
-                                {visitor?.name?.slice(0, 13)}
+                                <Link to="/profil" className="hover:underline hover:text-red-600">{visitor?.name?.slice(0, 13)}</Link>
                                 <button
                                     onClick={handleSignOut}
                                     className="flex items-center justify-center w-9 h-9 rounded-full bg-primary-600 text-white hover:bg-primary-700"
@@ -278,7 +278,8 @@ const Header: React.FC = () => {
 
                     {visitor ? (
                         <div className="border-t border-gray-200 pt-4 space-y-2">
-                           <span className="flex items-center justify-center"> {visitor?.name}</span>
+                            <span className="flex items-center justify-center"> <Link
+                                to="/profil">{visitor?.name}</Link></span>
                             <button
                                 onClick={handleSignOut}
                                 className="flex items-center justify-center w-full py-2 text-gray-700 hover:text-primary-600"

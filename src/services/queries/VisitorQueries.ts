@@ -28,3 +28,5 @@ export const UseRegisterVisitor = () => UsePostFormDataQuery(endpoints.openVisit
 export const UseLogoutVisitor = () => UsePostFormDataQuery(`${endpoints.connectedVisitors}-logout`, "logoutVisitor")
 export const UseVisitorCommentPost = () => UsePostFormDataQuery(`${endpoints.connectedVisitors}-comment-post`, "commentPostVisitor")
 export const UseVisitorLikePost = () => UsePostFormDataQuery(`${endpoints.connectedVisitors}-like-post`, "likePostVisitor")
+export const UseVisitorUpdateProfile = () => UsePostFormDataQuery(`${endpoints.connectedVisitors}-update-profile`, "updateProfileVisitor")
+export const UseVisitorUpdatePassword = () => UsePostFormDataQuery(`${endpoints.connectedVisitors}-update-password`, "updatePasswordVisitor")

@@ -47,6 +47,7 @@ export const removeAuthData = () => {
 
 export const setAuthVisitor = (data: any) => {
     AppStorage.setItem(localStorageKeys.visitor, JSON.stringify(data))
+    AppStorage.setItem(localStorageKeys.visitorToken, data?.current_token || "")
 }
 
 export const getAuthVisitorData = (): any => {

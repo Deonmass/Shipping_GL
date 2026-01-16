@@ -51,6 +51,7 @@ export const getUserCurrentLocation = () => {
 
 
 const token = AppStorage.getItem(localStorageKeys.token);
+const visitorToken = AppStorage.getItem(localStorageKeys.visitorToken);
 
 let headers: any = {
     'content-type': 'application/json',
@@ -78,6 +79,9 @@ const authInterceptor = (config: any) => {
     if (token) {
         newCongif.headers.Authorization = `Bearer ${token ? token : ''}`;
         newCongif.headers["Auth-Token"] = token ? token : '';
+    }
+    if (visitorToken) {
+        newCongif.headers["Visit-Token"] = visitorToken;
     }
     return newCongif;
 };
@@ -133,7 +137,7 @@ axiosInstance.interceptors.response.use(
         if (error?.response?.status?.toString() === "419" && error.response.data.message && error.response.data.message.includes("connexion a expiré")) {
             console.log("Please, session expired login again.")
             AppStorage.clearAll()
-            window.location.href = "/admin-login"
+            window.location.href = error?.response?.data?.data?.request === "visitor" ? "/login" : "/admin-login"
             return false
         }
         return Promise.resolve({
@@ -175,6 +179,7 @@ const fetchFile = async ({url, method}: {
     const myHeaders = new Headers();
     myHeaders.append("Authorization", `Bearer ${token ? token : ''}`);
     myHeaders.append("Auth-Token", token ? token : '');
+    myHeaders.append("Visit-Token", visitorToken ? visitorToken : '');
     const res = await fetch(`${REACT_APP_BASE_URL}${url}`, {method, headers: myHeaders})
     const blob = await res.blob()
     if (blob.type === "" || blob.type !== "application/pdf") {
