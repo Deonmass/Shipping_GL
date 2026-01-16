@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {motion} from 'framer-motion';
-import {Link, useNavigate} from 'react-router-dom';
+import {Link} from 'react-router-dom';
 import {useAuth} from '../contexts/AuthContext';
 import {User, Mail, Phone, Building2, MapPin, Calendar, Key, Edit, ArrowRight} from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -15,7 +15,6 @@ interface PasswordChangeForm {
 
 const ProfilePage: React.FC = () => {
     const {visitor} = useAuth();
-    const navigate = useNavigate();
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [passwordForm, setPasswordForm] = useState<PasswordChangeForm>({
         currentPassword: '',
@@ -47,7 +46,7 @@ const ProfilePage: React.FC = () => {
                     confirmPassword: ''
                 });
                 removeAuthVisitorData()
-                navigate("/")
+                window.location.href = "/login"
             }
         }
     }, [updatePasswordResult]);
