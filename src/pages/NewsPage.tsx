@@ -9,7 +9,14 @@ import LeftSidebar from '../components/news/LeftSidebar';
 import PostCard from '../components/news/PostCard';
 import RightSidebar from '../components/news/RightSidebar';
 import FilterBar from '../components/news/FilterBar';
-import {UseGetOpenCategories, UseGetOpenEvents, UseGetOpenPosts} from "../services";
+import {
+    UseGetOpenCategories,
+    UseGetOpenEvents, UseGetOpenPostLikes,
+    UseGetOpenPosts,
+    UseVisitorCommentPost,
+    UseVisitorLikePost
+} from "../services";
+import {removeAuthVisitorData} from "../utils";
 
 interface Post {
     id: string;
@@ -28,18 +35,10 @@ interface Post {
     category_name?: string;
 }
 
-interface Event {
-    id: string;
-    title: string;
-    event_date: string;
-    location: string;
-    image_url?: string;
-    description?: string;
-}
 
 const NewsPage: React.FC = () => {
     const {t, i18n} = useTranslation();
-    const {user} = useAuth();
+    const {visitor} = useAuth();
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -49,147 +48,47 @@ const NewsPage: React.FC = () => {
     const [dateRange, setDateRange] = useState<{ start: Date | null; end: Date | null }>({start: null, end: null});
     const [shares, setShares] = useState<{ [key: string]: number }>({});
 
-    const {data: posts, isLoading: isGettingPosts} = UseGetOpenPosts()
+    const {data: posts, isLoading: isGettingPosts, refetch: reGetPosts} = UseGetOpenPosts()
     const {data: categories, isLoading: isGettingCategories} = UseGetOpenCategories({type: "news"})
     const {data: events, isLoading: isGettingEvents} = UseGetOpenEvents()
 
+    const {isPending: isLiking, mutate: likePost, data: likeResult} = UseVisitorLikePost()
+    const {data: visitorLikes, refetch: reGetVisitorLikes} = UseGetOpenPostLikes({format: "visitor_array", visitor_id: visitor?.id, enabled: !!visitor,})
+    const {isPending: isCommenting, mutate: commentPost} = UseVisitorCommentPost()
+
     useEffect(() => {
         document.title = 'Actualités - SHIPPING GL';
-        if (user) {
-            fetchUserLikes();
-        }
-    }, [user, i18n.language]);
+    }, [i18n.language]);
 
     useEffect(() => {
         // Reset slider when opening a new post
         setCurrentSlide(0);
     }, [selectedPost]);
 
-
-    const fetchUserLikes = async () => {
-        if (!user) return;
-
-        try {
-            const {data, error} = await supabase
-                .from('post_likes')
-                .select('post_id')
-                .eq('user_id', user.id);
-
-            if (error) throw error;
-
-            const likedPostIds = new Set(data?.map(like => like.post_id) || []);
-            setLikedPosts(likedPostIds);
-        } catch (error) {
-            console.error('Error fetching user likes:', error);
+    useEffect(() => {
+        if (likeResult) {
+            if (likeResult?.responseData?.error) {
+                toast.error(likeResult?.responseData?.message || "Une erreur s'est produite ! Reesayez");
+            } else {
+                reGetPosts()
+                reGetVisitorLikes()
+            }
         }
-    };
+    }, [likeResult]);
+
 
     const handleLike = async (postId: string) => {
-        if (!user) {
+        if (!visitor) {
             toast.error(t('news.messages.loginRequired'));
             return;
         }
-
-        const isLiked = likedPosts.has(postId);
-
-        try {
-            if (isLiked) {
-                const {error} = await supabase
-                    .from('post_likes')
-                    .delete()
-                    .eq('post_id', postId)
-                    .eq('user_id', user.id);
-
-                if (error) throw error;
-
-                setLikedPosts(prev => {
-                    const newSet = new Set(prev);
-                    newSet.delete(postId);
-                    return newSet;
-                });
-
-                // setPosts(prev => prev.map(post =>
-                //     post.id === postId
-                //         ? {...post, likes_count: (post.likes_count || 0) - 1}
-                //         : post
-                // ));
-
-                toast.success(t('news.messages.likeRemoved'));
-            } else {
-                const {data: userProfile, error: userProfileError} = await supabase
-                    .from('users')
-                    .select('full_name, email')
-                    .eq('id', user.id)
-                    .maybeSingle();
-
-                if (userProfileError) {
-                    console.warn('Error fetching user profile for like notification:', userProfileError);
-                }
-
-                const actorName =
-                    userProfile?.full_name?.trim() ||
-                    user.email?.split('@')[0] ||
-                    'Utilisateur';
-
-                const {error} = await supabase
-                    .from('post_likes')
-                    .insert({
-                        post_id: postId,
-                        user_id: user.id
-                    });
-
-                if (error) throw error;
-
-                setLikedPosts(prev => new Set([...prev, postId]));
-
-                // setPosts(prev => prev.map(post =>
-                //     post.id === postId
-                //         ? {...post, likes_count: (post.likes_count || 0) + 1}
-                //         : post
-                // ));
-
-                const likedPost = posts?.responseData?.data?.find((p: any) => p.id === postId);
-
-                try {
-                    const {error: notifError} = await supabase
-                        .from('admin_notifications')
-                        .insert({
-                            user_id: user.id,
-                            type: 'like',
-                            title: likedPost
-                                ? `${actorName} a aimé le post "${likedPost.title}"`
-                                : `${actorName} a aimé un post`,
-                            message: likedPost
-                                ? `Like sur le post "${likedPost.title}"`
-                                : 'Like sur un post',
-                            data: {
-                                post_id: postId,
-                                user_id: user.id,
-                                user_name: actorName,
-                                user_email: userProfile?.email || user.email || null,
-                                post_title: likedPost?.title || null,
-                            },
-                            is_read: false,
-                        });
-
-                    if (notifError) {
-                        console.error('Error inserting like notification:', notifError);
-                    }
-                } catch (e) {
-                    console.error('Unexpected error inserting like notification:', e);
-                }
-
-                toast.success(t('news.messages.liked'));
-            }
-        } catch (error) {
-            console.error('Error toggling like:', error);
-            toast.error('Une erreur est survenue');
-        }
+        likePost({ post_id: postId, })
     };
 
     const handleComment = (postId: string) => {
-        if (!user) {
+        if (!visitor) {
             toast.error(t('news.messages.loginRequired'));
+            return
         }
     };
 
@@ -252,7 +151,6 @@ const NewsPage: React.FC = () => {
         return filtered;
     })();
 
-
     return (
         <motion.div
             initial={{opacity: 0}}
@@ -303,7 +201,7 @@ const NewsPage: React.FC = () => {
                                             key={post.id}
                                             post={{
                                                 ...post,
-                                                is_liked: likedPosts.has(post.id)
+                                                is_liked: !!(visitorLikes?.responseData?.data[`${post?.id}`])
                                             }}
                                             onLike={handleLike}
                                             onComment={handleComment}

@@ -56,6 +56,7 @@ const PostCard: React.FC<PostCardProps> = ({
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentsCount, setCommentsCount] = useState(post.comments_count || 0);
 
+  console.log("post", post?.is_liked)
   useEffect(() => {
     if (showComments) {
       fetchComments();
@@ -262,7 +263,7 @@ const PostCard: React.FC<PostCardProps> = ({
           <button
             onClick={() => onLike(post.id)}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors flex-1 justify-center ${
-              post.is_liked
+              post?.is_liked
                 ? 'text-red-500 hover:bg-red-50'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
