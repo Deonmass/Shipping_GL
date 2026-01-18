@@ -54,7 +54,6 @@ const NewsPage: React.FC = () => {
 
     const {isPending: isLiking, mutate: likePost, data: likeResult} = UseVisitorLikePost()
     const {data: visitorLikes, refetch: reGetVisitorLikes} = UseGetOpenPostLikes({format: "visitor_array", visitor_id: visitor?.id, enabled: !!visitor,})
-    const {isPending: isCommenting, mutate: commentPost} = UseVisitorCommentPost()
 
     useEffect(() => {
         document.title = 'Actualités - SHIPPING GL';
@@ -83,13 +82,6 @@ const NewsPage: React.FC = () => {
             return;
         }
         likePost({ post_id: postId, })
-    };
-
-    const handleComment = (postId: string) => {
-        if (!visitor) {
-            toast.error(t('news.messages.loginRequired'));
-            return
-        }
     };
 
     const handleShare = (postId: string) => {
@@ -204,7 +196,6 @@ const NewsPage: React.FC = () => {
                                                 is_liked: !!(visitorLikes?.responseData?.data[`${post?.id}`])
                                             }}
                                             onLike={handleLike}
-                                            onComment={handleComment}
                                             onShare={handleShare}
                                             onReadMore={() => setSelectedPost(post)}
                                             categoryLabel={post?.category_name}
