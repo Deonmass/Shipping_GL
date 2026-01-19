@@ -1,3 +1,5 @@
+import {UseGetCotations} from "../services/queries/ServicesQueries.ts";
+
 const urls =  {
     openOffices: '/open/offices',
     openPartners: '/open/partners',
@@ -27,6 +29,8 @@ const urls =  {
     partners: '/api/partners',
     services: '/api/services',
     quoteRequests: '/api/quote-requests',
+    cotations: '/api/cotations',
+    cotationStatus: '/api/cotation-status',
     posts: '/api/posts',
     postLikes: '/api/post-likes',
     postComments: '/api/post-comments',

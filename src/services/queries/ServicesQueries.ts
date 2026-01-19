@@ -45,3 +45,35 @@ export const UseUpdateQuoteRequests = () => UseUpdateFormDataQuery(endpoints.quo
 export const UseDeleteQuoteRequests = () => UseUpdateQuery(`${endpoints.quoteRequests}-delete`, "deleteQuoteRequests")
 
 export const UseAddOpenQuoteRequests = () => UsePostFormDataQuery(endpoints.openQuoteRequests, "addOpenQuoteRequests")
+
+
+
+export const UseGetCotations = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "Cotations",
+    options: options,
+    endpoint: endpoints.cotations,
+})
+export const UseGetCotationDetail = (id: string, options?: GetQueryParams) => UseGetDetailQuery({
+    id: id,
+    identifier: "Cotation",
+    options: options,
+    endpoint: endpoints.cotations,
+})
+export const UseAddCotation = () => UsePostFormDataQuery(endpoints.cotations, "addCotation")
+export const UseUpdateCotation = () => UseUpdateFormDataQuery(endpoints.cotations, "updateCotation")
+export const UseDeleteCotation = () => UseUpdateQuery(`${endpoints.cotations}-delete`, "deleteCotation")
+
+export const UseGetCotationStatus = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "CotationStatus",
+    options: options,
+    endpoint: endpoints.cotationStatus,
+})
+export const UseGetCotationStatusDetail = (id: string, options?: GetQueryParams) => UseGetDetailQuery({
+    id: id,
+    identifier: "CotationStatus",
+    options: options,
+    endpoint: endpoints.cotationStatus,
+})
+export const UseAddCotationStatus = () => UsePostFormDataQuery(endpoints.cotationStatus, "addCotationStatus")
+export const UseUpdateCotationStatus = () => UseUpdateFormDataQuery(endpoints.cotationStatus, "updateCotationStatus")
+export const UseDeleteCotationStatus = () => UseUpdateQuery(`${endpoints.cotationStatus}-delete`, "deleteCotationStatus")

@@ -66,7 +66,17 @@ export {
     UseAddOpenQuoteRequests,
     UseGetQuoteRequests,
     UseDeleteQuoteRequests,
-    UseUpdateQuoteRequests
+    UseUpdateQuoteRequests,
+    UseGetCotationDetail,
+    UseGetCotationStatus,
+    UseGetCotationStatusDetail,
+    UseGetCotations,
+    UseAddCotation,
+    UseAddCotationStatus,
+    UseDeleteCotation,
+    UseDeleteCotationStatus,
+    UseUpdateCotation,
+    UseUpdateCotationStatus
 } from "./queries/ServicesQueries.ts"
 
 export {
