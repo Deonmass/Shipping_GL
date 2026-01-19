@@ -10,7 +10,7 @@ import {
     Edit,
     Search,
     Settings,
-    ToggleRight, ToggleLeft, KeyRound, ClipboardEditIcon
+    ToggleRight, ToggleLeft, KeyRound, ClipboardEditIcon, RefreshCcwIcon
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
@@ -33,6 +33,8 @@ import {HasPermission} from "../../utils/PermissionChecker.ts";
 import {appPermissions} from "../../constants/appPermissions.ts";
 import {appOps} from "../../constants";
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
+import {UseAddCotation, UseGetCotations, UseGetPartners, UseGetServices, UseGetUsers} from "../../services";
+import AppToast from "../../utils/AppToast.ts";
 
 // Enregistrer les composants nécessaires de Chart.js
 ChartJS.register(
@@ -127,7 +129,7 @@ interface Cotation {
     services: string;
     type: TypeCotation;
     mode: ModeTransport;
-    dateReception: Date;
+    reception_date: Date;
     dateEnvoi: Date | null;
     dateSoumissionValidation?: string;
     dateSoumissionClient?: string;
@@ -168,8 +170,6 @@ const CotationsPage: React.FC = () => {
         {length: 5},
         (_, i) => new Date().getFullYear() - i
     );
-    const [editingCotation, setEditingCotation] = useState<Cotation | null>(null);
-    const [cotations, setCotations] = useState<Cotation[]>([]);
     const [filteredCotations, setFilteredCotations] = useState<Cotation[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [userFilter, setUserFilter] = useState<string>('all');
@@ -200,6 +200,18 @@ const CotationsPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState<"add" | "edit" | "detail" | null>(null);
     const [formData, setFormData] = useState<any>(emptyItem);
 
+    const {data: services, isLoading: isGettingServices} = UseGetServices({noPermission: 1})
+    const {data: partners, isLoading: isGettingPartners} = UseGetPartners({noPermission: 1})
+    const {data: users, isLoading: isGettingUsers} = UseGetUsers({noPermission: 1})
+    const {
+        data: cotations,
+        isLoading: isGettingCotations,
+        isRefetching: isReGettingCotations,
+        refetch: reGetCotations
+    } = UseGetCotations({format: "stats"})
+
+    const {isPending: isAdding, mutate: addCotation, data: addResult} = UseAddCotation()
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const {name, value, type} = e.target as HTMLInputElement;
@@ -208,41 +220,29 @@ const CotationsPage: React.FC = () => {
             ...prev,
             [name]: type === 'number'
                 ? parseFloat(value) || 0
-                : type === 'date'
-                    ? new Date(value)
-                    : value
+                : value
         }));
     };
 
-    const getLastStatusDate = (cotation: Cotation) => {
-        if (cotation.statut === 'annulee' && cotation.dateAnnulation) {
-            return new Date(cotation.dateAnnulation).toLocaleDateString('fr-FR');
-        } else if (cotation.statut === 'envoyee' && cotation.dateSoumissionClient) {
-            return new Date(cotation.dateSoumissionClient).toLocaleDateString('fr-FR');
-        } else if (cotation.statut === 'en_attente' && cotation.dateSoumissionValidation) {
-            return new Date(cotation.dateSoumissionValidation).toLocaleDateString('fr-FR');
-        } else {
-            return new Date(cotation.dateReception).toLocaleDateString('fr-FR');
-        }
-    };
-
     const calculateProcessingTime = (cotation: Cotation) => {
-        const lastDate = cotation.statut === 'annulee' && cotation.dateAnnulation ?
-            new Date(cotation.dateAnnulation) :
-            cotation.statut === 'envoyee' && cotation.dateSoumissionClient ?
-                new Date(cotation.dateSoumissionClient) :
-                cotation.statut === 'en_attente' && cotation.dateSoumissionValidation ?
-                    new Date(cotation.dateSoumissionValidation) :
-                    new Date();
-
-        const receptionDate = new Date(cotation.dateReception);
+        // const lastDate = cotation.status === 'annulee' && cotation.dateAnnulation ?
+        //     new Date(cotation.dateAnnulation) :
+        //     cotation.statut === 'envoyee' && cotation.dateSoumissionClient ?
+        //         new Date(cotation.dateSoumissionClient) :
+        //         cotation.statut === 'en_attente' && cotation.dateSoumissionValidation ?
+        //             new Date(cotation.dateSoumissionValidation) :
+        //             new Date();
+        const lastDate = cotation.updated_at ?
+            new Date(cotation.updated_at) :
+            new Date();
+        const receptionDate = new Date(cotation.reception_date);
         const diffTime = Math.abs(lastDate.getTime() - receptionDate.getTime());
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // Convertir en jours
     };
 
     // Fonction pour filtrer les cotations par année
     const getCotationsByYear = (year: number) => {
-        return filteredCotations.filter(cotation => {
+        return filteredCotations?.filter(cotation => {
             const date = new Date(cotation.dateReception);
             return date.getFullYear() === year;
         });
@@ -396,7 +396,7 @@ const CotationsPage: React.FC = () => {
             domestique: 0
         };
 
-        filteredCotations.forEach(cotation => {
+        filteredCotations?.forEach(cotation => {
             const cotationYear = new Date(cotation.dateReception).getFullYear();
             if (cotationYear === year && (cotation.type === 'import' || cotation.type === 'export' || cotation.type === 'domestique')) {
                 typeCounts[cotation.type]++;
@@ -429,7 +429,7 @@ const CotationsPage: React.FC = () => {
             autre: {totalVente: 0, totalAchat: 0, count: 0}
         };
 
-        filteredCotations.forEach(cotation => {
+        filteredCotations?.forEach(cotation => {
             const mode = cotation.mode;
             stats[mode].totalVente += cotation.vente || 0;
             stats[mode].totalAchat += cotation.achat || 0;
@@ -470,7 +470,7 @@ const CotationsPage: React.FC = () => {
 
         // Compter les cotations par mois
         filteredCotations.forEach(cotation => {
-            const date = new Date(cotation.dateReception);
+            const date = new Date(cotation.reception_date);
             const year = date.getFullYear();
             const month = date.getMonth();
 
@@ -523,13 +523,13 @@ const CotationsPage: React.FC = () => {
 
         // Filtrer les cotations pour l'année sélectionnée
         const yearlyCotations = cotationsList.filter(cotation => {
-            const date = new Date(cotation.dateReception);
+            const date = new Date(cotation.reception_date);
             return date.getFullYear() === year;
         });
 
         // Compter les cotations par statut et par mois
         yearlyCotations.forEach(cotation => {
-            const date = new Date(cotation.dateReception);
+            const date = new Date(cotation.reception_date);
             const month = date.getMonth(); // 0-11
             const status = cotation.statut;
 
@@ -564,7 +564,7 @@ const CotationsPage: React.FC = () => {
 
         // Filtrer les cotations pour l'année sélectionnée
         const yearlyFilteredCotations = filteredCotations.filter(cotation => {
-            return new Date(cotation.dateReception).getFullYear() === selectedYear;
+            return new Date(cotation.reception_date).getFullYear() === selectedYear;
         });
 
         const {
@@ -712,7 +712,7 @@ const CotationsPage: React.FC = () => {
         };
 
         filteredCotations.forEach(cotation => {
-            const cotationYear = new Date(cotation.dateReception).getFullYear();
+            const cotationYear = new Date(cotation.reception_date).getFullYear();
             if (cotationYear === selectedYear) {
                 switch (cotation.statut) {
                     case 'todo':
@@ -1135,246 +1135,26 @@ const CotationsPage: React.FC = () => {
         }
     };
 
-    // Données de démonstration pour les cotations
-    const fetchCotations = () => {
-        // setLoading(true);
-
-        const demoCotations: Cotation[] = [
-            /* ======================
-       ===== JANVIER 2026 =====
-       ====================== */
-            {
-                id: '2026-01',
-                numero: 'COT-2026-001',
-                client: 'Client A',
-                regime: 'exo_total',
-                type: 'import',
-                mode: 'aerien',
-                dateReception: new Date('2026-01-05'),
-                dateEnvoi: null,
-                statut: 'pending',
-                reference: 'REF-2026-01',
-                services: 'Aérien express',
-                commentaire: '',
-                vente: 1600,
-                achat: 1100,
-                utilisateur: 'Gedeon Massadi'
-            },
-            {
-                id: '2026-01-02',
-                numero: 'COT-2026-011',
-                client: 'Client B',
-                regime: 'exo_partiel',
-                type: 'export',
-                mode: 'maritime',
-                dateReception: new Date('2026-01-12').toISOString(),
-                dateEnvoi: null,
-                statut: 'envoyee',
-                reference: 'REF-2026-11',
-                services: 'Maritime complet',
-                commentaire: 'Prioritaire',
-                vente: 2200,
-                achat: 1600,
-                utilisateur: 'Felix Luaba'
-            },
-            {
-                id: '2026-01-03',
-                numero: 'COT-2026-012',
-                client: 'Client G',
-                regime: 'exo_total',
-                type: 'import',
-                mode: 'routier',
-                dateReception: new Date('2026-01-18').toISOString(),
-                dateEnvoi: null,
-                statut: 'en_attente',
-                reference: 'REF-2026-12',
-                services: 'Routier régional',
-                commentaire: '',
-                vente: 1200,
-                achat: 800,
-                utilisateur: 'Gedeon Massadi'
-            },
-            {
-                id: '2026-01-04',
-                numero: 'COT-2026-013',
-                client: 'Client D',
-                regime: 'exo_partiel',
-                type: 'export',
-                mode: 'aerien',
-                dateReception: new Date('2026-01-20').toISOString(),
-                dateEnvoi: null,
-                statut: 'annulee',
-                reference: 'REF-2026-13',
-                services: 'Aérien standard',
-                commentaire: 'Client indisponible',
-                vente: 2100,
-                achat: 1500,
-                utilisateur: 'Felix Luaba'
-            },
-            {
-                id: '2026-01-05',
-                numero: 'COT-2026-014',
-                client: 'Client K',
-                regime: 'exo_total',
-                type: 'import',
-                mode: 'maritime',
-                dateReception: new Date('2026-01-25').toISOString(),
-                dateEnvoi: null,
-                statut: 'envoyee',
-                reference: 'REF-2026-14',
-                services: 'Maritime groupage',
-                commentaire: '',
-                vente: 2300,
-                achat: 1650,
-                utilisateur: 'Gedeon Massadi'
-            },
-
-            /* ======================
-       ===== FÉVRIER 2026 =====
-       ====================== */
-            {
-                id: '2026-02-01',
-                numero: 'COT-2026-015',
-                client: 'Client K',
-                regime: 'exo_partiel',
-                type: 'import',
-                mode: 'routier',
-                dateReception: new Date('2026-02-03').toISOString(),
-                dateEnvoi: null,
-                statut: 'pending',
-                reference: 'REF-2026-15',
-                services: 'Routier national',
-                commentaire: '',
-                vente: 1300,
-                achat: 900,
-                utilisateur: 'Felix Luaba'
-            },
-            {
-                id: '2026-02-02',
-                numero: 'COT-2026-016',
-                client: 'Client G',
-                regime: 'exo_total',
-                type: 'import',
-                mode: 'aerien',
-                dateReception: new Date('2026-02-08').toISOString(),
-                dateEnvoi: null,
-                statut: 'envoyee',
-                reference: 'REF-2026-16',
-                services: 'Aérien prioritaire',
-                commentaire: 'Urgent',
-                vente: 2500,
-                achat: 1800,
-                utilisateur: 'Gedeon Massadi'
-            },
-            {
-                id: '2026-02-03',
-                numero: 'COT-2026-017',
-                client: 'Client H',
-                regime: 'exo_partiel',
-                type: 'import',
-                mode: 'maritime',
-                dateReception: new Date('2026-02-12').toISOString(),
-                dateEnvoi: null,
-                statut: 'en_attente',
-                reference: 'REF-2026-17',
-                services: 'Maritime',
-                commentaire: '',
-                vente: 2600,
-                achat: 1900,
-                utilisateur: 'Felix Luaba'
-            },
-            {
-                id: '2026-02-04',
-                numero: 'COT-2026-018',
-                client: 'Client I',
-                regime: 'exo_total',
-                type: 'import',
-                mode: 'routier',
-                dateReception: new Date('2026-02-18').toISOString(),
-                dateEnvoi: null,
-                statut: 'pending',
-                reference: 'REF-2026-18',
-                services: 'Routier express',
-                commentaire: '',
-                vente: 1150,
-                achat: 750,
-                utilisateur: 'Gedeon Massadi'
-            },
-            {
-                id: '2026-02-05',
-                numero: 'COT-2026-019',
-                client: 'Client G',
-                regime: 'exo_partiel',
-                type: 'import',
-                mode: 'aerien',
-                dateReception: new Date('2026-02-22').toISOString(),
-                dateEnvoi: null,
-                statut: 'envoyee',
-                reference: 'REF-2026-19',
-                services: 'Aérien standard',
-                commentaire: '',
-                vente: 2900,
-                achat: 2100,
-                utilisateur: 'Felix Luaba'
-            },
-        ];
-
-
-        setCotations(demoCotations);
-        // setLoading(false);
-    };
-
-    // Charger les cotations au montage du composant
-    useEffect(() => {
-        fetchCotations();
-    }, []);
-
-    // Récupérer la liste des utilisateurs uniques pour le filtre
-    const getUniqueUsers = () => {
-        const users = new Set<string>();
-        cotations.forEach(cotation => {
-            if (cotation.utilisateur) {
-                users.add(cotation.utilisateur);
-            }
-        });
-        return Array.from(users);
-    };
-
-    // Récupérer la liste des services uniques pour le filtre
-    const getUniqueServices = () => {
-        const services = new Set<string>();
-        cotations.forEach(cotation => {
-            if (cotation.services) {
-                cotation.services.split(',').forEach(service => {
-                    const trimmed = service.trim();
-                    if (trimmed) services.add(trimmed);
-                });
-            }
-        });
-        return Array.from(services);
-    };
 
     useEffect(() => {
-        let result = [...cotations];
+        let result = cotations?.responseData?.data?.items?.length ? cotations?.responseData?.data?.items : [];
 
         // Trier par date de réception (du plus récent au plus ancien)
-        result.sort((a, b) => new Date(b.dateReception).getTime() - new Date(a.dateReception).getTime());
+        result.sort((a, b) => new Date(b?.reception_date).getTime() - new Date(a?.reception_date).getTime());
 
         // Appliquer le filtre de statut
         if (statusFilter !== 'all') {
-            result = result.filter(cotation => cotation.statut === statusFilter);
+            result = result.filter(cotation => cotation?.status === statusFilter);
         }
 
         // Appliquer le filtre par utilisateur
         if (userFilter && userFilter !== 'all') {
-            result = result.filter(cotation => cotation.utilisateur === userFilter);
+            result = result.filter(cotation => cotation?.managed_by === userFilter);
         }
 
         // Appliquer le filtre par service
         if (serviceFilter) {
-            result = result.filter(cotation =>
-                cotation.services && cotation.services.toLowerCase().includes(serviceFilter.toLowerCase())
-            );
+            result = result.filter(cotation => cotation.service_id  === serviceFilter)
         }
 
         // Appliquer le filtre de date
@@ -1383,18 +1163,18 @@ const CotationsPage: React.FC = () => {
 
         if (dateFilter === 'today') {
             result = result.filter(cotation =>
-                new Date(cotation.dateReception).toDateString() === today.toDateString()
+                new Date(cotation?.reception_date).toDateString() === today.toDateString()
             );
         } else if (dateFilter === 'week') {
             const lastWeek = new Date(today);
             lastWeek.setDate(today.getDate() - 7);
             result = result.filter(cotation =>
-                new Date(cotation.dateReception) >= lastWeek
+                new Date(cotation?.reception_date) >= lastWeek
             );
         } else if (dateFilter === 'month') {
             const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
             result = result.filter(cotation =>
-                new Date(cotation.dateReception) >= firstDayOfMonth
+                new Date(cotation?.reception_date) >= firstDayOfMonth
             );
         } else if (dateFilter === 'specific-month') {
             const month = parseInt(monthFilter);
@@ -1404,7 +1184,7 @@ const CotationsPage: React.FC = () => {
             endDate.setHours(23, 59, 59, 999);
 
             result = result.filter(cotation => {
-                const cotationDate = new Date(cotation.dateReception);
+                const cotationDate = new Date(cotation.reception_date);
                 return cotationDate >= startDate && cotationDate <= endDate;
             });
         } else if (dateFilter === 'specific-year') {
@@ -1413,7 +1193,7 @@ const CotationsPage: React.FC = () => {
             const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
 
             result = result.filter(cotation => {
-                const cotationDate = new Date(cotation.dateReception);
+                const cotationDate = new Date(cotation.reception_date);
                 return cotationDate >= startDate && cotationDate <= endDate;
             });
         } else if (dateFilter === 'custom-range' && dateRange.start && dateRange.end) {
@@ -1422,7 +1202,7 @@ const CotationsPage: React.FC = () => {
             endDate.setHours(23, 59, 59, 999);
 
             result = result.filter(cotation => {
-                const cotationDate = new Date(cotation.dateReception);
+                const cotationDate = new Date(cotation.reception_date);
                 return cotationDate >= startDate && cotationDate <= endDate;
             });
         }
@@ -1431,10 +1211,10 @@ const CotationsPage: React.FC = () => {
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
             result = result.filter(cotation =>
-                cotation.numero?.toLowerCase().includes(term) ||
-                cotation.client?.toLowerCase().includes(term) ||
-                cotation.reference?.toLowerCase().includes(term) ||
-                cotation.services?.toLowerCase().includes(term)
+                cotation?.numero?.toLowerCase().includes(term) ||
+                cotation?.partner_title?.toLowerCase().includes(term) ||
+                cotation?.ref?.toLowerCase().includes(term) ||
+                cotation?.service_title?.toLowerCase().includes(term)
             );
         }
 
@@ -1445,7 +1225,6 @@ const CotationsPage: React.FC = () => {
     const deleteCotation = async (id: string) => {
         const theme = getTheme();
         const themeConfig = swalThemes[theme];
-
         const result = await MySwal.fire({
             title: 'Êtes-vous sûr ?',
             text: 'Voulez-vous vraiment supprimer cette cotation ?',
@@ -1467,20 +1246,8 @@ const CotationsPage: React.FC = () => {
         });
 
         if (result.isConfirmed) {
-            setCotations(cotations.filter(c => c.id !== id));
-            MySwal.fire({
-                title: 'Supprimé !',
-                text: 'La cotation a été supprimée avec succès.',
-                icon: 'success',
-                background: themeConfig.background,
-                color: themeConfig.text,
-                customClass: {
-                    popup: 'dark:bg-gray-800',
-                    title: 'dark:text-white',
-                    htmlContainer: 'dark:text-gray-300',
-                    confirmButton: 'dark:bg-red-600 dark:hover:bg-red-700',
-                },
-            });
+            //setCotations(cotations.filter(c => c.id !== id));
+
         }
     };
 
@@ -1491,23 +1258,7 @@ const CotationsPage: React.FC = () => {
     const handleStatusSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (selectedCotation && statusDate) {
-            const updated = cotations.map(c =>
-                c.id === selectedCotation.id
-                    ? {
-                        ...c,
-                        statut: newStatus,
-                        dateDerniereModification: new Date().toISOString(),
-                        ...(newStatus === 'pending' && {dateEnAttenteClient: statusDate}),
-                        ...(newStatus === 'en_attente' && {dateSoumissionValidation: statusDate}),
-                        ...(newStatus === 'envoyee' && {dateSoumissionClient: statusDate}),
-                        ...(newStatus === 'annulee' && {
-                            dateAnnulation: statusDate,
-                            raisonAnnulation: 'Modifié via le panneau des statuts'
-                        })
-                    }
-                    : c
-            );
-            setCotations(updated);
+
             setShowStatusModal(false);
             setStatusDate('');
         }
@@ -1518,7 +1269,7 @@ const CotationsPage: React.FC = () => {
 
         // Créer l'historique des statuts
         const history = [];
-        const creationDate = new Date(cotation.dateReception);
+        const creationDate = new Date(cotation.reception_date);
 
         // Date de création
         history.push({
@@ -1561,10 +1312,6 @@ const CotationsPage: React.FC = () => {
         setShowStatusModal(true);
     };
 
-    const openDetailsModal = (cotation: Cotation) => {
-        setSelectedCotation(cotation);
-        setShowDetailsModal(true);
-    };
 
     const getStatutBadge = (statut: Statut) => {
         const statutClasses = {
@@ -1590,15 +1337,43 @@ const CotationsPage: React.FC = () => {
         );
     };
 
-    const handleEditCotation = (cotation: Cotation) => {
-        setEditingCotation(cotation);
+    useEffect(() => {
+        if (addResult) {
+            if (addResult?.responseData?.error) {
+                AppToast.error(getTheme() === "dark", addResult?.responseData?.message || "Erreur lors de l'enregistrement")
+            } else {
+                //reGetJobs()
+                AppToast.success(getTheme() === "dark", 'Cotation ajoutée avec succès')
+                setIsModalOpen(null);
+                setFormData(emptyItem);
+            }
+        }
+    }, [addResult]);
 
-        // setShowAddForm(true);
-    };
 
-    const handleAddCotation = (e: React.FormEvent) => {
+    const handleSubmitCotation = (e: React.FormEvent) => {
         e.preventDefault();
-
+        if (!formData.service_id || !formData.managed_by || !formData.regime || !formData.type || !formData.mode) {
+            AppToast.error(getTheme() === "dark", 'Veuillez remplir tous les champs requis');
+            return;
+        }
+        const body = {
+            numero: formData?.numero,
+            reception_date: formData?.reception_date,
+            partner_id: formData?.partner_id,
+            service_id: formData?.service_id,
+            regime: formData?.regime,
+            type: formData?.type,
+            transportation_mode: formData?.transportation_mode,
+            sale_price: formData?.sale_price,
+            buy_price: formData?.buy_price,
+            ref: formData?.ref,
+            comment: formData?.comment,
+            managed_by: formData?.managed_by,
+        }
+        if (isModalOpen === "add") {
+            addCotation(body);
+        }
     };
 
     const getStatsByUser = () => {
@@ -1695,6 +1470,7 @@ const CotationsPage: React.FC = () => {
             icon: Eye,
             onClick: () => {
                 setIsModalOpen("detail");
+                setSelectedCotation(item);
             },
             color: 'text-blue-400',
             bgColor: 'bg-blue-500/20',
@@ -1705,7 +1481,8 @@ const CotationsPage: React.FC = () => {
             label: 'Modifier',
             icon: Edit,
             onClick: () => {
-                //setSelectedUser(user);
+                console.log(item);
+                setSelectedCotation(item);
                 setFormData(item);
                 setIsModalOpen("edit");
             },
@@ -1726,6 +1503,7 @@ const CotationsPage: React.FC = () => {
         }
     ];
 
+
     return (
         <div className="p-6">
 
@@ -1741,8 +1519,8 @@ const CotationsPage: React.FC = () => {
                         title="Gestion des Cotations"
                         onRefresh={() => console.log('refresh')}
                         onAdd={HasPermission(appPermissions.cotation, appOps.create) ? () => {
-                            setFormData(emptyItem);
                             setIsModalOpen("add");
+                            setFormData(emptyItem);
                         } : undefined}
                     />
                 </div>
@@ -2229,7 +2007,7 @@ const CotationsPage: React.FC = () => {
                                 ({filteredCotations.length})</h2>
                         </div>
 
-                        {isModalOpen && (
+                        {isModalOpen === "add" || isModalOpen === "edit" ? (
                             <div
                                 className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                                 <div
@@ -2237,7 +2015,7 @@ const CotationsPage: React.FC = () => {
                                     <div
                                         className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
                                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                                            {editingCotation ? 'Modifier la cotation' : 'Nouvelle cotation'}
+                                            {isModalOpen === "edit" ? 'Modifier la cotation' : 'Nouvelle cotation'}
                                         </h3>
                                         <button
                                             onClick={() => setIsModalOpen(null)}
@@ -2246,29 +2024,33 @@ const CotationsPage: React.FC = () => {
                                             <XCircle className="h-6 w-6"/>
                                         </button>
                                     </div>
-                                    <form onSubmit={handleAddCotation}
+                                    <form onSubmit={handleSubmitCotation}
                                           className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium mb-1">N° Cotation</label>
                                             <input
                                                 type="text"
                                                 name="numero"
-                                                value={formData.numero}
+                                                value={formData?.numero}
                                                 onChange={handleChange}
                                                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 required
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium mb-1">Client</label>
-                                            <input
-                                                type="text"
-                                                name="client"
-                                                value={formData.client}
+                                            <label className="block text-sm font-medium mb-1">Client/Partenaire</label>
+                                            <select
+                                                name="partner_id"
+                                                value={formData.partner_id}
                                                 onChange={handleChange}
                                                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 required
-                                            />
+                                            >
+                                                <option value="">{isGettingPartners ? "Chargement..." : ""}</option>
+                                                {partners?.responseData?.data?.map((partner: any) => <option
+                                                    key={partner?.id}
+                                                    value={partner?.id}>{partner?.title}</option>)}
+                                            </select>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium mb-1">Régime</label>
@@ -2286,13 +2068,18 @@ const CotationsPage: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium mb-1">Services</label>
-                                            <input
-                                                type="text"
-                                                name="services"
-                                                value={formData.services}
+                                            <select
+                                                name="service_id"
+                                                value={formData.service_id}
                                                 onChange={handleChange}
                                                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
+                                                required
+                                            >
+                                                <option value="">{isGettingServices ? "Chargement..." : ""}</option>
+                                                {services?.responseData?.data?.map((service: any) => <option
+                                                    key={service?.id}
+                                                    value={service?.id}>{service?.title}</option>)}
+                                            </select>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium mb-1">Type</label>
@@ -2310,8 +2097,8 @@ const CotationsPage: React.FC = () => {
                                         <div>
                                             <label className="block text-sm font-medium mb-1">Mode de transport</label>
                                             <select
-                                                name="mode"
-                                                value={formData.mode}
+                                                name="transportation_mode"
+                                                value={formData.transportation_mode}
                                                 onChange={handleChange}
                                                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             >
@@ -2324,24 +2111,21 @@ const CotationsPage: React.FC = () => {
                                             <label className="block text-sm font-medium mb-1">Date de réception</label>
                                             <input
                                                 type="date"
-                                                name="dateReception"
-                                                value={formData.dateReception.toISOString().split('T')[0]}
-                                                onChange={(e) =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        dateReception: new Date(e.target.value)
-                                                    })
-                                                }
-                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                id="reception_date"
+                                                name="reception_date"
                                                 required
+                                                min={new Date().toISOString().split('T')[0]}
+                                                value={formData.reception_date ? formData.reception_date : ''}
+                                                onChange={handleChange}
+                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                             />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium mb-1">Prix de vente ($)</label>
                                             <input
                                                 type="number"
-                                                name="vente"
-                                                value={formData.vente}
+                                                name="sale_price"
+                                                value={formData.sale_price}
                                                 onChange={handleChange}
                                                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 step="0.01"
@@ -2352,8 +2136,8 @@ const CotationsPage: React.FC = () => {
                                             <label className="block text-sm font-medium mb-1">Prix d'achat ($)</label>
                                             <input
                                                 type="number"
-                                                name="achat"
-                                                value={formData.achat}
+                                                name="buy_price"
+                                                value={formData.buy_price}
                                                 onChange={handleChange}
                                                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 step="0.01"
@@ -2363,18 +2147,33 @@ const CotationsPage: React.FC = () => {
                                         <div className="md:col-span-2">
                                             <label className="block text-sm font-medium mb-1">Référence</label>
                                             <input
+                                                required
                                                 type="text"
-                                                name="reference"
-                                                value={formData.reference}
+                                                name="ref"
+                                                value={formData.ref}
                                                 onChange={handleChange}
                                                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
                                         </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">BID Manager</label>
+                                            <select
+                                                name="managed_by"
+                                                value={formData.managed_by}
+                                                onChange={handleChange}
+                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                required
+                                            >
+                                                <option value="">{isGettingUsers ? "Chargement..." : ""}</option>
+                                                {users?.responseData?.data?.map((user: any) => <option key={user?.id}
+                                                                                                       value={user?.id}>{user?.name}</option>)}
+                                            </select>
+                                        </div>
                                         <div className="md:col-span-3">
                                             <label className="block text-sm font-medium mb-1">Commentaire</label>
                                             <textarea
-                                                name="commentaire"
-                                                value={formData.commentaire}
+                                                name="comment"
+                                                value={formData.comment}
                                                 onChange={handleChange}
                                                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 rows={3}
@@ -2389,16 +2188,17 @@ const CotationsPage: React.FC = () => {
                                                 Annuler
                                             </button>
                                             <button
+                                                disabled={isAdding}
                                                 type="submit"
                                                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
                                             >
-                                                Enregistrer
+                                                {isAdding ? <RefreshCcwIcon className="animate-spin"/> : "Enregistrer"}
                                             </button>
                                         </div>
                                     </form>
                                 </div>
                             </div>
-                        )}
+                        ) : null}
 
                         {activeTab === 'base' && (
                             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -2533,8 +2333,8 @@ const CotationsPage: React.FC = () => {
                                             onChange={(e) => setUserFilter(e.target.value)}
                                         >
                                             <option value="all">Tous les utilisateurs</option>
-                                            {getUniqueUsers().map(user => (
-                                                <option key={user} value={user}>{user}</option>
+                                            {users?.responseData?.data?.map(user => (
+                                                <option key={user?.id} value={user?.id}>{user?.name}</option>
                                             ))}
                                         </select>
                                     </div>
@@ -2547,8 +2347,8 @@ const CotationsPage: React.FC = () => {
                                             onChange={(e) => setServiceFilter(e.target.value)}
                                         >
                                             <option value="">Tous les services</option>
-                                            {getUniqueServices().map(service => (
-                                                <option key={service} value={service}>{service}</option>
+                                            {services?.responseData?.data?.map(service => (
+                                                <option key={service?.id} value={service?.id}>{service?.title}</option>
                                             ))}
                                         </select>
                                     </div>
@@ -2600,7 +2400,7 @@ const CotationsPage: React.FC = () => {
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredCotations.map((cotation) => (
+                                    filteredCotations?.map((cotation) => (
                                         <tr key={cotation.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                             <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white truncate">
                                                 <div className="truncate" title={cotation.numero}>
@@ -2608,50 +2408,43 @@ const CotationsPage: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-300">
-                                                <div className="truncate" title={cotation.client}>
-                                                    {cotation.client}
+                                                <div className="truncate" title={cotation?.partner_title}>
+                                                    {cotation?.partner_title}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-300">
-                                                <div className="truncate" title={cotation.services}>
-                                                    {cotation.services}
+                                                <div className="truncate" title={cotation?.service_title}>
+                                                    {cotation?.service_title}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-300">
-                                                <div className="truncate">
-                                                    {cotation.type.charAt(0).toUpperCase() + cotation.type.slice(1)}
-                                                    <span className="ml-1 text-xs text-gray-400">
-                              ({cotation.mode === 'aerien' ? 'Aér' :
-                                                        cotation.mode === 'maritime' ? 'Mar' :
-                                                            cotation.mode === 'routier' ? 'Rout' : 'Autre'})
-                            </span>
-                                                </div>
+                                                {cotation.type}
                                             </td>
                                             <td className="px-4 py-3 text-[12px] text-gray-500 dark:text-gray-300">
-                                                <div>Reception:  {new Date(cotation.dateReception).toLocaleDateString('fr-FR')}</div>
-                                                <div className="mt-2" title={getLastStatusDate(cotation)}>
-                                                    Status: {getLastStatusDate(cotation)}
+                                                <div>Reception: {new Date(cotation.reception_date).toLocaleDateString('fr-FR')}</div>
+                                                <div className="mt-2" title={new Date(cotation.updated_at).toLocaleDateString('fr-FR')}>
+                                                    Status: {new Date(cotation.updated_at).toLocaleDateString('fr-FR')}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-center text-gray-500 dark:text-gray-300">
                                                 {calculateProcessingTime(cotation)}
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-300">
-                                                {cotation.utilisateur || '-'}
+                                                {cotation.manager_name || '-'}
                                             </td>
                                             <td className="px-0 py-0 ">
                                                 <div
                                                     className="w-full cursor-pointer hover:opacity-80 transition-opacity flex justify-left"
                                                     onClick={() => openStatusModal(cotation)}
                                                 >
-                                                    {getStatutBadge(cotation.statut, 'text-[1px] py-0 px-0')}
+                                                    {getStatutBadge(cotation.status, 'text-[1px] py-0 px-0')}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div
                                                     className="inline-flex w-full flex-wrap items-center justify-end gap-2">
 
-                                                    {getActionItems(event)
+                                                    {getActionItems(cotation)
                                                         .map((action) => {
                                                             return action?.visible ? (<button
                                                                 key={action.label}
@@ -2869,7 +2662,7 @@ const CotationsPage: React.FC = () => {
                                     <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Date de
                                         réception</h4>
                                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                                        {new Date(selectedCotation.dateReception).toLocaleDateString('fr-FR')}
+                                        {new Date(selectedCotation.reception_date).toLocaleDateString('fr-FR')}
                                     </p>
                                 </div>
                                 {selectedCotation.dateSoumissionValidation && (
@@ -3015,7 +2808,7 @@ const CotationsPage: React.FC = () => {
                                         </thead>
                                         <tbody
                                             className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                        {selectedCotation.dateReception && (
+                                        {selectedCotation.reception_date && (
                                             <tr>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -3029,7 +2822,7 @@ const CotationsPage: React.FC = () => {
                             </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                                    {new Date(selectedCotation.dateReception).toLocaleDateString('fr-FR')}
+                                                    {new Date(selectedCotation.reception_date).toLocaleDateString('fr-FR')}
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
                                                     Réception de la demande
