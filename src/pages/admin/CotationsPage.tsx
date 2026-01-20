@@ -28,7 +28,14 @@ import {HasPermission} from "../../utils/PermissionChecker.ts";
 import {appPermissions} from "../../constants/appPermissions.ts";
 import {appOps} from "../../constants";
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
-import {UseAddCotation, UseUpdateCotation, UseGetCotations, UseGetPartners, UseGetServices, UseGetUsers} from "../../services";
+import {
+    UseAddCotation,
+    UseUpdateCotation,
+    UseGetCotations,
+    UseGetPartners,
+    UseGetServices,
+    UseGetUsers
+} from "../../services";
 import AppToast from "../../utils/AppToast.ts";
 
 // Enregistrer les composants nécessaires de Chart.js
@@ -92,6 +99,42 @@ const modeDataSelect = [
         id: "Autre",
     }
 ]
+
+const statusDataSelect = [
+    {
+        id: "1",
+        title: "À faire"
+    },
+    {
+        id: "2",
+        title: "En cours"
+    },
+    {
+        id: "3",
+        title: "En attente"
+    },
+    {
+        id: "4",
+        title: "Envoyée"
+    },
+    {
+        id: "5",
+        title: "Gagnée"
+    },
+    {
+        id: "0",
+        title: "Annulée"
+    },
+]
+
+const statusDataKeys = {
+    "0": "Annulée",
+    "1": "À faire",
+    "2": "En cours",
+    "3": "En attente",
+    "4": "Envoyée",
+    "5": "Gagnée",
+}
 
 
 // Configuration des thèmes
@@ -168,11 +211,12 @@ const CotationsPage: React.FC = () => {
     const [userFilter, setUserFilter] = useState<string>('all');
     const [serviceFilter, setServiceFilter] = useState<string>('');
     const [activeSeries, setActiveSeries] = useState<Record<string, boolean>>({
-        'À faire': true,
-        'En cours': true,
-        'En attente': true,
-        'Envoyée': true,
-        'Annulée': true
+        '0': true,
+        '1': true,
+        '2': true,
+        '3': true,
+        '4': true,
+        '5': true,
     });
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [dateFilter, setDateFilter] = useState<string>('all');
@@ -244,12 +288,12 @@ const CotationsPage: React.FC = () => {
     // Comptage des statuts pour le graphique circulaire
     const getStatusStats = () => {
         const statusCounts = {
-            todo: 0,
-            pending: 0,
-            en_attente: 0,
-            envoyee: 0,
-            annulee: 0,
-            gagne: 0
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
         };
 
         const cotationsAnnee = getCotationsByYear(selectedYear);
@@ -415,11 +459,11 @@ const CotationsPage: React.FC = () => {
 
         filteredCotations?.forEach(cotation => {
             const mode = cotation.transportation_mode;
-            if(stats[mode]){
+            if (stats[mode]) {
                 stats[mode].totalVente += cotation?.sale_price || 0;
                 stats[mode].totalAchat += cotation?.buy_price || 0;
                 stats[mode].count++;
-            }else {
+            } else {
                 stats[mode] = {
                     totalVente: cotation?.sale_price || 0,
                     totalAchat: cotation?.buy_price || 0,
@@ -430,7 +474,7 @@ const CotationsPage: React.FC = () => {
         });
 
         return Object.entries(stats).map(([mode, data]) => ({
-            mode: mode as ModeTransport,
+            mode: mode,
             totalVente: data.totalVente,
             totalAchat: data.totalAchat,
             marge: data.totalVente - data.totalAchat,
@@ -453,12 +497,12 @@ const CotationsPage: React.FC = () => {
     const getMonthlyStatsByStatus = (cotationsList: Cotation[], year: number) => {
         // Initialiser les données pour chaque mois (0-11 pour janvier à décembre)
         const monthsData = Array(12).fill(0).map(() => ({
-            todo: 0,
-            pending: 0,
-            en_attente: 0,
-            envoyee: 0,
-            annulee: 0,
-            gagne: 0
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
         }));
 
         // Formater les mois pour l'affichage
@@ -477,7 +521,7 @@ const CotationsPage: React.FC = () => {
         yearlyCotations.forEach(cotation => {
             const date = new Date(cotation.reception_date);
             const month = date.getMonth(); // 0-11
-            const status = cotation.status;
+            const status = cotation.status?.toString();
 
             // Incrémenter le compteur pour le statut correspondant
             if (status in monthsData[month]) {
@@ -486,12 +530,12 @@ const CotationsPage: React.FC = () => {
         });
 
         // Créer les tableaux de données pour chaque statut
-        const todoData = monthsData.map(m => m.todo);
-        const pendingData = monthsData.map(m => m.pending);
-        const enAttenteData = monthsData.map(m => m.en_attente);
-        const envoyeeData = monthsData.map(m => m.envoyee);
-        const annuleeData = monthsData.map(m => m.annulee);
-        const gagneData = monthsData.map(m => m.gagne);
+        const todoData = monthsData.map(m => m["1"]);
+        const pendingData = monthsData.map(m => m["2"]);
+        const enAttenteData = monthsData.map(m => m["3"]);
+        const envoyeeData = monthsData.map(m => m["4"]);
+        const gagneData = monthsData.map(m => m["5"]);
+        const annuleeData = monthsData.map(m => m["0"]);
 
         return {
             monthLabels,
@@ -526,7 +570,7 @@ const CotationsPage: React.FC = () => {
             labels: monthLabels,
             datasets: [
                 {
-                    label: 'À faire',
+                    label: statusDataKeys["1"],
                     data: todoData,
                     borderColor: 'rgba(156, 163, 175, 1)',
                     backgroundColor: createGradient(ctx, 'rgba(156, 163, 175, 0.4)', 'rgba(156, 163, 175, 0.05)'),
@@ -545,10 +589,10 @@ const CotationsPage: React.FC = () => {
                     shadowBlur: 15,
                     shadowOffsetX: 0,
                     shadowOffsetY: 10,
-                    hidden: !activeSeries['À faire']
+                    hidden: !activeSeries['1']
                 },
                 {
-                    label: 'En cours',
+                    label: statusDataKeys["2"],
                     data: pendingData,
                     borderColor: 'rgba(59, 130, 246, 1)',
                     backgroundColor: createGradient(ctx, 'rgba(59, 130, 246, 0.4)', 'rgba(59, 130, 246, 0.05)'),
@@ -567,10 +611,10 @@ const CotationsPage: React.FC = () => {
                     shadowBlur: 15,
                     shadowOffsetX: 0,
                     shadowOffsetY: 10,
-                    hidden: !activeSeries['En cours']
+                    hidden: !activeSeries['2']
                 },
                 {
-                    label: 'En attente',
+                    label: statusDataKeys["3"],
                     data: enAttenteData,
                     borderColor: 'rgba(245, 158, 11, 1)',
                     backgroundColor: createGradient(ctx, 'rgba(245, 158, 11, 0.4)', 'rgba(245, 158, 11, 0.05)'),
@@ -589,10 +633,10 @@ const CotationsPage: React.FC = () => {
                     shadowBlur: 15,
                     shadowOffsetX: 0,
                     shadowOffsetY: 10,
-                    hidden: !activeSeries['En attente']
+                    hidden: !activeSeries['3']
                 },
                 {
-                    label: 'Envoyée',
+                    label: statusDataKeys["4"],
                     data: envoyeeData,
                     borderColor: 'rgba(16, 185, 129, 1)',
                     backgroundColor: createGradient(ctx, 'rgba(16, 185, 129, 0.4)', 'rgba(16, 185, 129, 0.05)'),
@@ -611,10 +655,32 @@ const CotationsPage: React.FC = () => {
                     shadowBlur: 15,
                     shadowOffsetX: 0,
                     shadowOffsetY: 10,
-                    hidden: !activeSeries['Envoyée']
+                    hidden: !activeSeries['4']
                 },
                 {
-                    label: 'Annulée',
+                    label: statusDataKeys["5"],
+                    data: todoData,
+                    borderColor: 'rgba(156, 163, 175, 1)',
+                    backgroundColor: createGradient(ctx, 'rgba(18,64,26,0.4)', 'rgba(15,53,11,0.05)'),
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: 'rgba(156, 163, 175, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(156, 163, 175, 1)',
+                    pointHoverBorderWidth: 2,
+                    pointHitRadius: 10,
+                    pointBorderWidth: 2,
+                    shadowColor: 'rgba(64,80,31,0.5)',
+                    shadowBlur: 15,
+                    shadowOffsetX: 0,
+                    shadowOffsetY: 10,
+                    hidden: !activeSeries['5']
+                },
+                {
+                    label: statusDataKeys["0"],
                     data: annuleeData,
                     borderColor: 'rgba(239, 68, 68, 1)',
                     backgroundColor: createGradient(ctx, 'rgba(239, 68, 68, 0.4)', 'rgba(239, 68, 68, 0.05)'),
@@ -633,7 +699,7 @@ const CotationsPage: React.FC = () => {
                     shadowBlur: 15,
                     shadowOffsetX: 0,
                     shadowOffsetY: 10,
-                    hidden: !activeSeries['Annulée']
+                    hidden: !activeSeries['0']
                 }
             ]
         };
@@ -650,31 +716,35 @@ const CotationsPage: React.FC = () => {
     // Compter le nombre total de cotations par statut pour l'année sélectionnée
     const getStatusCounts = () => {
         const counts = {
-            'À faire': 0,
-            'En cours': 0,
-            'En attente': 0,
-            'Envoyée': 0,
-            'Annulée': 0
+            '0': 0,
+            '1': 0,
+            '2': 0,
+            '3': 0,
+            '4': 0,
+            '5': 0
         };
 
         filteredCotations.forEach(cotation => {
             const cotationYear = new Date(cotation.reception_date).getFullYear();
             if (cotationYear === selectedYear) {
-                switch (cotation.status) {
-                    case 'todo':
-                        counts['À faire']++;
+                switch (cotation.status?.toString()) {
+                    case '0':
+                        counts['0']++;
                         break;
-                    case 'pending':
-                        counts['En cours']++;
+                    case '1':
+                        counts['1']++;
                         break;
-                    case 'en_attente':
-                        counts['En attente']++;
+                    case '2':
+                        counts['2']++;
                         break;
-                    case 'envoyee':
-                        counts['Envoyée']++;
+                    case '3':
+                        counts['3']++;
                         break;
-                    case 'annulee':
-                        counts['Annulée']++;
+                    case '4':
+                        counts['4']++;
+                        break;
+                    case '5':
+                        counts['5']++;
                         break;
                 }
             }
@@ -996,17 +1066,10 @@ const CotationsPage: React.FC = () => {
     };
 
     // Données pour le graphique circulaire des statuts
-    const statusStats = getStatusStats();
     const statusData = {
         labels: ['À faire', 'En attente client', 'En attente validation', 'Envoyée', 'Annulée'],
         datasets: [{
-            data: [
-                statusStats.todo,
-                statusStats.pending,
-                statusStats.en_attente,
-                statusStats.envoyee,
-                statusStats.annulee
-            ],
+            data: ["0", "1", "2", "3", "4", "5"],
             backgroundColor: [
                 'rgba(107, 114, 128, 0.7)',    // gris pour À faire
                 'rgba(59, 130, 246, 0.7)',     // bleu pour En attente client
@@ -1090,17 +1153,17 @@ const CotationsPage: React.FC = () => {
 
         // Appliquer le filtre de statut
         if (statusFilter !== 'all') {
-            result = result.filter(cotation => cotation?.status === statusFilter);
+            result = result.filter(cotation => cotation?.status?.toString() === statusFilter);
         }
 
         // Appliquer le filtre par utilisateur
         if (userFilter && userFilter !== 'all') {
-            result = result.filter(cotation => cotation?.managed_by === userFilter);
+            result = result.filter(cotation => cotation?.managed_by?.toString() === userFilter?.toString());
         }
 
         // Appliquer le filtre par service
         if (serviceFilter) {
-            result = result.filter(cotation => cotation.service_id === serviceFilter)
+            result = result.filter(cotation => cotation.service_id?.toString() === serviceFilter?.toString())
         }
 
         // Appliquer le filtre de date
@@ -1259,26 +1322,18 @@ const CotationsPage: React.FC = () => {
     };
 
 
-    const getStatutBadge = (statut: Statut) => {
+    const getStatutBadge = (statut: string) => {
         const statutClasses = {
-            todo: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white text-[9.199px]',
-            pending: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 text-[9.199px]',
-            gagne: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100  text-[9.199px]',
-            en_attente: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 text-[9.199px]',
-            envoyee: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 text-[9.199px]',
-            annulee: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 text-[9.199px]'
-        };
-        const statutLabels = {
-            todo: 'À faire',
-            pending: 'En attente client',
-            gagne: 'Gagnée',
-            en_attente: 'En attente validation',
-            envoyee: 'Envoyée',
-            annulee: 'Annulée'
+            "1": 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white text-[9.199px]',
+            "2": 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 text-[9.199px]',
+            "5": 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100  text-[9.199px]',
+            "3": 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 text-[9.199px]',
+            "4": 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 text-[9.199px]',
+            "0": 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 text-[9.199px]'
         };
         return (
             <span className={`px-3 py-1 text-sm rounded-full ${statutClasses[statut]}`}>
-        {statutLabels[statut]}
+        {statusDataKeys[statut]}
       </span>
         );
     };
@@ -1320,7 +1375,7 @@ const CotationsPage: React.FC = () => {
         if (isModalOpen === "add") {
             addCotation(body);
         }
-        if(isModalOpen === "edit") {
+        if (isModalOpen === "edit") {
 
         }
     };
@@ -2138,7 +2193,8 @@ const CotationsPage: React.FC = () => {
                                                 type="submit"
                                                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
                                             >
-                                                {isAdding || isUpdating ? <RefreshCcwIcon className="animate-spin"/> : "Enregistrer"}
+                                                {isAdding || isUpdating ?
+                                                    <RefreshCcwIcon className="animate-spin"/> : "Enregistrer"}
                                             </button>
                                         </div>
                                     </form>
@@ -2172,12 +2228,11 @@ const CotationsPage: React.FC = () => {
                                             onChange={(e) => setStatusFilter(e.target.value)}
                                         >
                                             <option value="all">Tous les statuts</option>
-                                            <option value="todo">À faire</option>
-                                            <option value="pending">En attente client</option>
-                                            <option value="en_attente">En attente validation</option>
-                                            <option value="envoyee">Envoyée</option>
-                                            <option value="annulee">Annulée</option>
-                                            <option value="gagne">Gagnée</option>
+                                            {
+                                                statusDataSelect?.map((stat) => <option key={stat?.id}
+                                                                                        value={stat?.id}>{stat.title}</option>)
+                                            }
+
                                         </select>
                                     </div>
 
@@ -2384,7 +2439,7 @@ const CotationsPage: React.FC = () => {
                                                     className="w-full cursor-pointer hover:opacity-80 transition-opacity flex justify-left"
                                                     onClick={() => openStatusModal(cotation)}
                                                 >
-                                                    {getStatutBadge(cotation.status, 'text-[1px] py-0 px-0')}
+                                                    {getStatutBadge(cotation?.status?.toString())}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
