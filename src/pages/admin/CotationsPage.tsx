@@ -1,20 +1,15 @@
 import React, {useState, useEffect, useRef} from 'react';
 import {
-    Plus,
     Trash2,
     Eye,
     XCircle,
-    CheckCircle,
     X,
-    AlertCircle,
     Edit,
-    Search,
-    Settings,
-    ToggleRight, ToggleLeft, KeyRound, ClipboardEditIcon, RefreshCcwIcon
+    Search, ClipboardEditIcon, RefreshCcwIcon
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import {Bar, Pie, Line} from 'react-chartjs-2';
+import {Bar, Pie} from 'react-chartjs-2';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -115,32 +110,30 @@ const swalThemes = {
     },
 };
 
-// Types
-type Regime = 'exo_total' | 'exo_partiel' | 'full_tax';
-type TypeCotation = 'import' | 'export' | 'domestique';
 type ModeTransport = 'aerien' | 'maritime' | 'routier' | 'autre';
 type Statut = 'todo' | 'pending' | 'en_attente' | 'envoyee' | 'annulee' | 'gagne';
 
 interface Cotation {
     id: string;
     numero: string;
-    client: string;
-    regime: Regime;
-    services: string;
-    type: TypeCotation;
-    mode: ModeTransport;
+    partner_id: string;
+    partner_title: string;
+    regime: string;
+    service_id: string;
+    service_title: string;
+    type: string;
+    transportation_mode: string;
     reception_date: Date;
-    dateEnvoi: Date | null;
-    dateSoumissionValidation?: string;
-    dateSoumissionClient?: string;
-    dateAnnulation?: string;
-    raisonAnnulation?: string;
-    vente: number;
-    achat: number;
-    commentaire: string;
-    reference: string;
-    statut: Statut;
-    utilisateur: string;
+    updated_at: Date;
+    created_at: Date;
+    sale_price: number;
+    buy_price: number;
+    comment: string;
+    ref: string;
+    status: string;
+    managed_by: string;
+    manager_name: string;
+    created_by: string;
 }
 
 const emptyItem = {
@@ -242,7 +235,7 @@ const CotationsPage: React.FC = () => {
     // Fonction pour filtrer les cotations par année
     const getCotationsByYear = (year: number) => {
         return filteredCotations?.filter(cotation => {
-            const date = new Date(cotation.dateReception);
+            const date = new Date(cotation.reception_date);
             return date.getFullYear() === year;
         });
     };
@@ -261,7 +254,7 @@ const CotationsPage: React.FC = () => {
         const cotationsAnnee = getCotationsByYear(selectedYear);
 
         cotationsAnnee.forEach(cotation => {
-            statusCounts[cotation.statut]++;
+            statusCounts[cotation.status]++;
         });
 
         return statusCounts;
@@ -276,8 +269,8 @@ const CotationsPage: React.FC = () => {
 
         // Compter les cotations par client
         cotationsAnnee.forEach(cotation => {
-            if (cotation.client) {
-                clientCounts[cotation.client] = (clientCounts[cotation.client] || 0) + 1;
+            if (cotation.partner_id) {
+                clientCounts[cotation.partner_id] = (clientCounts[cotation.partner_id] || 0) + 1;
             }
         });
 
@@ -396,8 +389,8 @@ const CotationsPage: React.FC = () => {
         };
 
         filteredCotations?.forEach(cotation => {
-            const cotationYear = new Date(cotation.dateReception).getFullYear();
-            if (cotationYear === year && (cotation.type === 'import' || cotation.type === 'export' || cotation.type === 'domestique')) {
+            const cotationYear = new Date(cotation.reception_date).getFullYear();
+            if (cotationYear === year && (cotation.type?.toLowerCase() === 'import' || cotation.type?.toLowerCase() === 'export' || cotation.type?.toLowerCase() === 'domestique')) {
                 typeCounts[cotation.type]++;
             }
         });
@@ -417,22 +410,22 @@ const CotationsPage: React.FC = () => {
 
     // Obtenir les statistiques financières par mode de transport
     const getTransportStats = (): TransportStats[] => {
-        const stats: Record<ModeTransport, {
-            totalVente: number;
-            totalAchat: number;
-            count: number;
-        }> = {
-            aerien: {totalVente: 0, totalAchat: 0, count: 0},
-            maritime: {totalVente: 0, totalAchat: 0, count: 0},
-            routier: {totalVente: 0, totalAchat: 0, count: 0},
-            autre: {totalVente: 0, totalAchat: 0, count: 0}
-        };
+        const stats: any = {}
 
         filteredCotations?.forEach(cotation => {
-            const mode = cotation.trasportation_mode;
-            stats[mode].totalVente += cotation?.sale_price || 0;
-            stats[mode].totalAchat += cotation?.buy_price || 0;
-            stats[mode].count++;
+            const mode = cotation.transportation_mode;
+            if(stats[mode]){
+                stats[mode].totalVente += cotation?.sale_price || 0;
+                stats[mode].totalAchat += cotation?.buy_price || 0;
+                stats[mode].count++;
+            }else {
+                stats[mode] = {
+                    totalVente: cotation?.sale_price || 0,
+                    totalAchat: cotation?.buy_price || 0,
+                    count: 1,
+                }
+            }
+
         });
 
         return Object.entries(stats).map(([mode, data]) => ({
@@ -446,53 +439,6 @@ const CotationsPage: React.FC = () => {
             count: data.count
         })).filter(item => item.count > 0); // Ne retourner que les modes avec des données
     };
-
-    // Compter les cotations par mois
-    const getMonthlyStats = (yearFilter: number) => {
-        const monthlyCounts: Record<string, number> = {};
-
-        // Créer un tableau avec les 12 mois de l'année sélectionnée
-        const monthsOfYear = Array.from({length: 12}, (_, i) => {
-            const date = new Date(yearFilter, i, 1); // i va de 0 à 11 (janvier à décembre)
-            return {
-                year: yearFilter,
-                month: i, // 0 à 11 (janvier à décembre)
-                label: date.toLocaleString('fr-FR', {month: 'short'}).substring(0, 3) // Format: 'jan'
-            };
-        });
-
-        // Initialiser tous les mois à 0
-        monthsOfYear.forEach(({year, month}) => {
-            const key = `${year}-${month.toString().padStart(2, '0')}`;
-            monthlyCounts[key] = 0;
-        });
-
-        // Compter les cotations par mois
-        filteredCotations.forEach(cotation => {
-            const date = new Date(cotation.reception_date);
-            const year = date.getFullYear();
-            const month = date.getMonth();
-
-            // Ne compter que les cotations de l'année sélectionnée
-            if (year === yearFilter) {
-                const key = `${year}-${month.toString().padStart(2, '0')}`;
-                if (monthlyCounts.hasOwnProperty(key)) {
-                    monthlyCounts[key]++;
-                }
-            }
-        });
-
-        return {
-            labels: monthsOfYear.map(({label}) => label),
-            data: monthsOfYear.map(({year, month}) => {
-                const key = `${year}-${month.toString().padStart(2, '0')}`;
-                return monthlyCounts[key] || 0;
-            })
-        };
-    };
-
-    // Données pour le graphique des cotations par mois
-    const monthlyStats = getMonthlyStats(selectedYear);
 
     // Création d'un dégradé pour l'arrière-plan
     const createGradient = (ctx: any, color1: string, color2: string) => {
@@ -530,7 +476,7 @@ const CotationsPage: React.FC = () => {
         yearlyCotations.forEach(cotation => {
             const date = new Date(cotation.reception_date);
             const month = date.getMonth(); // 0-11
-            const status = cotation.statut;
+            const status = cotation.status;
 
             // Incrémenter le compteur pour le statut correspondant
             if (status in monthsData[month]) {
@@ -713,7 +659,7 @@ const CotationsPage: React.FC = () => {
         filteredCotations.forEach(cotation => {
             const cotationYear = new Date(cotation.reception_date).getFullYear();
             if (cotationYear === selectedYear) {
-                switch (cotation.statut) {
+                switch (cotation.status) {
                     case 'todo':
                         counts['À faire']++;
                         break;
@@ -1307,7 +1253,7 @@ const CotationsPage: React.FC = () => {
         }
 
         setStatusHistory(history);
-        setNewStatus(cotation.statut);
+        setNewStatus(cotation.status);
         setShowStatusModal(true);
     };
 
@@ -1435,7 +1381,7 @@ const CotationsPage: React.FC = () => {
                 const service_id = cotation.service_id
                 if (!serviceStats[service_id]) {
                     serviceStats[service_id] = {
-                        service,
+                        service_id,
                         totalVente: 0,
                         totalAchat: 0,
                         marge: 0,
@@ -1512,7 +1458,8 @@ const CotationsPage: React.FC = () => {
                             }`}
                         />}
                         title="Gestion des Cotations"
-                        onRefresh={() => console.log('refresh')}
+                        isRefreshing={isGettingCotations || isReGettingCotations}
+                        onRefresh={() => reGetCotations()}
                         onAdd={HasPermission(appPermissions.cotation, appOps.create) ? () => {
                             setIsModalOpen("add");
                             setFormData(emptyItem);
@@ -2497,7 +2444,7 @@ const CotationsPage: React.FC = () => {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                             Jours écoulés
                                         </th>
-                                        {selectedCotation.statut === 'annulee' && (
+                                        {selectedCotation?.status?.toString() === '0' && (
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                                 Raison
                                             </th>
@@ -2768,75 +2715,21 @@ const CotationsPage: React.FC = () => {
                                         </thead>
                                         <tbody
                                             className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                        {selectedCotation.reception_date && (
-                                            <tr>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+
+                                        <tr>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                selectedCotation.statut === 'todo' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                selectedCotation?.status?.toString() === '1' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
                                     'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                            }`}>
-                              {selectedCotation.statut === 'todo' ? 'À faire' :
-                                  selectedCotation.statut === 'en_attente' ? 'En attente' :
-                                      selectedCotation.statut === 'envoyee' ? 'Envoyée' :
-                                          selectedCotation.statut === 'annulee' ? 'Annulée' : 'En cours'}
-                            </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                                    {new Date(selectedCotation.reception_date).toLocaleDateString('fr-FR')}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                                    Réception de la demande
-                                                </td>
-                                            </tr>
-                                        )}
-                                        {selectedCotation.dateSoumissionValidation && (
-                                            <tr>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                            <span
-                                className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                              En validation
-                            </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                                    {new Date(selectedCotation.dateSoumissionValidation).toLocaleDateString('fr-FR')}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                                    Soumis pour validation
-                                                </td>
-                                            </tr>
-                                        )}
-                                        {selectedCotation.dateSoumissionClient && (
-                                            <tr>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                            <span
-                                className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                              Envoyée
-                            </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                                    {new Date(selectedCotation.dateSoumissionClient).toLocaleDateString('fr-FR')}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                                    Envoyé au client
-                                                </td>
-                                            </tr>
-                                        )}
-                                        {selectedCotation.dateAnnulation && (
-                                            <tr>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                            <span
-                                className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                              Annulée
-                            </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                                    {new Date(selectedCotation.dateAnnulation).toLocaleDateString('fr-FR')}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                                    {selectedCotation.raisonAnnulation || 'Annulation sans raison spécifiée'}
-                                                </td>
-                                            </tr>
-                                        )}
+                            }`}>En cours</span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                                {new Date(selectedCotation.reception_date).toLocaleDateString('fr-FR')}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                                                Réception de la demande
+                                            </td>
+                                        </tr>
                                         </tbody>
                                     </table>
                                 </div>
