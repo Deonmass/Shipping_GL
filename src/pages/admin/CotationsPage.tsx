@@ -189,7 +189,6 @@ const CotationsPage: React.FC = () => {
 
     // État pour le formulaire
     const [showStatusModal, setShowStatusModal] = useState(false);
-    const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [selectedCotation, setSelectedCotation] = useState<Cotation | null>(null);
     const [statusHistory, setStatusHistory] = useState<{ statut: string, date: string, jours: number }[]>([]);
     const [newStatus, setNewStatus] = useState<Statut>('todo');
@@ -430,9 +429,9 @@ const CotationsPage: React.FC = () => {
         };
 
         filteredCotations?.forEach(cotation => {
-            const mode = cotation.mode;
-            stats[mode].totalVente += cotation.vente || 0;
-            stats[mode].totalAchat += cotation.achat || 0;
+            const mode = cotation.trasportation_mode;
+            stats[mode].totalVente += cotation?.sale_price || 0;
+            stats[mode].totalAchat += cotation?.buy_price || 0;
             stats[mode].count++;
         });
 
@@ -1154,7 +1153,7 @@ const CotationsPage: React.FC = () => {
 
         // Appliquer le filtre par service
         if (serviceFilter) {
-            result = result.filter(cotation => cotation.service_id  === serviceFilter)
+            result = result.filter(cotation => cotation.service_id === serviceFilter)
         }
 
         // Appliquer le filtre de date
@@ -1389,10 +1388,10 @@ const CotationsPage: React.FC = () => {
         }> = {};
 
         filteredCotations.forEach(cotation => {
-            if (!cotation.utilisateur) return;
+            if (!cotation.managed_by) return;
 
-            if (!userStats[cotation.utilisateur]) {
-                userStats[cotation.utilisateur] = {
+            if (!userStats[cotation.managed_by]) {
+                userStats[cotation.managed_by] = {
                     total: 0,
                     import: 0,
                     export: 0,
@@ -1404,19 +1403,19 @@ const CotationsPage: React.FC = () => {
                 };
             }
 
-            userStats[cotation.utilisateur].total++;
-            userStats[cotation.utilisateur][cotation.type] =
-                (userStats[cotation.utilisateur][cotation.type] || 0) + 1;
-            userStats[cotation.utilisateur].totalVente += cotation.vente || 0;
-            userStats[cotation.utilisateur].totalAchat += cotation.achat || 0;
-            userStats[cotation.utilisateur].marge = userStats[cotation.utilisateur].totalVente - userStats[cotation.utilisateur].totalAchat;
-            userStats[cotation.utilisateur].margePourcentage = userStats[cotation.utilisateur].totalVente > 0
-                ? (userStats[cotation.utilisateur].marge / userStats[cotation.utilisateur].totalVente) * 100
+            userStats[cotation.managed_by].total++;
+            userStats[cotation.managed_by][cotation.type] =
+                (userStats[cotation.managed_by][cotation.type] || 0) + 1;
+            userStats[cotation.managed_by].totalVente += cotation.sale_price || 0;
+            userStats[cotation.managed_by].totalAchat += cotation.buy_price || 0;
+            userStats[cotation.managed_by].marge = userStats[cotation.managed_by].totalVente - userStats[cotation.managed_by].totalAchat;
+            userStats[cotation.managed_by].margePourcentage = userStats[cotation.managed_by].totalVente > 0
+                ? (userStats[cotation.managed_by].marge / userStats[cotation.managed_by].totalVente) * 100
                 : 0;
         });
 
-        return Object.entries(userStats).map(([utilisateur, stats]) => ({
-            utilisateur,
+        return Object.entries(userStats).map(([managed_by, stats]) => ({
+            managed_by,
             ...stats
         }));
     };
@@ -1432,30 +1431,26 @@ const CotationsPage: React.FC = () => {
         }> = {};
 
         filteredCotations.forEach(cotation => {
-            if (cotation.services) {
-                const services = cotation.services.split(',').map(s => s.trim());
-                services.forEach(service => {
-                    if (!service) return;
+            if (cotation.service_id) {
+                const service_id = cotation.service_id
+                if (!serviceStats[service_id]) {
+                    serviceStats[service_id] = {
+                        service,
+                        totalVente: 0,
+                        totalAchat: 0,
+                        marge: 0,
+                        margePourcentage: 0,
+                        count: 0
+                    };
+                }
 
-                    if (!serviceStats[service]) {
-                        serviceStats[service] = {
-                            service,
-                            totalVente: 0,
-                            totalAchat: 0,
-                            marge: 0,
-                            margePourcentage: 0,
-                            count: 0
-                        };
-                    }
-
-                    serviceStats[service].totalVente += cotation.vente || 0;
-                    serviceStats[service].totalAchat += cotation.achat || 0;
-                    serviceStats[service].marge = serviceStats[service].totalVente - serviceStats[service].totalAchat;
-                    serviceStats[service].margePourcentage = serviceStats[service].totalVente > 0
-                        ? (serviceStats[service].marge / serviceStats[service].totalVente) * 100
-                        : 0;
-                    serviceStats[service].count++;
-                });
+                serviceStats[service_id].totalVente += cotation.sale_price || 0;
+                serviceStats[service_id].totalAchat += cotation.buy_price || 0;
+                serviceStats[service_id].marge = serviceStats[service_id].totalVente - serviceStats[service_id].totalAchat;
+                serviceStats[service_id].margePourcentage = serviceStats[service_id].totalVente > 0
+                    ? (serviceStats[service_id].marge / serviceStats[service_id].totalVente) * 100
+                    : 0;
+                serviceStats[service_id].count++;
             }
         });
 
@@ -2422,7 +2417,8 @@ const CotationsPage: React.FC = () => {
                                             </td>
                                             <td className="px-4 py-3 text-[12px] text-gray-500 dark:text-gray-300">
                                                 <div>Reception: {new Date(cotation.reception_date).toLocaleDateString('fr-FR')}</div>
-                                                <div className="mt-2" title={new Date(cotation.updated_at).toLocaleDateString('fr-FR')}>
+                                                <div className="mt-2"
+                                                     title={new Date(cotation.updated_at).toLocaleDateString('fr-FR')}>
                                                     Status: {new Date(cotation.updated_at).toLocaleDateString('fr-FR')}
                                                 </div>
                                             </td>
@@ -2606,7 +2602,7 @@ const CotationsPage: React.FC = () => {
             )}
 
             {/* Modal de détails de la cotation */}
-            {showDetailsModal && selectedCotation && (
+            {isModalOpen === "detail" && selectedCotation ? (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div
                         className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -2621,7 +2617,7 @@ const CotationsPage: React.FC = () => {
                                     )}
                                 </div>
                                 <button
-                                    onClick={() => setShowDetailsModal(false)}
+                                    onClick={() => setIsModalOpen(null)}
                                     className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
                                 >
                                     <X className="h-6 w-6"/>
@@ -2632,30 +2628,29 @@ const CotationsPage: React.FC = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Numéro</h4>
-                                    <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedCotation.numero}</p>
+                                    <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedCotation?.numero}</p>
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Client</h4>
-                                    <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedCotation.client}</p>
+                                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Client/Partenaire</h4>
+                                    <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedCotation?.partner_title}</p>
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Régime</h4>
                                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                                        {selectedCotation.regime === 'exo_total' ? 'Exonération totale' :
-                                            selectedCotation.regime === 'exo_partiel' ? 'Exonération partielle' : 'TVA pleine'}
+                                        {selectedCotation?.regime}
                                     </p>
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Type</h4>
                                     <p className="mt-1 text-sm text-gray-900 dark:text-white capitalize">
-                                        {selectedCotation.type}
+                                        {selectedCotation?.type}
                                     </p>
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Mode de
                                         transport</h4>
                                     <p className="mt-1 text-sm text-gray-900 dark:text-white capitalize">
-                                        {selectedCotation.mode}
+                                        {selectedCotation?.transportation_mode}
                                     </p>
                                 </div>
                                 <div>
@@ -2665,58 +2660,23 @@ const CotationsPage: React.FC = () => {
                                         {new Date(selectedCotation.reception_date).toLocaleDateString('fr-FR')}
                                     </p>
                                 </div>
-                                {selectedCotation.dateSoumissionValidation && (
-                                    <div>
-                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Date de
-                                            soumission en validation</h4>
-                                        <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                                            {new Date(selectedCotation.dateSoumissionValidation).toLocaleDateString('fr-FR')}
-                                        </p>
-                                    </div>
-                                )}
-                                {selectedCotation.dateSoumissionClient && (
-                                    <div>
-                                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Date
-                                            d'envoi au client</h4>
-                                        <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                                            {new Date(selectedCotation.dateSoumissionClient).toLocaleDateString('fr-FR')}
-                                        </p>
-                                    </div>
-                                )}
-                                {selectedCotation.dateAnnulation && (
-                                    <>
-                                        <div>
-                                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Date
-                                                d'annulation</h4>
-                                            <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                                                {new Date(selectedCotation.dateAnnulation).toLocaleDateString('fr-FR')}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Raison
-                                                de l'annulation</h4>
-                                            <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                                                {selectedCotation.raisonAnnulation || 'Non spécifiée'}
-                                            </p>
-                                        </div>
-                                    </>
-                                )}
+
                                 <div className="md:col-span-1">
                                     <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Services</h4>
                                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                                        {selectedCotation.services || 'Aucun service spécifié'}
+                                        {selectedCotation?.service_title || 'Aucun service spécifié'}
                                     </p>
                                 </div>
                                 <div className="md:col-span-1">
                                     <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Référence</h4>
                                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                                        {selectedCotation.reference || 'Non spécifiée'}
+                                        {selectedCotation.ref || 'Non spécifiée'}
                                     </p>
                                 </div>
                                 <div className="md:col-span-2">
                                     <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Commentaires</h4>
                                     <p className="mt-1 text-sm text-gray-900 dark:text-white whitespace-pre-line">
-                                        {selectedCotation.commentaire || 'Aucun commentaire'}
+                                        {selectedCotation.comment || 'Aucun commentaire'}
                                     </p>
                                 </div>
                             </div>
@@ -2739,7 +2699,7 @@ const CotationsPage: React.FC = () => {
                                                 de vente HT
                                             </td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
-                                                {selectedCotation.vente.toLocaleString('fr-FR', {
+                                                {selectedCotation?.sale_price?.toLocaleString('fr-FR', {
                                                     style: 'currency',
                                                     currency: 'USD'
                                                 })}
@@ -2750,7 +2710,7 @@ const CotationsPage: React.FC = () => {
                                                 d'achat HT
                                             </td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
-                                                {selectedCotation.achat.toLocaleString('fr-FR', {
+                                                {selectedCotation?.buy_price?.toLocaleString('fr-FR', {
                                                     style: 'currency',
                                                     currency: 'USD'
                                                 })}
@@ -2761,9 +2721,9 @@ const CotationsPage: React.FC = () => {
                                                 brute
                                             </td>
                                             <td className={`px-4 py-2 whitespace-nowrap text-sm font-semibold text-right ${
-                                                (selectedCotation.vente - selectedCotation.achat) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                                                (selectedCotation?.sale_price - selectedCotation?.buy_price) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                                             }`}>
-                                                {(selectedCotation.vente - selectedCotation.achat).toLocaleString('fr-FR', {
+                                                {(selectedCotation?.sale_price - selectedCotation?.buy_price).toLocaleString('fr-FR', {
                                                     style: 'currency',
                                                     currency: 'USD'
                                                 })}
@@ -2774,11 +2734,11 @@ const CotationsPage: React.FC = () => {
                                                 brute (%)
                                             </td>
                                             <td className={`px-4 py-2 whitespace-nowrap text-sm font-semibold text-right ${
-                                                (selectedCotation.vente > 0 && ((selectedCotation.vente - selectedCotation.achat) / selectedCotation.vente * 100) < 15)
+                                                (selectedCotation.sale_price > 0 && ((selectedCotation.sale_price - selectedCotation?.buy_price) / selectedCotation?.sale_price * 100) < 15)
                                                     ? 'text-red-600 dark:text-red-400'
                                                     : 'text-green-600 dark:text-green-400'
                                             }`}>
-                                                {selectedCotation.vente > 0 ? ((selectedCotation.vente - selectedCotation.achat) / selectedCotation.vente * 100).toFixed(2) : '0.00'}%
+                                                {selectedCotation.sale_price > 0 ? ((selectedCotation.sale_price - selectedCotation?.buy_price) / selectedCotation?.sale_price * 100).toFixed(2) : '0.00'}%
                                             </td>
                                         </tr>
                                         </tbody>
@@ -2886,14 +2846,14 @@ const CotationsPage: React.FC = () => {
                             <button
                                 type="button"
                                 className="inline-flex justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                                onClick={() => setShowDetailsModal(false)}
+                                onClick={() => setIsModalOpen(null)}
                             >
                                 Fermer
                             </button>
                         </div>
                     </div>
                 </div>
-            )}
+            ) : null}
         </div>
     );
 };
