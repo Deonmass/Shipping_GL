@@ -8,7 +8,7 @@ import {
     XCircle,
     X,
     CheckCircle2,
-    AlertTriangle
+    AlertTriangle, RefreshCcwIcon
 } from "lucide-react";
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
 import {useOutletContext} from "react-router-dom";
@@ -804,7 +804,7 @@ const OfficesPage = () => {
                                     type="submit"
                                     className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg"
                                 >
-                                    {isAdding ? "Chargement..." : "Enregistrer"}
+                                    {isAdding ? <RefreshCcwIcon className="animate-spin"/> : "Enregistrer"}
                                 </button>
                             </div>
                         </form>

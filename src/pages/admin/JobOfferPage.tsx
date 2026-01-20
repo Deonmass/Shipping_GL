@@ -6,7 +6,7 @@ import {
     Pencil,
     Trash2,
     ClipboardEditIcon,
-    CheckCircle, Clock
+    CheckCircle, Clock, RefreshCcwIcon
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -790,7 +790,7 @@ const JobOfferPage: React.FC = () => {
                                             type="submit"
                                             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                                         >
-                                            {isAdding || isUpdating ? 'Chargement ...' : 'Valider'}
+                                            {isAdding || isUpdating ? <RefreshCcwIcon className="animate-spin"/> : 'Valider'}
                                         </button>
                                     </div>
                                 </form>

@@ -28,7 +28,7 @@ import {HasPermission} from "../../utils/PermissionChecker.ts";
 import {appPermissions} from "../../constants/appPermissions.ts";
 import {appOps} from "../../constants";
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
-import {UseAddCotation, UseGetCotations, UseGetPartners, UseGetServices, UseGetUsers} from "../../services";
+import {UseAddCotation, UseUpdateCotation, UseGetCotations, UseGetPartners, UseGetServices, UseGetUsers} from "../../services";
 import AppToast from "../../utils/AppToast.ts";
 
 // Enregistrer les composants nécessaires de Chart.js
@@ -203,6 +203,7 @@ const CotationsPage: React.FC = () => {
     } = UseGetCotations({format: "stats"})
 
     const {isPending: isAdding, mutate: addCotation, data: addResult} = UseAddCotation()
+    const {isPending: isUpdating, mutate: updateCotation, data: updateResult} = UseUpdateCotation()
 
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -1319,6 +1320,9 @@ const CotationsPage: React.FC = () => {
         if (isModalOpen === "add") {
             addCotation(body);
         }
+        if(isModalOpen === "edit") {
+
+        }
     };
 
     const getStatsByUser = () => {
@@ -2134,7 +2138,7 @@ const CotationsPage: React.FC = () => {
                                                 type="submit"
                                                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
                                             >
-                                                {isAdding ? <RefreshCcwIcon className="animate-spin"/> : "Enregistrer"}
+                                                {isAdding || isUpdating ? <RefreshCcwIcon className="animate-spin"/> : "Enregistrer"}
                                             </button>
                                         </div>
                                     </form>

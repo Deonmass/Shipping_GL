@@ -7,7 +7,7 @@ import {
     Wrench,
     FileText,
     Edit, LucideStar,
-    Trash2, ToggleRight, ToggleLeft, AlertCircle, XCircle, CheckCircle,
+    Trash2, ToggleRight, ToggleLeft, AlertCircle, XCircle, CheckCircle, RefreshCcwIcon,
 } from 'lucide-react';
 import {UseAddService, UseDeleteService, UseGetServices, UseUpdateService} from "../../services";
 import {HasPermission} from "../../utils/PermissionChecker.ts";
@@ -659,7 +659,7 @@ const AdminServicesPage: React.FC = () => {
                                     type="submit"
                                     className="px-4 py-2 rounded-lg text-sm font-medium bg-primary-600 hover:bg-primary-700 text-white"
                                 >
-                                    {isAdding || isUpdating ? 'Chargement ... ' : 'Valider'}
+                                    {isAdding || isUpdating ? <RefreshCcwIcon className="animate-spin"/> : 'Valider'}
                                 </button>
                             </div>
                         </form>

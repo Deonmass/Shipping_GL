@@ -3,7 +3,7 @@ import {motion} from 'framer-motion';
 import {
     Eye, Edit, Trash2, X, AlertCircle,
     Building2, CheckCircle, Clock, BarChart3,
-     XCircle
+    XCircle, RefreshCcwIcon
 } from 'lucide-react';
 import {format, parseISO, subMonths, startOfMonth, endOfMonth} from 'date-fns';
 import {fr} from 'date-fns/locale';
@@ -999,7 +999,7 @@ const PartnersPage: React.FC = () => {
                                     type="submit"
                                     className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
                                 >
-                                    {isAdding || isUpdating ? "Chargement ..." : "Valider"}
+                                    {isAdding || isUpdating ? <RefreshCcwIcon className="animate-spin"/> : "Valider"}
                                 </button>
                             </div>
                         </form>

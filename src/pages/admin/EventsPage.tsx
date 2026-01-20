@@ -11,7 +11,7 @@ import {
     Calendar,
     CalendarX,
     CalendarRange,
-    TrendingUp, ToggleRight, ToggleLeft
+    TrendingUp, ToggleRight, ToggleLeft, RefreshCcwIcon
 } from 'lucide-react';
 import {format, subMonths, startOfMonth, endOfMonth} from 'date-fns';
 import {fr} from 'date-fns/locale';
@@ -830,7 +830,7 @@ const EventsPage: React.FC = () => {
                                     type="submit"
                                     className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
                                 >
-                                    {isAdding || isUpdating ? 'Chargement ...' : 'Valider'}
+                                    {isAdding || isUpdating ? <RefreshCcwIcon className="animate-spin"/> : 'Valider'}
                                 </button>
                             </div>
                         </form>

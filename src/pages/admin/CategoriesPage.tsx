@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {useOutletContext} from 'react-router-dom';
 import {motion} from 'framer-motion';
-import {Eye, Edit, Trash2, X, AlertCircle, Search, Tag, BarChart3} from 'lucide-react';
+import {Eye, Edit, Trash2, X, AlertCircle, Search, Tag, BarChart3, RefreshCcwIcon} from 'lucide-react';
 import {StatsCard} from '../../components/admin/StatsCard';
 import {ChartPanel} from '../../components/admin/ChartPanel';
 import {ChartModal} from '../../components/admin/ChartModal';
@@ -625,7 +625,7 @@ const CategoriesPage: React.FC = () => {
                                     type="submit"
                                     className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
                                 >
-                                    {isAdding || isUpdating ? "Chargement ..." : "Valider"}
+                                    {isAdding || isUpdating ? <RefreshCcwIcon className="animate-spin"/> : "Valider"}
                                 </button>
                             </div>
                         </form>

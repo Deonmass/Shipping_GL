@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Download, Search, Filter, Calendar, BarChart3, Eye, Trash2 } from 'lucide-react';
+import {FileText, Download, Search, Filter, Calendar, BarChart3, Eye, Trash2, RefreshCcwIcon} from 'lucide-react';
 import { StatsCard } from '../../components/admin/StatsCard';
 import { ChartPanel } from '../../components/admin/ChartPanel';
 import { ChartModal } from '../../components/admin/ChartModal';
@@ -946,7 +946,7 @@ const ReportsPage: React.FC = () => {
                       className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium disabled:opacity-70 disabled:cursor-not-allowed"
                       disabled={loadingPreview}
                     >
-                      {loadingPreview ? 'Chargement...' : 'Prévisualiser'}
+                      {loadingPreview ? <RefreshCcwIcon className="animate-spin"/> : 'Prévisualiser'}
                     </button>
                   </div>
                 </div>

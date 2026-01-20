@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {useOutletContext} from 'react-router-dom';
 import {motion} from 'framer-motion';
-import {Shield, Save, Plus, Trash2, AlertTriangle, X, Pencil, MoreVertical} from 'lucide-react';
+import {Shield, Save, Plus, Trash2, AlertTriangle, X, Pencil, MoreVertical, RefreshCcwIcon} from 'lucide-react';
 import {
     UseAddRole,
     UseDeleteRole,
@@ -562,7 +562,7 @@ const RolePermissionsPage: React.FC = () => {
                                         type="submit"
                                         className="px-4 py-2 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700"
                                     >
-                                        {isUpdatingRole ? "Chargement..." : "Enregistrer"}
+                                        {isUpdatingRole ? <RefreshCcwIcon className="animate-spin"/> : "Enregistrer"}
                                     </button>
                                 </div>
                             </form>
