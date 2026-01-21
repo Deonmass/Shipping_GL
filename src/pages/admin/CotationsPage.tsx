@@ -200,6 +200,7 @@ const CotationsPage: React.FC = () => {
         return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
     };
 
+    const theme = getTheme()
     const [activeTab, setActiveTab] = useState<'statistiques' | 'analyse' | 'base'>('base');
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     const years = Array.from(
@@ -299,7 +300,7 @@ const CotationsPage: React.FC = () => {
         const cotationsAnnee = getCotationsByYear(selectedYear);
 
         cotationsAnnee.forEach(cotation => {
-            statusCounts[cotation.status]++;
+            statusCounts[`${cotation.status}`]++;
         });
 
         return statusCounts;
@@ -314,8 +315,8 @@ const CotationsPage: React.FC = () => {
 
         // Compter les cotations par client
         cotationsAnnee.forEach(cotation => {
-            if (cotation.partner_id) {
-                clientCounts[cotation.partner_id] = (clientCounts[cotation.partner_id] || 0) + 1;
+            if (cotation.partner_title) {
+                clientCounts[cotation.partner_title] = (clientCounts[cotation.partner_title] || 0) + 1;
             }
         });
 
@@ -435,8 +436,9 @@ const CotationsPage: React.FC = () => {
 
         filteredCotations?.forEach(cotation => {
             const cotationYear = new Date(cotation.reception_date).getFullYear();
-            if (cotationYear === year && (cotation.type?.toLowerCase() === 'import' || cotation.type?.toLowerCase() === 'export' || cotation.type?.toLowerCase() === 'domestique')) {
-                typeCounts[cotation.type]++;
+            const type = cotation.type?.toLowerCase()
+            if (cotationYear === year && (type === 'import' || type === 'export' || type === 'domestique')) {
+                typeCounts[type]++;
             }
         });
 
@@ -1066,23 +1068,26 @@ const CotationsPage: React.FC = () => {
     };
 
     // Données pour le graphique circulaire des statuts
+    const statusStats = getStatusStats();
     const statusData = {
-        labels: ['À faire', 'En attente client', 'En attente validation', 'Envoyée', 'Annulée'],
+        labels: ['À faire', 'En attente client', 'En attente validation', 'Envoyée', 'Annulée', 'Gagnée'],
         datasets: [{
-            data: ["0", "1", "2", "3", "4", "5"],
+            data: [statusStats["1"], statusStats["2"], statusStats["3"], statusStats["4"], statusStats["0"], statusStats["5"]],
             backgroundColor: [
                 'rgba(107, 114, 128, 0.7)',    // gris pour À faire
                 'rgba(59, 130, 246, 0.7)',     // bleu pour En attente client
                 'rgba(245, 158, 11, 0.7)',     // jaune pour En attente validation
                 'rgba(16, 185, 129, 0.7)',     // vert pour Envoyée
-                'rgba(239, 68, 68, 0.7)'       // rouge pour Annulée
+                'rgba(239, 68, 68, 0.7)',       // rouge pour Annulée
+                'rgba(32,57,12,0.7)'       // rouge pour Gagnée
             ],
             borderColor: [
                 'rgba(107, 114, 128, 1)',
                 'rgba(59, 130, 246, 1)',
                 'rgba(245, 158, 11, 1)',
                 'rgba(16, 185, 129, 1)',
-                'rgba(239, 68, 68, 1)'
+                'rgba(239, 68, 68, 1)',
+                'rgba(32,57,12,0.7)'
             ],
             borderWidth: 1
         }]
@@ -1105,10 +1110,10 @@ const CotationsPage: React.FC = () => {
                 }
             },
             tooltip: {
-                backgroundColor: getTheme() === 'dark' ? '#374151' : '#ffffff',
-                titleColor: getTheme() === 'dark' ? '#ffffff' : '#1f2937',
-                bodyColor: getTheme() === 'dark' ? '#e5e7eb' : '#4b5563',
-                borderColor: getTheme() === 'dark' ? '#4b5563' : '#e5e7eb',
+                backgroundColor: theme === 'dark' ? '#374151' : '#ffffff',
+                titleColor: theme === 'dark' ? '#ffffff' : '#1f2937',
+                bodyColor: theme === 'dark' ? '#e5e7eb' : '#4b5563',
+                borderColor: theme === 'dark' ? '#4b5563' : '#e5e7eb',
                 borderWidth: 1,
                 padding: 10,
                 callbacks: {
@@ -1139,7 +1144,7 @@ const CotationsPage: React.FC = () => {
                     size: 12
                 },
                 textShadowBlur: 10,
-                textShadowColor: getTheme() === 'dark' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.5)'
+                textShadowColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.5)'
             }
         }
     };
@@ -1232,7 +1237,6 @@ const CotationsPage: React.FC = () => {
 
 
     const deleteCotation = async (id: string) => {
-        const theme = getTheme();
         const themeConfig = swalThemes[theme];
         const result = await MySwal.fire({
             title: 'Êtes-vous sûr ?',
@@ -1341,21 +1345,35 @@ const CotationsPage: React.FC = () => {
     useEffect(() => {
         if (addResult) {
             if (addResult?.responseData?.error) {
-                AppToast.error(getTheme() === "dark", addResult?.responseData?.message || "Erreur lors de l'enregistrement")
+                AppToast.error(theme === "dark", addResult?.responseData?.message || "Erreur lors de l'enregistrement")
             } else {
-                //reGetJobs()
-                AppToast.success(getTheme() === "dark", 'Cotation ajoutée avec succès')
+                reGetCotations()
+                AppToast.success(theme === "dark", 'Cotation ajoutée avec succès')
                 setIsModalOpen(null);
                 setFormData(emptyItem);
             }
         }
     }, [addResult]);
 
+    useEffect(() => {
+        if (updateResult) {
+            if (updateResult?.responseData?.error) {
+                AppToast.error(theme === "dark", updateResult?.responseData?.message || "Erreur lors de la modification")
+            } else {
+                reGetCotations()
+                AppToast.success(theme === "dark", 'Cotation mise a jour avec avec succès')
+                setIsModalOpen(null);
+                setSelectedCotation(null)
+                setFormData(emptyItem);
+            }
+        }
+    }, [updateResult]);
+
 
     const handleSubmitCotation = (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.service_id || !formData.managed_by || !formData.regime || !formData.type || !formData.mode) {
-            AppToast.error(getTheme() === "dark", 'Veuillez remplir tous les champs requis');
+            AppToast.error(theme === "dark", 'Veuillez remplir tous les champs requis');
             return;
         }
         const body = {
@@ -1376,7 +1394,10 @@ const CotationsPage: React.FC = () => {
             addCotation(body);
         }
         if (isModalOpen === "edit") {
-
+            updateCotation({
+                id: selectedCotation?.id,
+                ...body
+            })
         }
     };
 
@@ -1397,6 +1418,7 @@ const CotationsPage: React.FC = () => {
 
             if (!userStats[cotation.managed_by]) {
                 userStats[cotation.managed_by] = {
+                    manager_name: cotation.manager_name,
                     total: 0,
                     import: 0,
                     export: 0,
@@ -1408,11 +1430,12 @@ const CotationsPage: React.FC = () => {
                 };
             }
 
+            const type = cotation?.type?.toLowerCase()
             userStats[cotation.managed_by].total++;
-            userStats[cotation.managed_by][cotation.type] =
-                (userStats[cotation.managed_by][cotation.type] || 0) + 1;
-            userStats[cotation.managed_by].totalVente += cotation.sale_price || 0;
-            userStats[cotation.managed_by].totalAchat += cotation.buy_price || 0;
+            userStats[cotation.managed_by][type] =
+                (userStats[cotation.managed_by][type] || 0) + 1;
+            userStats[cotation.managed_by].totalVente += parseFloat(`${cotation.sale_price}`) || 0;
+            userStats[cotation.managed_by].totalAchat += parseFloat(`${cotation.buy_price}`) || 0;
             userStats[cotation.managed_by].marge = userStats[cotation.managed_by].totalVente - userStats[cotation.managed_by].totalAchat;
             userStats[cotation.managed_by].margePourcentage = userStats[cotation.managed_by].totalVente > 0
                 ? (userStats[cotation.managed_by].marge / userStats[cotation.managed_by].totalVente) * 100
@@ -1427,7 +1450,8 @@ const CotationsPage: React.FC = () => {
 
     const getServiceStats = () => {
         const serviceStats: Record<string, {
-            service: string;
+            service_id: string;
+            service_title: string;
             totalVente: number;
             totalAchat: number;
             marge: number;
@@ -1438,9 +1462,11 @@ const CotationsPage: React.FC = () => {
         filteredCotations.forEach(cotation => {
             if (cotation.service_id) {
                 const service_id = cotation.service_id
+                const service_title = cotation.service_title
                 if (!serviceStats[service_id]) {
                     serviceStats[service_id] = {
                         service_id,
+                        service_title,
                         totalVente: 0,
                         totalAchat: 0,
                         marge: 0,
@@ -1513,7 +1539,7 @@ const CotationsPage: React.FC = () => {
                     <AdminPageHeader
                         Icon={<ClipboardEditIcon
                             className={`w-7 h-7 ${
-                                getTheme() === 'dark' ? 'text-sky-400' : 'text-sky-600'
+                                theme === 'dark' ? 'text-sky-400' : 'text-sky-600'
                             }`}
                         />}
                         title="Gestion des Cotations"
@@ -1727,7 +1753,7 @@ const CotationsPage: React.FC = () => {
                                                         <tr key={index}
                                                             className={index % 2 === 0 ? 'bg-white dark:bg-gray-700' : 'bg-gray-50 dark:bg-gray-600'}>
                                                             <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white capitalize">
-                                                                {stat.service}
+                                                                {stat.service_title}
                                                             </td>
                                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
                                                                 {formatNumber(stat.totalVente)} $
@@ -1908,13 +1934,13 @@ const CotationsPage: React.FC = () => {
                                         {(() => {
                                             const userStats = getStatsByUser();
                                             const totals = userStats.reduce((acc, stat) => ({
-                                                total: acc.total + stat.total,
-                                                import: acc.import + (stat.import || 0),
-                                                export: acc.export + (stat.export || 0),
-                                                domestique: acc.domestique + (stat.domestique || 0),
-                                                totalVente: acc.totalVente + stat.totalVente,
-                                                totalAchat: acc.totalAchat + stat.totalAchat,
-                                                marge: acc.marge + stat.marge
+                                                total: parseFloat(`${acc.total}`) + stat.total,
+                                                import: parseFloat(`${acc.import}`) + (stat.import || 0),
+                                                export: parseFloat(`${acc.export}`) + (stat.export || 0),
+                                                domestique: parseFloat(`${acc.domestique}`) + (stat.domestique || 0),
+                                                totalVente: parseFloat(`${acc.totalVente}`) + parseFloat(stat.totalVente),
+                                                totalAchat: parseFloat(`${acc.totalAchat}`) + parseFloat(stat.totalAchat),
+                                                marge: parseFloat(`${acc.marge}`) + parseFloat(stat.marge)
                                             }), {
                                                 total: 0,
                                                 import: 0,
@@ -1931,7 +1957,7 @@ const CotationsPage: React.FC = () => {
                                                         <tr key={index}
                                                             className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                                {stat.utilisateur}
+                                                                {stat.manager_name}
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                                                 {stat.total}
@@ -2008,199 +2034,6 @@ const CotationsPage: React.FC = () => {
                                 ({filteredCotations.length})</h2>
                         </div>
 
-                        {isModalOpen === "add" || isModalOpen === "edit" ? (
-                            <div
-                                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                                <div
-                                    className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                                    <div
-                                        className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                                            {isModalOpen === "edit" ? 'Modifier la cotation' : 'Nouvelle cotation'}
-                                        </h3>
-                                        <button
-                                            onClick={() => setIsModalOpen(null)}
-                                            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-                                        >
-                                            <XCircle className="h-6 w-6"/>
-                                        </button>
-                                    </div>
-                                    <form onSubmit={handleSubmitCotation}
-                                          className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">N° Cotation</label>
-                                            <input
-                                                type="text"
-                                                name="numero"
-                                                value={formData?.numero}
-                                                onChange={handleChange}
-                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Client/Partenaire</label>
-                                            <select
-                                                name="partner_id"
-                                                value={formData.partner_id}
-                                                onChange={handleChange}
-                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                required
-                                            >
-                                                <option value="">{isGettingPartners ? "Chargement..." : ""}</option>
-                                                {partners?.responseData?.data?.map((partner: any) => <option
-                                                    key={partner?.id}
-                                                    value={partner?.id}>{partner?.title}</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Régime</label>
-                                            <select
-                                                name="regime"
-                                                value={formData.regime}
-                                                onChange={handleChange}
-                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                required
-                                            >
-                                                <option value=""></option>
-                                                {regimeData.map((regime) => <option key={regime.id}
-                                                                                    value={regime.id}>{regime.id}</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Services</label>
-                                            <select
-                                                name="service_id"
-                                                value={formData.service_id}
-                                                onChange={handleChange}
-                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                required
-                                            >
-                                                <option value="">{isGettingServices ? "Chargement..." : ""}</option>
-                                                {services?.responseData?.data?.map((service: any) => <option
-                                                    key={service?.id}
-                                                    value={service?.id}>{service?.title}</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Type</label>
-                                            <select
-                                                name="type"
-                                                value={formData.type}
-                                                onChange={handleChange}
-                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            >
-                                                <option value=""></option>
-                                                {typeDataSelect.map((type) => <option key={type.id}
-                                                                                      value={type.id}>{type.id}</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Mode de transport</label>
-                                            <select
-                                                name="transportation_mode"
-                                                value={formData.transportation_mode}
-                                                onChange={handleChange}
-                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            >
-                                                <option value=""></option>
-                                                {modeDataSelect.map((mode) => <option key={mode.id}
-                                                                                      value={mode.id}>{mode.id}</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Date de réception</label>
-                                            <input
-                                                type="date"
-                                                id="reception_date"
-                                                name="reception_date"
-                                                required
-                                                min={new Date().toISOString().split('T')[0]}
-                                                value={formData.reception_date ? formData.reception_date : ''}
-                                                onChange={handleChange}
-                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Prix de vente ($)</label>
-                                            <input
-                                                type="number"
-                                                name="sale_price"
-                                                value={formData.sale_price}
-                                                onChange={handleChange}
-                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                step="0.01"
-                                                min="0"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Prix d'achat ($)</label>
-                                            <input
-                                                type="number"
-                                                name="buy_price"
-                                                value={formData.buy_price}
-                                                onChange={handleChange}
-                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                step="0.01"
-                                                min="0"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-2">
-                                            <label className="block text-sm font-medium mb-1">Référence</label>
-                                            <input
-                                                required
-                                                type="text"
-                                                name="ref"
-                                                value={formData.ref}
-                                                onChange={handleChange}
-                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">BID Manager</label>
-                                            <select
-                                                name="managed_by"
-                                                value={formData.managed_by}
-                                                onChange={handleChange}
-                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                required
-                                            >
-                                                <option value="">{isGettingUsers ? "Chargement..." : ""}</option>
-                                                {users?.responseData?.data?.map((user: any) => <option key={user?.id}
-                                                                                                       value={user?.id}>{user?.name}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="md:col-span-3">
-                                            <label className="block text-sm font-medium mb-1">Commentaire</label>
-                                            <textarea
-                                                name="comment"
-                                                value={formData.comment}
-                                                onChange={handleChange}
-                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                rows={3}
-                                            />
-                                        </div>
-                                        <div className="flex justify-end space-x-2 md:col-span-3 pt-4">
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsModalOpen(null)}
-                                                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                                            >
-                                                Annuler
-                                            </button>
-                                            <button
-                                                disabled={isAdding}
-                                                type="submit"
-                                                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                                            >
-                                                {isAdding || isUpdating ?
-                                                    <RefreshCcwIcon className="animate-spin"/> : "Enregistrer"}
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        ) : null}
 
                         {activeTab === 'base' && (
                             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -2348,7 +2181,7 @@ const CotationsPage: React.FC = () => {
                                             onChange={(e) => setServiceFilter(e.target.value)}
                                         >
                                             <option value="">Tous les services</option>
-                                            {services?.responseData?.data?.map(service => (
+                                            {services?.responseData?.data?.map((service: any) => (
                                                 <option key={service?.id} value={service?.id}>{service?.title}</option>
                                             ))}
                                         </select>
@@ -2472,6 +2305,201 @@ const CotationsPage: React.FC = () => {
                     </div>
                 )}
             </div>
+
+
+            {isModalOpen === "add" || isModalOpen === "edit" ? (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div
+                        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <div
+                            className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                                {isModalOpen === "edit" ? 'Modifier la cotation' : 'Nouvelle cotation'}
+                            </h3>
+                            <button
+                                onClick={() => setIsModalOpen(null)}
+                                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                            >
+                                <XCircle className="h-6 w-6"/>
+                            </button>
+                        </div>
+                        <form onSubmit={handleSubmitCotation}
+                              className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">N° Cotation</label>
+                                <input
+                                    type="text"
+                                    name="numero"
+                                    value={formData?.numero}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Client/Partenaire</label>
+                                <select
+                                    name="partner_id"
+                                    value={formData.partner_id}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                >
+                                    <option value="">{isGettingPartners ? "Chargement..." : ""}</option>
+                                    {partners?.responseData?.data?.map((partner: any) => <option
+                                        key={partner?.id}
+                                        value={partner?.id}>{partner?.title}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Régime</label>
+                                <select
+                                    name="regime"
+                                    value={formData.regime}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                >
+                                    <option value=""></option>
+                                    {regimeData.map((regime) => <option key={regime.id}
+                                                                        value={regime.id}>{regime.id}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Services</label>
+                                <select
+                                    name="service_id"
+                                    value={formData.service_id}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                >
+                                    <option value="">{isGettingServices ? "Chargement..." : ""}</option>
+                                    {services?.responseData?.data?.map((service: any) => <option
+                                        key={service?.id}
+                                        value={service?.id}>{service?.title}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Type</label>
+                                <select
+                                    name="type"
+                                    value={formData.type}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                >
+                                    <option value=""></option>
+                                    {typeDataSelect.map((type) => <option key={type.id}
+                                                                          value={type.id}>{type.id}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Mode de transport</label>
+                                <select
+                                    name="transportation_mode"
+                                    value={formData.transportation_mode}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                >
+                                    <option value=""></option>
+                                    {modeDataSelect.map((mode) => <option key={mode.id}
+                                                                          value={mode.id}>{mode.id}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Date de réception</label>
+                                <input
+                                    type="date"
+                                    id="reception_date"
+                                    name="reception_date"
+                                    required
+                                    min={new Date().toISOString().split('T')[0]}
+                                    value={formData.reception_date ? formData.reception_date : ''}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Prix de vente ($)</label>
+                                <input
+                                    type="number"
+                                    name="sale_price"
+                                    value={formData.sale_price}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    step="0.01"
+                                    min="0"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Prix d'achat ($)</label>
+                                <input
+                                    type="number"
+                                    name="buy_price"
+                                    value={formData.buy_price}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    step="0.01"
+                                    min="0"
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium mb-1">Référence</label>
+                                <input
+                                    required
+                                    type="text"
+                                    name="ref"
+                                    value={formData.ref}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">BID Manager</label>
+                                <select
+                                    name="managed_by"
+                                    value={formData.managed_by}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                >
+                                    <option value="">{isGettingUsers ? "Chargement..." : ""}</option>
+                                    {users?.responseData?.data?.map((user: any) => <option key={user?.id}
+                                                                                           value={user?.id}>{user?.name}</option>)}
+                                </select>
+                            </div>
+                            <div className="md:col-span-3">
+                                <label className="block text-sm font-medium mb-1">Commentaire</label>
+                                <textarea
+                                    name="comment"
+                                    value={formData.comment}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    rows={3}
+                                />
+                            </div>
+                            <div className="flex justify-end space-x-2 md:col-span-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsModalOpen(null)}
+                                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    disabled={isAdding}
+                                    type="submit"
+                                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                                >
+                                    {isAdding || isUpdating ?
+                                        <RefreshCcwIcon className="animate-spin"/> : "Enregistrer"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            ) : null}
 
             {/* Modal de gestion des statuts */}
             {showStatusModal && selectedCotation && (
