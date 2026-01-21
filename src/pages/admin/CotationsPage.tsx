@@ -34,7 +34,7 @@ import {
     UseGetCotations,
     UseGetPartners,
     UseGetServices,
-    UseGetUsers
+    UseGetUsers, UseDeleteCotation, UseGetCotationStatus, UseAddCotationStatus
 } from "../../services";
 import AppToast from "../../utils/AppToast.ts";
 
@@ -182,16 +182,19 @@ interface Cotation {
 const emptyItem = {
     numero: '',
     client: '',
-    regime: 'exo_total',
+    regime: '',
     services: '',
-    type: 'import',
-    mode: 'maritime',
+    type: '',
+    mode: '',
     dateReception: new Date(),
     vente: 0,
     achat: 0,
-    commentaire: '',
+    comment: '',
     reference: '',
-    utilisateur: ''
+    managed_by: '',
+    created_at: '',
+    status_date: '',
+    status: '',
 }
 
 const CotationsPage: React.FC = () => {
@@ -226,15 +229,9 @@ const CotationsPage: React.FC = () => {
     const [dateRange, setDateRange] = useState<{ start: string, end: string }>({start: '', end: ''});
 
     // État pour le formulaire
-    const [showStatusModal, setShowStatusModal] = useState(false);
     const [selectedCotation, setSelectedCotation] = useState<Cotation | null>(null);
-    const [statusHistory, setStatusHistory] = useState<{ statut: string, date: string, jours: number }[]>([]);
-    const [newStatus, setNewStatus] = useState<Statut>('todo');
-    const [statusDate, setStatusDate] = useState('');
-    const [cancelData, setCancelData] = useState({date: '', raison: ''});
 
-
-    const [isModalOpen, setIsModalOpen] = useState<"add" | "edit" | "detail" | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState<"add" | "edit" | "detail" | 'status' | null>(null);
     const [formData, setFormData] = useState<any>(emptyItem);
 
     const {data: services, isLoading: isGettingServices} = UseGetServices({noPermission: 1})
@@ -249,6 +246,17 @@ const CotationsPage: React.FC = () => {
 
     const {isPending: isAdding, mutate: addCotation, data: addResult} = UseAddCotation()
     const {isPending: isUpdating, mutate: updateCotation, data: updateResult} = UseUpdateCotation()
+    const {isPending: isDeleting, mutate: deleteCotations, data: deleteResult} = UseDeleteCotation()
+
+    const {
+        isRefetching: isGettingStatus,
+        data: cotationStatus,
+        refetch: reGetCotationStatus
+    } = UseGetCotationStatus({
+        cotation_id: selectedCotation?.id,
+        enabled: !!(selectedCotation?.id && isModalOpen === 'status')
+    })
+    const {isPending: isAddingStatus, mutate: addCotationStatus, data: addStatusResult} = UseAddCotationStatus()
 
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -462,13 +470,13 @@ const CotationsPage: React.FC = () => {
         filteredCotations?.forEach(cotation => {
             const mode = cotation.transportation_mode;
             if (stats[mode]) {
-                stats[mode].totalVente += cotation?.sale_price || 0;
-                stats[mode].totalAchat += cotation?.buy_price || 0;
+                stats[mode].totalVente += parseFloat(`${cotation?.sale_price}`) || 0;
+                stats[mode].totalAchat += parseFloat(`${cotation?.buy_price}`) || 0;
                 stats[mode].count++;
             } else {
                 stats[mode] = {
-                    totalVente: cotation?.sale_price || 0,
-                    totalAchat: cotation?.buy_price || 0,
+                    totalVente: parseFloat(`${cotation?.sale_price}`) || 0,
+                    totalAchat: parseFloat(`${cotation?.buy_price}`) || 0,
                     count: 1,
                 }
             }
@@ -1259,70 +1267,33 @@ const CotationsPage: React.FC = () => {
         });
 
         if (result.isConfirmed) {
-            //setCotations(cotations.filter(c => c.id !== id));
-
+            deleteCotations({id})
         }
     };
 
-    const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setNewStatus(e.target.value as Statut);
-    };
 
     const handleStatusSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (selectedCotation && statusDate) {
+        if (!selectedCotation?.id) {
+            AppToast.error(true, 'Aucune cotation selectionée');
 
-            setShowStatusModal(false);
-            setStatusDate('');
         }
+        if (!formData.status_date || !formData.status) {
+            AppToast.error(true, 'Veuillez remplir tous les champs requis');
+            return;
+        }
+        addCotationStatus({
+            cotation_id: selectedCotation?.id,
+            title: statusDataKeys[`${formData?.status}`],
+            status_date: formData.status_date,
+            comment: formData.comment
+        })
     };
 
     const openStatusModal = (cotation: Cotation) => {
         setSelectedCotation(cotation);
-
-        // Créer l'historique des statuts
-        const history = [];
-        const creationDate = new Date(cotation.reception_date);
-
-        // Date de création
-        history.push({
-            statut: 'Création',
-            date: creationDate.toLocaleDateString('fr-FR'),
-            jours: 0
-        });
-
-        // Autres dates de statut
-        if (cotation.dateSoumissionValidation) {
-            const date = new Date(cotation.dateSoumissionValidation);
-            history.push({
-                statut: 'En attente de validation',
-                date: date.toLocaleDateString('fr-FR'),
-                jours: Math.ceil((date.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24))
-            });
-        }
-
-        if (cotation.dateSoumissionClient) {
-            const date = new Date(cotation.dateSoumissionClient);
-            history.push({
-                statut: 'Envoyée au client',
-                date: date.toLocaleDateString('fr-FR'),
-                jours: Math.ceil((date.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24))
-            });
-        }
-
-        if (cotation.dateAnnulation) {
-            const date = new Date(cotation.dateAnnulation);
-            history.push({
-                statut: 'Annulée',
-                date: date.toLocaleDateString('fr-FR'),
-                jours: Math.ceil((date.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24)),
-                raison: cotation.raisonAnnulation
-            });
-        }
-
-        setStatusHistory(history);
-        setNewStatus(cotation.status);
-        setShowStatusModal(true);
+        setIsModalOpen("status")
+        setFormData(emptyItem)
     };
 
 
@@ -1369,10 +1340,34 @@ const CotationsPage: React.FC = () => {
         }
     }, [updateResult]);
 
+    useEffect(() => {
+        if (deleteResult) {
+            if (deleteResult?.responseData?.error) {
+                AppToast.error(theme === "dark", deleteResult?.responseData?.message || "Erreur lors de la suppression")
+            } else {
+                reGetCotations()
+                AppToast.success(theme === "dark", 'Cotation supprimée avec avec succès')
+                setIsModalOpen(null);
+                setSelectedCotation(null)
+                setFormData(emptyItem);
+            }
+        }
+    }, [deleteResult]);
+
+    useEffect(() => {
+        if (addStatusResult) {
+            if (addStatusResult?.responseData?.error) {
+                AppToast.error(true, addStatusResult?.responseData?.message || "Erreur lors de l'ajout de status")
+            } else {
+                updateCotation({id: selectedCotation?.id, status: formData.status})
+            }
+        }
+    }, [addStatusResult]);
+
 
     const handleSubmitCotation = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.service_id || !formData.managed_by || !formData.regime || !formData.type || !formData.mode) {
+        if (!formData.service_id || !formData.managed_by || !formData.regime || !formData.type || !formData.transportation_mode) {
             AppToast.error(theme === "dark", 'Veuillez remplir tous les champs requis');
             return;
         }
@@ -1475,8 +1470,8 @@ const CotationsPage: React.FC = () => {
                     };
                 }
 
-                serviceStats[service_id].totalVente += cotation.sale_price || 0;
-                serviceStats[service_id].totalAchat += cotation.buy_price || 0;
+                serviceStats[service_id].totalVente += parseFloat(`${cotation.sale_price}`) || 0;
+                serviceStats[service_id].totalAchat += parseFloat(`${cotation.buy_price}`) || 0;
                 serviceStats[service_id].marge = serviceStats[service_id].totalVente - serviceStats[service_id].totalAchat;
                 serviceStats[service_id].margePourcentage = serviceStats[service_id].totalVente > 0
                     ? (serviceStats[service_id].marge / serviceStats[service_id].totalVente) * 100
@@ -1521,7 +1516,7 @@ const CotationsPage: React.FC = () => {
             label: 'Supprimer',
             icon: Trash2,
             onClick: () => {
-                // setShowDeleteConfirm(item.id);
+                deleteCotation(`${item.id}`);
             },
             color: 'text-red-400',
             bgColor: 'bg-red-500/20',
@@ -2414,7 +2409,7 @@ const CotationsPage: React.FC = () => {
                                     id="reception_date"
                                     name="reception_date"
                                     required
-                                    min={new Date().toISOString().split('T')[0]}
+                                    max={new Date().toISOString().split('T')[0]}
                                     value={formData.reception_date ? formData.reception_date : ''}
                                     onChange={handleChange}
                                     className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -2502,16 +2497,18 @@ const CotationsPage: React.FC = () => {
             ) : null}
 
             {/* Modal de gestion des statuts */}
-            {showStatusModal && selectedCotation && (
+            {isModalOpen === "status" && selectedCotation ? (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl">
                         <div className="p-6">
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                                    Historique des statuts - {selectedCotation.numero}
+                                    Historique des statuts - <span
+                                    className="text-blue-500">{selectedCotation.numero}</span>
+                                    {isGettingStatus ? <RefreshCcwIcon className="animate-spin inline"/> : null}
                                 </h3>
                                 <button
-                                    onClick={() => setShowStatusModal(false)}
+                                    onClick={() => setIsModalOpen(null)}
                                     className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
                                 >
                                     <X className="h-6 w-6"/>
@@ -2531,31 +2528,45 @@ const CotationsPage: React.FC = () => {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                             Jours écoulés
                                         </th>
-                                        {selectedCotation?.status?.toString() === '0' && (
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                Raison
-                                            </th>
-                                        )}
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Raison
+                                        </th>
                                     </tr>
                                     </thead>
                                     <tbody
                                         className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    {statusHistory.map((item, index) => (
+                                    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                            {statusDataKeys["1"]}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                            {new Date(selectedCotation.reception_date).toLocaleDateString('fr-FR')}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                            0
+                                            {/*{*/}
+                                            {/*    Math.ceil((new Date(selectedCotation?.reception_date).getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24))*/}
+                                            {/*}*/}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                                            -
+                                        </td>
+                                    </tr>
+
+                                    {cotationStatus?.responseData?.data?.map((item: any, index: number) => (
                                         <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                {item.statut}
+                                                {item.title}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                                {item.date}
+                                                {new Date(selectedCotation.created_at).toLocaleDateString('fr-FR')}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                                {item.jours} j
+                                                {item?.jours} j
                                             </td>
-                                            {selectedCotation.statut === 'annulee' && item.raison && (
-                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                                    {item.raison}
-                                                </td>
-                                            )}
+                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                                                {item.comment}
+                                            </td>
                                         </tr>
                                     ))}
                                     </tbody>
@@ -2573,67 +2584,69 @@ const CotationsPage: React.FC = () => {
                                             Nouveau statut
                                         </label>
                                         <select
-                                            value={newStatus}
-                                            onChange={handleStatusChange}
+                                            required
+                                            name="status"
+                                            value={formData?.status}
+                                            onChange={handleChange}
                                             className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         >
-                                            <option value="todo">À faire</option>
-                                            <option value="pending">En attente client</option>
-                                            <option value="en_attente">En attente validation</option>
-                                            <option value="envoyee">Envoyée</option>
-                                            <option value="annulee">Annulée</option>
-                                            <option value="gagne">Gagnée</option>
+                                            <option value=""></option>
+                                            {
+                                                statusDataSelect.map((status) => <option key={status.id}
+                                                                                         value={status.id}>{status.title}</option>)
+                                            }
                                         </select>
                                     </div>
                                     <div>
-                                        <label
-                                            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                            Date
-                                        </label>
+                                        <label className="block text-sm font-medium mb-1">Date</label>
                                         <input
                                             type="date"
-                                            value={statusDate}
-                                            onChange={(e) => setStatusDate(e.target.value)}
-                                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                            id="status_date"
+                                            name="status_date"
                                             required
+                                            max={new Date().toISOString().split('T')[0]}
+                                            value={formData.status_date ? formData.status_date : ''}
+                                            onChange={handleChange}
+                                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         />
                                     </div>
-                                    {newStatus === 'annulee' && (
-                                        <div>
-                                            <label
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                                Raison de l'annulation
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={cancelData.raison}
-                                                onChange={(e) => setCancelData({...cancelData, raison: e.target.value})}
-                                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                required={newStatus === 'annulee'}
-                                            />
-                                        </div>
-                                    )}
+
+                                    <div>
+                                        <label
+                                            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Raison/Commentaire
+                                        </label>
+                                        <input
+                                            name="comment"
+                                            type="text"
+                                            value={formData.comment}
+                                            onChange={handleChange}
+                                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                            required={formData?.status === '0'}
+                                        />
+                                    </div>
                                 </div>
                                 <div className="flex justify-end space-x-3 mt-6">
                                     <button
                                         type="button"
-                                        onClick={() => setShowStatusModal(false)}
+                                        onClick={() => setIsModalOpen(null)}
                                         className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
                                     >
                                         Annuler
                                     </button>
                                     <button
+                                        disabled={isAddingStatus}
                                         type="submit"
                                         className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                                     >
-                                        Enregistrer les modifications
+                                        {isAddingStatus ? <RefreshCcwIcon className="animate-spin"/> : "Enregistrer les modifications"}
                                     </button>
                                 </div>
                             </form>
                         </div>
                     </div>
                 </div>
-            )}
+            ) : null}
 
             {/* Modal de détails de la cotation */}
             {isModalOpen === "detail" && selectedCotation ? (
@@ -2692,6 +2705,13 @@ const CotationsPage: React.FC = () => {
                                         réception</h4>
                                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
                                         {new Date(selectedCotation.reception_date).toLocaleDateString('fr-FR')}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Date d'enregistement</h4>
+                                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                                        {new Date(selectedCotation.created_at).toLocaleDateString('fr-FR')} {new Date(selectedCotation.created_at).toLocaleTimeString('fr-FR')}
                                     </p>
                                 </div>
 
