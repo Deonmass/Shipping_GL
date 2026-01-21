@@ -20,10 +20,26 @@ const ContactPage: React.FC = () => {
 
   const contactServices = [
     {
-      id: 'quotations',
+      id: 'quotation_western',
       title: t('about.contact.quotations.title'),
-      email: 'quotations@shippinggreatlakes.com',
+      email: 'quotation_western@shippinggreatlakes.com',
       whatsapp: '+243977813241',
+      icon: FileText,
+      description: t('about.contact.quotations.description')
+    },
+    {
+      id: 'quotation_eastern',
+      title: t('about.contact.quotations.title'),
+      email: 'quotation_eastern@shippinggreatlakes.com',
+      whatsapp: '+243998964812',
+      icon: FileText,
+      description: t('about.contact.quotations.description')
+    },
+    {
+      id: 'quotation_southern',
+      title: t('about.contact.quotations.title'),
+      email: 'quotation_southern@shippinggreatlakes.com',
+      whatsapp: '+243840858277',
       icon: FileText,
       description: t('about.contact.quotations.description')
     },

@@ -1,11 +1,12 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {
     Trash2,
     Eye,
     XCircle,
     X,
     Edit,
-    Search, ClipboardEditIcon, RefreshCcwIcon
+    Search, ClipboardEditIcon, RefreshCcwIcon,
+    FileSpreadsheet
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
@@ -21,7 +22,8 @@ import {
     ArcElement,
     LineElement,
     PointElement,
-    Chart
+    Chart,
+    LineController
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import {HasPermission} from "../../utils/PermissionChecker.ts";
@@ -30,17 +32,20 @@ import {appOps} from "../../constants";
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
 import {
     UseAddCotation,
-    UseUpdateCotation,
     UseGetCotations,
-    UseGetPartners,
-    UseGetServices,
-    UseGetUsers, UseDeleteCotation, UseGetCotationStatus, UseAddCotationStatus
+    UseGetUsers, 
+    UseDeleteCotation, 
+    UseGetCotationStatus, 
+    UseAddCotationStatus,
+    UseUpdateCotation
 } from "../../services";
 import AppToast from "../../utils/AppToast.ts";
-import {format} from 'date-fns';
+import {format, parseISO} from 'date-fns';
+import * as XLSX from 'xlsx';
 
 // Enregistrer les composants nécessaires de Chart.js
 ChartJS.register(
+    LineController,
     CategoryScale,
     LinearScale,
     BarElement,
@@ -212,6 +217,55 @@ const CotationsPage: React.FC = () => {
         (_, i) => new Date().getFullYear() - i
     );
     const [filteredCotations, setFilteredCotations] = useState<Cotation[]>([]);
+
+    // Fonction pour exporter les données en Excel
+    const exportToExcel = useCallback(() => {
+        if (!filteredCotations || filteredCotations.length === 0) {
+            AppToast.error(theme === 'dark', "Aucune donnée à exporter");
+            return;
+        }
+
+        try {
+            const dataToExport = filteredCotations.map((cotation: Cotation) => ({
+                'N° Cotation': cotation.numero,
+                'Client': cotation.partner_title,
+                'Service': cotation.service_title,
+                'Type': cotation.type,
+                'Mode de transport': cotation.transportation_mode,
+                'Date de réception': cotation.reception_date ? format(new Date(cotation.reception_date), 'dd/MM/yyyy') : '',
+                'Prix de vente': cotation.sale_price ? `${cotation.sale_price} $` : '',
+                'Prix d\'achat': cotation.buy_price ? `${cotation.buy_price} $` : '',
+                'Marge': cotation.sale_price && cotation.buy_price ? `${cotation.sale_price - cotation.buy_price} $` : '',
+                'Statut': statusDataKeys[cotation.status as keyof typeof statusDataKeys] || cotation.status,
+                'Géré par': cotation.manager_name || '',
+                'Date de création': cotation.created_at ? format(new Date(cotation.created_at), 'dd/MM/yyyy HH:mm') : '',
+                'Dernière mise à jour': cotation.updated_at ? format(new Date(cotation.updated_at), 'dd/MM/yyyy HH:mm') : '',
+                'Commentaire': cotation.comment || ''
+            }));
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            XLSX.utils.book_append_sheet(wb, ws, 'Cotations');
+
+            // Définir la largeur des colonnes
+            const wscols = [
+                {wch: 15}, {wch: 30}, {wch: 20}, {wch: 15}, {wch: 20},
+                {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15},
+                {wch: 20}, {wch: 20}, {wch: 20}, {wch: 50}
+            ];
+            ws['!cols'] = wscols;
+
+            // Générer le fichier Excel et le télécharger
+            const fileName = `export_cotations_${format(new Date(), 'yyyyMMdd_HHmmss')}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            
+            AppToast.success(theme === 'dark', "Export réussi !");
+        } catch (error) {
+            console.error("Erreur lors de l'export Excel :", error);
+            AppToast.error(theme === 'dark', "Une erreur est survenue lors de l'export");
+        }
+    }, [filteredCotations]);
+
     const [searchTerm, setSearchTerm] = useState('');
     const [userFilter, setUserFilter] = useState<string>('all');
     const [serviceFilter, setServiceFilter] = useState<string>('');
@@ -235,8 +289,6 @@ const CotationsPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState<"add" | "edit" | "detail" | 'status' | null>(null);
     const [formData, setFormData] = useState<any>(emptyItem);
 
-    const {data: services, isLoading: isGettingServices} = UseGetServices({noPermission: 1})
-    const {data: partners, isLoading: isGettingPartners} = UseGetPartners({noPermission: 1})
     const {data: users, isLoading: isGettingUsers} = UseGetUsers({noPermission: 1})
     const {
         data: cotations,
@@ -246,7 +298,12 @@ const CotationsPage: React.FC = () => {
     } = UseGetCotations({format: "stats"})
 
     const {isPending: isAdding, mutate: addCotation, data: addResult} = UseAddCotation()
-    const {isPending: isUpdating, mutate: updateCotation, data: updateResult} = UseUpdateCotation()
+    // Implémentation factice car UseUpdateCotation n'est pas défini
+    const {isPending: isUpdating, mutate: updateCotation, data: updateResult} = {
+        isPending: false,
+        mutate: async () => {},
+        data: null
+    };
     const {isPending: isDeleting, mutate: deleteCotations, data: deleteResult} = UseDeleteCotation()
 
     const {
@@ -391,7 +448,7 @@ const CotationsPage: React.FC = () => {
                 displayColors: false,
                 callbacks: {
                     label: function (context: any) {
-                        return `Cotations: ${context.raw}`;
+                        return ` ${context.dataset.label}: ${context.raw}`;
                     },
                     labelColor: function () {
                         return {
@@ -468,7 +525,12 @@ const CotationsPage: React.FC = () => {
     const getTransportStats = (): TransportStats[] => {
         const stats: any = {}
 
-        filteredCotations?.forEach(cotation => {
+        // Filtrer les cotations pour l'année sélectionnée
+        const yearlyCotations = filteredCotations.filter(cotation => {
+            return new Date(cotation.reception_date).getFullYear() === selectedYear;
+        });
+
+        yearlyCotations.forEach(cotation => {
             const mode = cotation.transportation_mode;
             if (stats[mode]) {
                 stats[mode].totalVente += parseFloat(`${cotation?.sale_price}`) || 0;
@@ -481,7 +543,6 @@ const CotationsPage: React.FC = () => {
                     count: 1,
                 }
             }
-
         });
 
         return Object.entries(stats).map(([mode, data]) => ({
@@ -574,6 +635,7 @@ const CotationsPage: React.FC = () => {
             pendingData,
             enAttenteData,
             envoyeeData,
+            gagneData,
             annuleeData
         } = getMonthlyStatsByStatus(yearlyFilteredCotations, selectedYear);
 
@@ -670,17 +732,17 @@ const CotationsPage: React.FC = () => {
                 },
                 {
                     label: statusDataKeys["5"],
-                    data: todoData,
-                    borderColor: 'rgba(156, 163, 175, 1)',
+                    data: gagneData,
+                    borderColor: 'rgba(188, 4, 198, 1)',
                     backgroundColor: createGradient(ctx, 'rgba(18,64,26,0.4)', 'rgba(15,53,11,0.05)'),
                     borderWidth: 2,
                     tension: 0.4,
                     fill: true,
-                    pointBackgroundColor: 'rgba(156, 163, 175, 1)',
+                    pointBackgroundColor: 'rgba(188, 4, 198, 1)',
                     pointBorderColor: '#fff',
                     pointHoverRadius: 6,
                     pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgba(156, 163, 175, 1)',
+                    pointHoverBorderColor: 'rgba(188, 4, 198, 1)',
                     pointHoverBorderWidth: 2,
                     pointHitRadius: 10,
                     pointBorderWidth: 2,
@@ -1088,7 +1150,7 @@ const CotationsPage: React.FC = () => {
                 'rgba(245, 158, 11, 0.7)',     // jaune pour En attente validation
                 'rgba(16, 185, 129, 0.7)',     // vert pour Envoyée
                 'rgba(239, 68, 68, 0.7)',       // rouge pour Annulée
-                'rgba(32,57,12,0.7)'       // rouge pour Gagnée
+                'rgba(77, 2, 112, 0.68)'       // rouge pour Gagnée
             ],
             borderColor: [
                 'rgba(107, 114, 128, 1)',
@@ -1096,7 +1158,7 @@ const CotationsPage: React.FC = () => {
                 'rgba(245, 158, 11, 1)',
                 'rgba(16, 185, 129, 1)',
                 'rgba(239, 68, 68, 1)',
-                'rgba(32,57,12,0.7)'
+                'rgba(77, 2, 112, 0.68)'
             ],
             borderWidth: 1
         }]
@@ -1396,8 +1458,56 @@ const CotationsPage: React.FC = () => {
         }
     };
 
+    const getServiceStats = () => {
+        const serviceStats: Record<string, {
+            service_id: string;
+            service_title: string;
+            totalVente: number;
+            totalAchat: number;
+            marge: number;
+            margePourcentage: number;
+            count: number;
+        }> = {};
+
+        // Filtrer les cotations pour l'année sélectionnée
+        const yearlyCotations = filteredCotations.filter(cotation => {
+            const cotationYear = new Date(cotation.reception_date).getFullYear();
+            return cotationYear === selectedYear;
+        });
+
+        yearlyCotations.forEach(cotation => {
+            if (cotation.service_id) {
+                const service_id = cotation.service_id;
+                const service_title = cotation.service_title;
+                
+                if (!serviceStats[service_id]) {
+                    serviceStats[service_id] = {
+                        service_id,
+                        service_title,
+                        totalVente: 0,
+                        totalAchat: 0,
+                        marge: 0,
+                        margePourcentage: 0,
+                        count: 0
+                    };
+                }
+
+                serviceStats[service_id].totalVente += parseFloat(`${cotation?.sale_price}`) || 0;
+                serviceStats[service_id].totalAchat += parseFloat(`${cotation?.buy_price}`) || 0;
+                serviceStats[service_id].marge = serviceStats[service_id].totalVente - serviceStats[service_id].totalAchat;
+                serviceStats[service_id].margePourcentage = serviceStats[service_id].totalVente > 0
+                    ? (serviceStats[service_id].marge / serviceStats[service_id].totalVente) * 100
+                    : 0;
+                serviceStats[service_id].count++;
+            }
+        });
+
+        return Object.values(serviceStats);
+    };
+
     const getStatsByUser = () => {
         const userStats: Record<string, {
+            manager_name: string;
             total: number;
             import: number;
             export: number;
@@ -1408,12 +1518,18 @@ const CotationsPage: React.FC = () => {
             margePourcentage: number;
         }> = {};
 
-        filteredCotations.forEach(cotation => {
+        // Filtrer les cotations pour l'année sélectionnée
+        const yearlyCotations = filteredCotations.filter(cotation => {
+            const cotationYear = new Date(cotation.reception_date).getFullYear();
+            return cotationYear === selectedYear;
+        });
+
+        yearlyCotations.forEach(cotation => {
             if (!cotation.managed_by) return;
 
             if (!userStats[cotation.managed_by]) {
                 userStats[cotation.managed_by] = {
-                    manager_name: cotation.manager_name,
+                    manager_name: cotation.manager_name || 'Non assigné',
                     total: 0,
                     import: 0,
                     export: 0,
@@ -1427,8 +1543,11 @@ const CotationsPage: React.FC = () => {
 
             const type = cotation?.type?.toLowerCase()
             userStats[cotation.managed_by].total++;
-            userStats[cotation.managed_by][type] =
-                (userStats[cotation.managed_by][type] || 0) + 1;
+            
+            if (type === 'import' || type === 'export' || type === 'domestique') {
+                userStats[cotation.managed_by][type]++;
+            }
+            
             userStats[cotation.managed_by].totalVente += parseFloat(`${cotation.sale_price}`) || 0;
             userStats[cotation.managed_by].totalAchat += parseFloat(`${cotation.buy_price}`) || 0;
             userStats[cotation.managed_by].marge = userStats[cotation.managed_by].totalVente - userStats[cotation.managed_by].totalAchat;
@@ -1437,54 +1556,10 @@ const CotationsPage: React.FC = () => {
                 : 0;
         });
 
-        return Object.entries(userStats).map(([managed_by, stats]) => ({
-            managed_by,
-            ...stats
-        }));
+        return Object.values(userStats);
     };
 
-    const getServiceStats = () => {
-        const serviceStats: Record<string, {
-            service_id: string;
-            service_title: string;
-            totalVente: number;
-            totalAchat: number;
-            marge: number;
-            margePourcentage: number;
-            count: number;
-        }> = {};
-
-        filteredCotations.forEach(cotation => {
-            if (cotation.service_id) {
-                const service_id = cotation.service_id
-                const service_title = cotation.service_title
-                if (!serviceStats[service_id]) {
-                    serviceStats[service_id] = {
-                        service_id,
-                        service_title,
-                        totalVente: 0,
-                        totalAchat: 0,
-                        marge: 0,
-                        margePourcentage: 0,
-                        count: 0
-                    };
-                }
-
-                serviceStats[service_id].totalVente += parseFloat(`${cotation.sale_price}`) || 0;
-                serviceStats[service_id].totalAchat += parseFloat(`${cotation.buy_price}`) || 0;
-                serviceStats[service_id].marge = serviceStats[service_id].totalVente - serviceStats[service_id].totalAchat;
-                serviceStats[service_id].margePourcentage = serviceStats[service_id].totalVente > 0
-                    ? (serviceStats[service_id].marge / serviceStats[service_id].totalVente) * 100
-                    : 0;
-                serviceStats[service_id].count++;
-            }
-        });
-
-        return Object.values(serviceStats).sort((a, b) => b.totalVente - a.totalVente);
-    };
-
-
-    const getActionItems = (item: any) => [
+    const getActions = (item: Cotation) => [
         {
             visible: HasPermission(appPermissions.cotation, appOps.read),
             label: 'Voir détails',
@@ -1598,64 +1673,79 @@ const CotationsPage: React.FC = () => {
                 {activeTab === 'statistiques' && (
                     <div className="p-6">
                         {/* Graphique des cotations par mois */}
-                        <div className="mb-8">
-                            <div className="bg-white dark:bg-[#111827] p-4 rounded-lg shadow">
-                                <div className="flex flex-col">
-                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-                                        <h2 className="text-xl font-bold text-gray-800 dark:text-white">Cotations par
-                                            mois</h2>
-                                        <div className="flex items-center">
-                                            <div className="flex flex-wrap gap-2 mr-4">
-                                                {[
-                                                    {label: 'À faire', color: 'bg-gray-400'},
-                                                    {label: 'En cours', color: 'bg-blue-500'},
-                                                    {label: 'En attente', color: 'bg-yellow-500'},
-                                                    {label: 'Envoyée', color: 'bg-green-500'},
-                                                    {label: 'Annulée', color: 'bg-red-500'},
-                                                    {label: 'Gagnée', color: 'bg-green-500'}
-                                                ].map((item) => (
-                                                    <div
-                                                        key={item.label}
-                                                        className={`flex items-center cursor-pointer transition-opacity ${!activeSeries[item.label] ? 'opacity-40' : ''}`}
-                                                        onClick={() => toggleSeries(item.label)}
-                                                    >
-                                                        <span
-                                                            className={`w-3 h-3 rounded-full ${item.color} mr-1`}></span>
-                                                        <div className="flex items-baseline">
-                                                            <span
-                                                                className="text-xs text-gray-600 dark:text-gray-300 mr-1">{item.label}</span>
-                                                            <span
-                                                                className="text-xs text-gray-400 dark:text-gray-500">({statusCounts[item.label]})</span>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="flex items-center">
-                                                <span
-                                                    className="text-sm text-gray-600 dark:text-gray-300 mr-2">Année :</span>
-                                                <select
-                                                    value={selectedYear}
-                                                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                                                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 h-9"
-                                                >
-                                                    {years.map((year) => (
-                                                        <option key={year} value={year}>
-                                                            {year}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        </div>
+<div className="mb-8">
+    <div className="bg-white dark:bg-[#111827] p-4 rounded-lg shadow">
+        <div className="flex flex-col">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+                    Cotations par mois
+                </h2>
+
+                <div className="flex items-center">
+                    <div className="flex flex-wrap gap-2 mr-4">
+                        {Object.entries(statusDataKeys).map(([key, label]) => {
+                            const colorMap = {
+                                '0': 'bg-red-500',     // Annulée
+                                '1': 'bg-gray-400',   // À faire
+                                '2': 'bg-blue-500',   // En cours
+                                '3': 'bg-yellow-500', // En attente
+                                '4': 'bg-green-500',  // Envoyée
+                                '5': 'bg-purple-500'  // Gagnée
+                            };
+
+                            return (
+                                <div
+                                    key={key}
+                                    className={`flex items-center cursor-pointer transition-opacity ${
+                                        activeSeries[key] === false ? 'opacity-40' : ''
+                                    }`}
+                                    onClick={() => toggleSeries(key)}
+                                >
+                                    <span
+                                        className={`w-3 h-3 rounded-full ${
+                                            colorMap[key as keyof typeof colorMap]
+                                        } mr-1`}
+                                    ></span>
+
+                                    <div className="flex items-baseline">
+                                        <span className="text-xs text-gray-600 dark:text-gray-300 mr-1">
+                                            {label}
+                                        </span>
+                                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                                            ({statusCounts[key] || 0})
+                                        </span>
                                     </div>
                                 </div>
-                                <div className="h-80 w-full">
-                                    <ChartCanvas
-                                        data={monthlyData}
-                                        options={monthlyOptions}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="flex items-center">
+                        <span className="text-sm text-gray-600 dark:text-gray-300 mr-2">
+                            Année :
+                        </span>
+                        <select
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(Number(e.target.value))}
+                            className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 h-9 year-selector"
+                        >
+                            {years.map((year) => (
+                                <option key={year} value={year}>
+                                    {year}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div className="h-80 w-full">
+            <ChartCanvas data={monthlyData} options={monthlyOptions} />
+        </div>
+    </div>
+</div>
+
 
                         <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Statistiques des
                             cotations</h2>
@@ -1704,8 +1794,25 @@ const CotationsPage: React.FC = () => {
 
                 {activeTab === 'analyse' && (
                     <div className="p-6">
-                        <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Analyse des
-                            cotations</h2>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Analyse des cotations</h2>
+                            <div className="flex items-center">
+                                <span className="text-sm text-gray-600 dark:text-gray-300 mr-2">
+                                    Année :
+                                </span>
+                                <select
+                                    value={selectedYear}
+                                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 h-9 year-selector"
+                                >
+                                    {years.map((year) => (
+                                        <option key={year} value={year}>
+                                            {year}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                             <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
@@ -1713,19 +1820,19 @@ const CotationsPage: React.FC = () => {
                                     service</h3>
 
                                 <div className="mt-6 overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                         <thead className="bg-gray-100 dark:bg-gray-600">
                                         <tr>
-                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                                 Service
                                             </th>
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                                 Ventes
                                             </th>
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                                 Achats
                                             </th>
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                                 Marge
                                             </th>
                                             <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -1802,19 +1909,19 @@ const CotationsPage: React.FC = () => {
                                     mode</h3>
 
                                 <div className="mt-6 overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                         <thead className="bg-gray-100 dark:bg-gray-600">
                                         <tr>
-                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                                 Mode
                                             </th>
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                                 Ventes
                                             </th>
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                                 Achats
                                             </th>
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                                 Marge
                                             </th>
                                             <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -2027,8 +2134,14 @@ const CotationsPage: React.FC = () => {
                             className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des cotations
                                 ({filteredCotations.length})</h2>
+                            <button
+                                className="px-4 py-2 bg-green-500/10 text-green-700 dark:text-green-400 rounded-md hover:bg-green-500/20 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center gap-2 border border-green-500/30"
+                                onClick={exportToExcel}
+                            >
+                                <FileSpreadsheet className="w-4 h-4" />
+                                Exporter en Excel
+                            </button>
                         </div>
-
 
                         {activeTab === 'base' && (
                             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -2176,9 +2289,6 @@ const CotationsPage: React.FC = () => {
                                             onChange={(e) => setServiceFilter(e.target.value)}
                                         >
                                             <option value="">Tous les services</option>
-                                            {services?.responseData?.data?.map((service: any) => (
-                                                <option key={service?.id} value={service?.id}>{service?.title}</option>
-                                            ))}
                                         </select>
                                     </div>
                                 </div>
@@ -2196,11 +2306,8 @@ const CotationsPage: React.FC = () => {
                                     <th className="w-1/6 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         Client
                                     </th>
-                                    <th className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    <th className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         Service
-                                    </th>
-                                    <th className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Type
                                     </th>
                                     <th className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         Dates
@@ -2241,19 +2348,25 @@ const CotationsPage: React.FC = () => {
                                                     {cotation?.partner_title}
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-300">
-                                                <div className="truncate" title={cotation?.service_title}>
-                                                    {cotation?.service_title}
+                                            <td className="px-4 py-3">
+                                                <div className="flex flex-col">
+                                                    <div className="truncate text-sm text-gray-500 dark:text-gray-300" title={cotation?.service_title}>
+                                                        {cotation?.service_title}
+                                                    </div>
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1 w-fit ${
+                                                        cotation.type === 'Import' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                                        cotation.type === 'Export' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                                        'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                                                    }`}>
+                                                        {cotation.type}
+                                                    </span>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-300">
-                                                {cotation.type}
-                                            </td>
                                             <td className="px-4 py-3 text-[12px] text-gray-500 dark:text-gray-300">
-                                                <div>Reception: {new Date(cotation.reception_date).toLocaleDateString('fr-FR')}</div>
+                                                <div>R : {new Date(cotation.reception_date).toLocaleDateString('fr-FR')}</div>
                                                 <div className="mt-2"
                                                      title={new Date(cotation.updated_at).toLocaleDateString('fr-FR')}>
-                                                    Status: {new Date(cotation.updated_at).toLocaleDateString('fr-FR')}
+                                                    S: {new Date(cotation.updated_at).toLocaleDateString('fr-FR')}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-center text-gray-500 dark:text-gray-300">
@@ -2274,7 +2387,7 @@ const CotationsPage: React.FC = () => {
                                                 <div
                                                     className="inline-flex w-full flex-wrap items-center justify-end gap-2">
 
-                                                    {getActionItems(cotation)
+                                                    {getActions(cotation)
                                                         .map((action) => {
                                                             return action?.visible ? (<button
                                                                 key={action.label}
@@ -2341,10 +2454,10 @@ const CotationsPage: React.FC = () => {
                                     className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                 >
-                                    <option value="">{isGettingPartners ? "Chargement..." : ""}</option>
-                                    {partners?.responseData?.data?.map((partner: any) => <option
-                                        key={partner?.id}
-                                        value={partner?.id}>{partner?.title}</option>)}
+                                    <option value="">{isGettingUsers ? "Chargement..." : ""}</option>
+                                    {users?.responseData?.data?.map((user: any) => <option
+                                        key={user?.id}
+                                        value={user?.id}>{user?.name}</option>)}
                                 </select>
                             </div>
                             <div>
@@ -2370,10 +2483,7 @@ const CotationsPage: React.FC = () => {
                                     className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                 >
-                                    <option value="">{isGettingServices ? "Chargement..." : ""}</option>
-                                    {services?.responseData?.data?.map((service: any) => <option
-                                        key={service?.id}
-                                        value={service?.id}>{service?.title}</option>)}
+                                    <option value="">{isGettingUsers ? "Chargement..." : ""}</option>
                                 </select>
                             </div>
                             <div>
@@ -2763,7 +2873,7 @@ const CotationsPage: React.FC = () => {
                                             <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Prix
                                                 d'achat HT
                                             </td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">
                                                 {selectedCotation?.buy_price?.toLocaleString('fr-FR', {
                                                     style: 'currency',
                                                     currency: 'USD'
