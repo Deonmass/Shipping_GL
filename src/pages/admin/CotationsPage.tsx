@@ -2543,32 +2543,47 @@ const CotationsPage: React.FC = () => {
                                             {new Date(selectedCotation.reception_date).toLocaleDateString('fr-FR')}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                            0
-                                            {/*{*/}
-                                            {/*    Math.ceil((new Date(selectedCotation?.reception_date).getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24))*/}
-                                            {/*}*/}
+                                            0 j
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
                                             -
                                         </td>
                                     </tr>
 
-                                    {cotationStatus?.responseData?.data?.map((item: any, index: number) => (
-                                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                {item.title}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                                {new Date(item.status_date).toLocaleDateString('fr-FR')}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                                {item?.jours} j
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                                {item.comment}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {cotationStatus?.responseData?.data?.map((item: any, index: number, array) => {
+                                        // Calculer les jours écoulés entre le statut précédent et le statut actuel
+                                        let daysDiff = 0;
+                                        if (index === 0) {
+                                            // Pour le premier statut, calculer par rapport à la date de réception
+                                            const prevDate = new Date(selectedCotation.reception_date);
+                                            const currentDate = new Date(item.status_date);
+                                            const diffTime = Math.abs(currentDate.getTime() - prevDate.getTime());
+                                            daysDiff = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                        } else {
+                                            // Pour les statuts suivants, calculer par rapport au statut précédent
+                                            const prevDate = new Date(array[index - 1].status_date);
+                                            const currentDate = new Date(item.status_date);
+                                            const diffTime = Math.abs(currentDate.getTime() - prevDate.getTime());
+                                            daysDiff = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                        }
+                                        
+                                        return (
+                                            <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                                    {item.title}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                                    {new Date(item.status_date).toLocaleDateString('fr-FR')}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                                    {daysDiff} j
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                                                    {item.comment}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                     </tbody>
                                 </table>
                             </div>
