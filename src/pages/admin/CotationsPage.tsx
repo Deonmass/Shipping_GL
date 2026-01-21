@@ -37,6 +37,7 @@ import {
     UseGetUsers, UseDeleteCotation, UseGetCotationStatus, UseAddCotationStatus
 } from "../../services";
 import AppToast from "../../utils/AppToast.ts";
+import {format} from 'date-fns';
 
 // Enregistrer les composants nécessaires de Chart.js
 ChartJS.register(
@@ -1358,7 +1359,7 @@ const CotationsPage: React.FC = () => {
             if (addStatusResult?.responseData?.error) {
                 AppToast.error(true, addStatusResult?.responseData?.message || "Erreur lors de l'ajout de status")
             } else {
-                if(formData.status && selectedCotation?.id) updateCotation({id: selectedCotation?.id, status: formData.status})
+                if(formData.status && selectedCotation?.id) updateCotation({id: selectedCotation?.id, status: formData.status, updated_at: format(new Date(), 'yyyy/MM/dd HH:mm:ss')})
             }
         }
     }, [addStatusResult]);
