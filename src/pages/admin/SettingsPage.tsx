@@ -1,24 +1,13 @@
 import React, {useState, useEffect} from 'react';
 import {
-    Save,
     User,
     Lock,
-    Bell,
-    Globe,
     Shield,
     Key,
     Eye,
     EyeOff,
-    XCircle,
-    CheckCircle2,
-    Wrench,
     LucideSettings, RefreshCcwIcon
 } from 'lucide-react';
-import {supabase} from '../../lib/supabase';
-import toast from 'react-hot-toast';
-import {HasPermission} from "../../utils/PermissionChecker.ts";
-import {appPermissions} from "../../constants/appPermissions.ts";
-import {appOps} from "../../constants";
 import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
 import {getAuthData, removeAuthData, setAuthUser} from "../../utils";
 import {UseLogout, UseUpdateUser, UseUpdateUserPassword} from "../../services";
@@ -78,7 +67,6 @@ const SettingsPage: React.FC = () => {
         new_password: '',
         confirm_new_password: ''
     });
-    const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
