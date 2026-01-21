@@ -1649,10 +1649,10 @@ const CotationsPage: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="h-80 w-full">
-                                    <ChartCanvas
-                                        data={monthlyData}
-                                        options={monthlyOptions}
-                                    />
+                                    {/*<ChartCanvas*/}
+                                    {/*    data={monthlyData}*/}
+                                    {/*    options={monthlyOptions}*/}
+                                    {/*/>*/}
                                 </div>
                             </div>
                         </div>
