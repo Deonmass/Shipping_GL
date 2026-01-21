@@ -254,7 +254,7 @@ const CotationsPage: React.FC = () => {
         refetch: reGetCotationStatus
     } = UseGetCotationStatus({
         cotation_id: selectedCotation?.id,
-        enabled: !!(selectedCotation?.id && isModalOpen === 'status')
+        enabled: !!(selectedCotation?.id && (isModalOpen === 'status' || isModalOpen === 'detail'))
     })
     const {isPending: isAddingStatus, mutate: addCotationStatus, data: addStatusResult} = UseAddCotationStatus()
 
@@ -1296,7 +1296,6 @@ const CotationsPage: React.FC = () => {
         setFormData(emptyItem)
     };
 
-
     const getStatutBadge = (statut: string) => {
         const statutClasses = {
             "1": 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white text-[9.199px]',
@@ -1359,7 +1358,7 @@ const CotationsPage: React.FC = () => {
             if (addStatusResult?.responseData?.error) {
                 AppToast.error(true, addStatusResult?.responseData?.message || "Erreur lors de l'ajout de status")
             } else {
-                updateCotation({id: selectedCotation?.id, status: formData.status})
+                if(formData.status && selectedCotation?.id) updateCotation({id: selectedCotation?.id, status: formData.status})
             }
         }
     }, [addStatusResult]);
@@ -2559,7 +2558,7 @@ const CotationsPage: React.FC = () => {
                                                 {item.title}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                                {new Date(selectedCotation.created_at).toLocaleDateString('fr-FR')}
+                                                {new Date(item.status_date).toLocaleDateString('fr-FR')}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                                 {item?.jours} j
@@ -2800,8 +2799,17 @@ const CotationsPage: React.FC = () => {
                                 </div>
                             </div>
                             <div className="md:col-span-2 mt-4">
-                                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Historique des
-                                    status</h4>
+                               <div className="flex flex-grow justify-between">
+                                   <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Historique des
+                                       status </h4>
+                                   <button
+                                       type="button"
+                                       className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-1 mb-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                       onClick={() => openStatusModal(selectedCotation)}
+                                   >
+                                       Modifier status
+                                   </button>
+                               </div>
                                 <div className="overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg">
                                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                         <thead className="bg-gray-50 dark:bg-gray-700">
@@ -2825,10 +2833,7 @@ const CotationsPage: React.FC = () => {
 
                                         <tr>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                selectedCotation?.status?.toString() === '1' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                            }`}>En cours</span>
+                                                {getStatutBadge("1")}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                                 {new Date(selectedCotation.reception_date).toLocaleDateString('fr-FR')}
@@ -2837,6 +2842,19 @@ const CotationsPage: React.FC = () => {
                                                 Réception de la demande
                                             </td>
                                         </tr>
+                                        {cotationStatus?.responseData?.data?.map((item: any, index: number) => (
+                                            <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                                    {item.title}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                                    {new Date(item.status_date).toLocaleDateString('fr-FR')}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                                                    {item.comment}
+                                                </td>
+                                            </tr>
+                                        ))}
                                         </tbody>
                                     </table>
                                 </div>
