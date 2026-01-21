@@ -996,6 +996,7 @@ const PartnersPage: React.FC = () => {
                                     Annuler
                                 </button>
                                 <button
+                                    disabled={isAdding || isUpdating}
                                     type="submit"
                                     className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
                                 >

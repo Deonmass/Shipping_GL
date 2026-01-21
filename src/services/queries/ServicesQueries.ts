@@ -46,8 +46,6 @@ export const UseDeleteQuoteRequests = () => UseUpdateQuery(`${endpoints.quoteReq
 
 export const UseAddOpenQuoteRequests = () => UsePostFormDataQuery(endpoints.openQuoteRequests, "addOpenQuoteRequests")
 
-
-
 export const UseGetCotations = (options?: GetQueryParams) => UseGetQuery({
     identifier: "Cotations",
     options: options,
@@ -77,3 +75,33 @@ export const UseGetCotationStatusDetail = (id: string, options?: GetQueryParams)
 export const UseAddCotationStatus = () => UsePostFormDataQuery(endpoints.cotationStatus, "addCotationStatus")
 export const UseUpdateCotationStatus = () => UseUpdateFormDataQuery(endpoints.cotationStatus, "updateCotationStatus")
 export const UseDeleteCotationStatus = () => UseUpdateQuery(`${endpoints.cotationStatus}-delete`, "deleteCotationStatus")
+
+export const UseGetCallOffers = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "CallOffers",
+    options: options,
+    endpoint: endpoints.callOffers,
+})
+export const UseGetCallOfferDetail = (id: string, options?: GetQueryParams) => UseGetDetailQuery({
+    id: id,
+    identifier: "CallOffer",
+    options: options,
+    endpoint: endpoints.callOffers,
+})
+export const UseAddCallOffer = () => UsePostFormDataQuery(endpoints.callOffers, "addCallOffer")
+export const UseUpdateCallOffer = () => UseUpdateFormDataQuery(endpoints.callOffers, "updateCallOffer")
+export const UseDeleteCallOffer = () => UseUpdateQuery(`${endpoints.callOffers}-delete`, "deleteCallOffer")
+
+export const UseGetCallOfferTasks = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "CallOfferTasks",
+    options: options,
+    endpoint: endpoints.callOfferTasks,
+})
+export const UseGetCallOfferTaskDetail = (id: string, options?: GetQueryParams) => UseGetDetailQuery({
+    id: id,
+    identifier: "CallOfferTask",
+    options: options,
+    endpoint: endpoints.callOfferTasks,
+})
+export const UseAddCallOfferTask = () => UsePostFormDataQuery(endpoints.callOfferTasks, "addCallOfferTask")
+export const UseUpdateCallOfferTask = () => UseUpdateFormDataQuery(endpoints.callOfferTasks, "updateCallOfferTask")
+export const UseDeleteCallOfferTask = () => UseUpdateQuery(`${endpoints.callOfferTasks}-delete`, "deleteCallOfferTask")
