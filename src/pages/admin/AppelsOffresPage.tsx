@@ -28,6 +28,7 @@ import {
 } from "../../services";
 import AppToast from "../../utils/AppToast.ts";
 import {format} from "date-fns";
+import Swal from "sweetalert2";
 
 interface DetailProps {
     label: string;
@@ -259,10 +260,26 @@ const AppelsOffresPage: React.FC = () => {
         ao.partner_title.toLowerCase().includes(searchTerm.toLowerCase())
     ) || [];
 
-    // Fonction pour supprimer un appel d'offre
-    const handleDeleteAppelOffre = (id: string) => {
-        if (window.confirm('Êtes-vous sûr de vouloir supprimer cet appel d\'offre ?')) {
+    const handleDeleteAppelOffre = async (id: string) => {
+        if (!id) {
+            AppToast.error(true, 'Aucun ID fourni pour la suppression');
+            return;
+        }
 
+        const result = await Swal.fire({
+            title: 'Êtes-vous sûr ?',
+            text: 'Cette action est irréversible !',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Oui, supprimer',
+            cancelButtonText: 'Annuler',
+            background:  '#1f2937' ,
+            color: '#ffffff',
+        });
+        if (result.isConfirmed) {
+            deleteCallOffer({id: id})
         }
     };
 
@@ -318,7 +335,7 @@ const AppelsOffresPage: React.FC = () => {
                 AppToast.error(true, deleteResult?.responseData?.message || "Erreur lors de la suppression")
             } else {
                 reGetCallOffers()
-                AppToast.success(true, 'Cotation supprimée avec avec succès')
+                AppToast.success(true, "Appel d'offre supprimée avec avec succès")
                 setIsModalOpen(null);
                 setSelectedAppelOffre(null)
                 setFormData(emptyItem);
@@ -989,7 +1006,7 @@ const AppelsOffresPage: React.FC = () => {
                                     <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-white">Répartition
                                         par statut</h3>
                                     <div className="h-64 text-white">
-                                        {callOffers?.responseData?.data?.items.length ? (
+                                        {callOffers?.responseData?.data?.items?.length ? (
                                             <Doughnut
                                                 ref={chartRef}
                                                 data={getChartData()}
