@@ -18,7 +18,16 @@ import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
 import {HasPermission} from "../../utils/PermissionChecker.ts";
 import {appPermissions} from "../../constants/appPermissions.ts";
 import {appOps} from "../../constants";
-import {UseAddCallOffer, UseDeleteCallOffer, UseGetPartners, UseGetUsers, UseUpdateCallOffer} from "../../services";
+import {
+    UseAddCallOffer,
+    UseDeleteCallOffer,
+    UseGetCallOffers,
+    UseGetPartners,
+    UseGetUsers,
+    UseUpdateCallOffer
+} from "../../services";
+import AppToast from "../../utils/AppToast.ts";
+import {format} from "date-fns";
 
 interface DetailProps {
     label: string;
@@ -34,6 +43,14 @@ const typeDataSelect = [
         id: "AMi",
     },
 ]
+
+const statusDataKeys = {
+    "0": "Perdu",
+    "1": "En cours",
+    "2": "Envoyé",
+    "3": "Cloturé",
+    "4": "Gagné",
+}
 
 const Detail: React.FC<DetailProps> = ({label, value, children}) => (
     <div className="space-y-1">
@@ -59,7 +76,6 @@ ChartJS.register(
 );
 
 // Types
-type StatutAppelOffre = 'en_cours' | 'cloture' | 'gagne' | 'perdu' | 'annule' | 'envoyee';
 type StatutTache = 'en_cours' | 'termine' | 'en_retard';
 
 interface Tache {
@@ -75,25 +91,26 @@ interface Tache {
 
 interface AppelOffre {
     id: string;
-    reference: string;
-    Titre: string;
-    type: 'national' | 'international' | 'import';
-    dateReception: string | Date;
-    deadline: string | Date;
-    dateEnvoi: string | Date | null;
-    statut: 'en_cours' | 'envoyee' | 'gagne' | 'perdu' | 'annule';
-    commentaire: string;
-    BID_manager: string;
-    montant: number;
-    dateCreation: string;
-    client: string;
+    ref: string;
+    title: string;
+    type: string
+    reception_date: string | Date;
+    limit_date: string | Date;
+    sending_date: string | Date | null;
+    status: '0' | '1' | '2' | '3' | '4';
+    comment: string;
+    manager_name: string;
+    amount: number;
+    created_at: string;
+    partner_id: string;
+    partner_title: string;
     numero: string;
 }
 
 const emptyItem = {
     ref: '',
     title: '',
-    type: 'national',
+    type: '',
     reception_date: new Date(),
     limit_date: new Date(),
     sending_date: null,
@@ -132,127 +149,18 @@ const AppelsOffresPage: React.FC = () => {
     const [showTacheForm, setShowTacheForm] = useState(false);
     const [editingTache, setEditingTache] = useState<Tache | null>(null);
     const [hiddenDatasets, setHiddenDatasets] = useState<Record<number, boolean>>({});
-    const [appelsOffres, setAppelsOffres] = useState<AppelOffre[]>([
-        {
-            id: '2026-01-01',
-            numero: 'AO-2026-001',
-            client: 'Ministère de la Santé',
-            Titre: 'Fourniture de matériel médical d\'urgence 2026',
-            type: 'national',
-            reference: 'AO-MS-2026-01',
-            dateReception: new Date('2026-01-10').toISOString(),
-            deadline: new Date('2026-02-15').toISOString(),
-            dateEnvoi: null,
-            statut: 'en_cours',
-            commentaire: 'Appel d\'offres urgent - Délai de réponse de 30 jours',
-            BID_manager: 'Gédéon Massadi',
-            montant: 5000000, // Ajout du montant manquant
-            dateCreation: new Date('2026-01-01').toISOString()
-        },
-        {
-            id: '2026-01-15',
-            numero: 'AO-2026-015',
-            client: 'Entreprise des Eaux du Cameroun',
-            Titre: 'Dédouanement de pièces détachées pour stations de traitement d\'eau',
-            type: 'import',
-            reference: 'AO-EEC-2026-02',
-            dateReception: new Date('2026-01-15').toISOString(),
-            deadline: new Date('2026-03-01').toISOString(),
-            dateEnvoi: new Date('2026-02-01').toISOString(),
-            statut: 'envoyee',
-            commentaire: 'En attente de réponse du comité de sélection',
-            BID_manager: 'Félix Luaba',
-            montant: 3500000, // Ajout du montant manquant
-            dateCreation: new Date('2026-01-15').toISOString()
-        },
-        {
-            id: '2026-02-01',
-            numero: 'AO-2026-027',
-            client: 'Hôpital Central de Yaoundé',
-            Titre: 'Acquisition de consommables médicaux stériles 2026',
-            type: 'international',
-            reference: 'AO-HCY-2026-03',
-            dateReception: new Date('2026-02-01').toISOString(),
-            deadline: new Date('2026-02-28').toISOString(),
-            dateEnvoi: null,
-            statut: 'en_cours',
-            commentaire: 'Appel d\'offres ouvert aux fournisseurs internationaux',
-            BID_manager: 'Gédéon Massadi',
-            montant: 7500000, // Ajout du montant manquant
-            dateCreation: new Date('2026-02-01').toISOString()
-        },
-        {
-            id: '2026-02-10',
-            numero: 'AO-2026-035',
-            client: 'Société Nationale des Hydrocarbures',
-            Titre: 'Services logistiques pour le transport de produits pétroliers',
-            type: 'national',
-            reference: 'AO-SNH-2026-04',
-            dateReception: new Date('2026-02-10').toISOString(),
-            deadline: new Date('2026-03-31').toISOString(),
-            dateEnvoi: null,
-            statut: 'en_cours',
-            commentaire: 'Nécessite une certification ISO 9001:2015',
-            BID_manager: 'Félix Luaba',
-            montant: 2500000, // Ajout du montant manquant
-            dateCreation: new Date('2026-02-10').toISOString()
-        },
-        {
-            id: '2026-02-15',
-            numero: 'AO-2026-042',
-            client: 'Ambassade de France au Cameroun',
-            Titre: 'Fourniture de matériel informatique pour la coopération',
-            type: 'international',
-            reference: 'AO-FR-2026-05',
-            dateReception: new Date('2026-02-15').toISOString(),
-            deadline: new Date('2026-04-15').toISOString(),
-            dateEnvoi: new Date('2026-02-20').toISOString(),
-            statut: 'gagne',
-            commentaire: 'Dossier technique et financier déposé',
-            BID_manager: 'Gédéon Massadi',
-            montant: 15000000,
-            dateCreation: new Date('2026-02-15').toISOString()
-        },
-        {
-            id: '2026-03-01',
-            numero: 'AO-2026-056',
-            client: 'Programme Alimentaire Mondial (PAM)',
-            Titre: 'Services logistiques pour la distribution alimentaire d\'urgence',
-            type: 'international',
-            reference: 'AO-PAM-2026-06',
-            dateReception: new Date('2026-03-01').toISOString(),
-            deadline: new Date('2026-03-20').toISOString(),
-            dateEnvoi: new Date('2026-03-05').toISOString(),
-            statut: 'perdu',
-            commentaire: 'Offre non retenue - Manque d\'expérience dans la zone d\'intervention',
-            BID_manager: 'Félix Luaba',
-            montant: 18000000,
-            dateCreation: new Date('2026-03-01').toISOString()
-        }
-    ]);
-    const [newAppelOffre, setNewAppelOffre] = useState<Omit<AppelOffre, 'id' | 'dateCreation'>>(
-        {
-            reference: '',
-            Titre: '',
-            type: 'national',
-            dateReception: new Date(),
-            deadline: new Date(),
-            montant: 0,
-            dateEnvoi: null,
-            statut: 'en_cours',
-            commentaire: '',
-            BID_manager: 'Admin',
-            client: '',
-            numero: ''
-        }
-    );
-
 
     const [isModalOpen, setIsModalOpen] = useState<"add" | "edit" | "detail" | 'status' | null>(null);
     const [formData, setFormData] = useState<any>(emptyItem);
 
     const {data: partners, isLoading: isGettingPartners} = UseGetPartners({noPermission: 1})
     const {data: users, isLoading: isGettingUsers} = UseGetUsers({noPermission: 1})
+    const {
+        data: callOffers,
+        isLoading: isGettingCallOffers,
+        isRefetching: isReGettingCallOffers,
+        refetch: reGetCallOffers
+    } = UseGetCallOffers({format: "stats"})
 
     const {isPending: isAdding, mutate: addCallOffer, data: addResult} = UseAddCallOffer()
     const {isPending: isUpdating, mutate: updateCallOffer, data: updateResult} = UseUpdateCallOffer()
@@ -327,17 +235,17 @@ const AppelsOffresPage: React.FC = () => {
     };
 
     // Fonction pour obtenir la couleur en fonction du statut
-    const getStatusColor = (statut: StatutAppelOffre) => {
+    const getStatusColor = (statut: string) => {
         switch (statut) {
-            case 'en_cours':
+            case '1':
                 return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-            case 'cloture':
+            case '2':
                 return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-            case 'gagne':
+            case '3':
                 return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-            case 'perdu':
+            case '0':
                 return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-            case 'annule':
+            case '4':
                 return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
             default:
                 return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
@@ -345,50 +253,24 @@ const AppelsOffresPage: React.FC = () => {
     };
 
     // Fonction pour filtrer les appels d'offres
-    const filteredAppelsOffres = appelsOffres.filter(ao =>
-        ao.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ao.Titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ao.client.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    // Fonction pour ajouter un nouvel appel d'offre
-    const handleAddAppelOffre = () => {
-        setNewAppelOffre({
-            reference: '',
-            Titre: '',
-            type: 'national',
-            dateReception: new Date(),
-            deadline: new Date(),
-            dateEnvoi: null,
-            statut: 'en_cours',
-            commentaire: '',
-            BID_manager: 'Admin',
-            client: '',
-            numero: '',
-            montant: 0
-        });
-        setEditingAppelOffre(null);
-        setShowAddForm(true);
-    };
+    const filteredAppelsOffres = callOffers?.responseData?.data?.items?.filter(ao =>
+        ao.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ao.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ao.partner_title.toLowerCase().includes(searchTerm.toLowerCase())
+    ) || [];
 
     // Fonction pour supprimer un appel d'offre
     const handleDeleteAppelOffre = (id: string) => {
         if (window.confirm('Êtes-vous sûr de vouloir supprimer cet appel d\'offre ?')) {
-            setAppelsOffres(appelsOffres.filter(ao => ao.id !== id));
+
         }
     };
 
     // Fonction pour éditer un appel d'offre
     const handleEditAppelOffre = (appelOffre: AppelOffre) => {
-        // Créer une copie profonde pour éviter les références partagées
-        const appelOffreCopy = {
-            ...appelOffre,
-            dateReception: new Date(appelOffre.dateReception),
-            deadline: new Date(appelOffre.deadline),
-            dateEnvoi: appelOffre.dateEnvoi ? new Date(appelOffre.dateEnvoi) : null
-        };
-        setEditingAppelOffre(appelOffreCopy);
-        setShowAddForm(true);
+        setSelectedAppelOffre(appelOffre);
+        setFormData(appelOffre);
+        setIsModalOpen("edit");
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -402,112 +284,132 @@ const AppelsOffresPage: React.FC = () => {
         }));
     };
 
+    useEffect(() => {
+        if (addResult) {
+            if (addResult?.responseData?.error) {
+                AppToast.error(true, addResult?.responseData?.message || "Erreur lors de l'enregistrement")
+            } else {
+                reGetCallOffers()
+                AppToast.success(true, "Appel d'offre ajouté avec succès")
+                setIsModalOpen(null);
+                setFormData(emptyItem);
+            }
+        }
+    }, [addResult]);
 
-    // Fonction pour réinitialiser le formulaire
-    const resetForm = () => {
-        setNewAppelOffre({
-            reference: '',
-            Titre: '',
-            type: 'national',
-            dateReception: new Date(),
-            deadline: new Date(),
-            dateEnvoi: null,
-            statut: 'en_cours',
-            commentaire: '',
-            BID_manager: 'Admin',
-            client: '',
-            numero: '',
-            montant: 0
-        });
-    };
+
+    useEffect(() => {
+        if (updateResult) {
+            if (updateResult?.responseData?.error) {
+                AppToast.error(true, updateResult?.responseData?.message || "Erreur lors de la modification")
+            } else {
+                reGetCallOffers()
+                AppToast.success(true, "Appel d'offre mis a jour avec avec succès")
+                setIsModalOpen(null);
+                setSelectedAppelOffre(null)
+                setFormData(emptyItem);
+            }
+        }
+    }, [updateResult]);
+
+    useEffect(() => {
+        if (deleteResult) {
+            if (deleteResult?.responseData?.error) {
+                AppToast.error(true, deleteResult?.responseData?.message || "Erreur lors de la suppression")
+            } else {
+                reGetCallOffers()
+                AppToast.success(true, 'Cotation supprimée avec avec succès')
+                setIsModalOpen(null);
+                setSelectedAppelOffre(null)
+                setFormData(emptyItem);
+            }
+        }
+    }, [deleteResult]);
+
 
     // Fonction pour gérer la soumission du formulaire
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // S'assurer que les dates sont des objets Date valides
-        const prepareAppelOffre = (ao: any) => ({
-            ...ao,
-            dateReception: ao.dateReception instanceof Date ? ao.dateReception.toISOString() : ao.dateReception,
-            deadline: ao.deadline instanceof Date ? ao.deadline.toISOString() : ao.deadline,
-            dateEnvoi: ao.dateEnvoi instanceof Date ? ao.dateEnvoi.toISOString() : ao.dateEnvoi,
-        });
-
-        if (editingAppelOffre) {
-            // Mise à jour d'un appel d'offre existant
-            const updatedAppelOffre = prepareAppelOffre(editingAppelOffre);
-            setAppelsOffres(appelsOffres.map(ao =>
-                ao.id === editingAppelOffre.id ? updatedAppelOffre : ao
-            ));
-        } else {
-            // Ajout d'un nouvel appel d'offre
-            const newId = Math.random().toString(36).substr(2, 9);
-            const newAppelOffreToAdd = prepareAppelOffre({
-                ...newAppelOffre,
-                id: newId,
-                dateCreation: new Date().toISOString()
-            });
-            setAppelsOffres([...appelsOffres, newAppelOffreToAdd]);
-            resetForm();
+        if (!formData.partner_id || !formData.managed_by || !formData.reception_date || !formData.type || !formData.limit_date) {
+            AppToast.error(true, 'Veuillez remplir tous les champs requis');
+            return;
         }
-
-        setShowAddForm(false);
-        setEditingAppelOffre(null);
+        const body = {
+            numero: formData?.numero,
+            reception_date: formData?.reception_date,
+            limit_date: formData?.limit_date,
+            sending_date: formData?.sending_date,
+            partner_id: formData?.partner_id,
+            type: formData?.type,
+            amount: formData?.amount,
+            title: formData?.title,
+            ref: formData?.ref,
+            comment: formData?.comment,
+            managed_by: formData?.managed_by,
+        }
+        if (isModalOpen === "add") {
+            addCallOffer(body);
+        }
+        if (isModalOpen === "edit") {
+            updateCallOffer({
+                id: selectedAppelOffre?.id,
+                ...body
+            })
+        }
     };
 
     // Filtrer les appels d'offres par année sélectionnée
-    const appelsAnneeEnCours = appelsOffres.filter(ao => {
-        const aoYear = new Date(ao.dateReception).getFullYear();
+    const appelsAnneeEnCours = callOffers?.responseData?.data?.items?.filter(ao => {
+        const aoYear = new Date(ao.reception_date).getFullYear();
         return aoYear === selectedYear;
-    });
+    }) || [];
 
     // Données pour les graphiques
     const statsData = {
         total: appelsAnneeEnCours.length,
-        enCours: appelsAnneeEnCours.filter(ao => ao.statut === 'en_cours').length,
-        gagnes: appelsAnneeEnCours.filter(ao => ao.statut === 'gagne').length,
+        enCours: appelsAnneeEnCours.filter(ao => ao.status === '1').length,
+        gagnes: appelsAnneeEnCours.filter(ao => ao.status === '4').length,
         tauxReussite: appelsAnneeEnCours.length > 0
-            ? Math.round((appelsAnneeEnCours.filter(ao => ['gagne', 'perdu'].includes(ao.statut)).length > 0
-                ? (appelsAnneeEnCours.filter(ao => ao.statut === 'gagne').length /
-                appelsAnneeEnCours.filter(ao => ['gagne', 'perdu'].includes(ao.statut)).length) * 100
+            ? Math.round((appelsAnneeEnCours.filter(ao => ['4', '0'].includes(ao.status)).length > 0
+                ? (appelsAnneeEnCours.filter(ao => ao.status === '4').length /
+                appelsAnneeEnCours.filter(ao => ['4', '0'].includes(ao.status)).length) * 100
                 : 0))
             : 0
     };
 
     // Données pour le graphique de répartition par statut
-    const getStatutData = (filteredAppels: AppelOffre[] = appelsOffres) => {
+    const getStatutData = (filteredAppels: AppelOffre[] = callOffers?.responseData?.data?.items || []) => {
         // Filtrer d'abord par année sélectionnée
         const appelsFiltres = filteredAppels.filter(ao => {
-            const aoYear = new Date(ao.dateReception).getFullYear();
+            const aoYear = new Date(ao.reception_date).getFullYear();
             return aoYear === selectedYear;
         });
 
         const statuts = {
-            en_cours: 0,
-            envoyee: 0,
-            gagne: 0,
-            perdu: 0,
-            annule: 0,
-            cloture: 0
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "0": 0,
         };
 
         appelsFiltres.forEach(ao => {
-            if (ao.statut in statuts) {
-                statuts[ao.statut as keyof typeof statuts]++;
+            if (ao.status in statuts) {
+                statuts[ao.status as keyof typeof statuts]++;
             }
         });
 
         return {
-            labels: ['En cours', 'Envoyée', 'Gagné', 'Perdu', 'Annulé', 'Clôturé'],
+            labels: ['En cours', 'Envoyé', 'Cloturé', 'Gagné', 'Perdu'],
             datasets: [
                 {
                     data: [
-                        statuts.en_cours,
-                        statuts.envoyee,
-                        statuts.gagne,
-                        statuts.perdu,
-                        statuts.annule,
-                        statuts.cloture
+                        statuts['1'],
+                        statuts['2'],
+                        statuts['3'],
+                        statuts['4'],
+                        statuts['0'],
                     ],
                     backgroundColor: [
                         'rgba(59, 130, 246, 0.7)',  // bleu pour en cours
@@ -683,8 +585,8 @@ const AppelsOffresPage: React.FC = () => {
 
     // Filtrer les appels d'offres par année sélectionnée
     const getFilteredAppelsOffres = () => {
-        return appelsOffres.filter(ao => {
-            const aoYear = new Date(ao.dateReception).getFullYear();
+        return callOffers?.responseData?.data?.items?.filter(ao => {
+            const aoYear = new Date(ao.reception_date).getFullYear();
             return aoYear === selectedYear;
         });
     };
@@ -695,14 +597,14 @@ const AppelsOffresPage: React.FC = () => {
         const monthlyData = new Array(12).fill(0);
 
         // Filtrer d'abord par année sélectionnée
-        const appelsAnneeEnCours = appelsOffres.filter(ao => {
-            const aoYear = new Date(ao.dateReception).getFullYear();
+        const appelsAnneeEnCours = callOffers?.responseData?.data?.items?.filter(ao => {
+            const aoYear = new Date(ao.reception_date).getFullYear();
             return aoYear === selectedYear;
         });
 
         // Parcourir les appels d'offres filtrés
         appelsAnneeEnCours.forEach(ao => {
-            const date = new Date(ao.dateReception);
+            const date = new Date(ao.reception_date);
             const month = date.getMonth(); // 0-11
             monthlyData[month]++;
         });
@@ -798,8 +700,8 @@ const AppelsOffresPage: React.FC = () => {
                     className={`w-7 h-7`}
                 />}
                 title="Gestion des Appels d'Offres"
-                // isRefreshing={isGettingCotations || isReGettingCotations}
-                // onRefresh={() => reGetCotations()}
+                isRefreshing={isGettingCallOffers || isReGettingCallOffers}
+                onRefresh={() => reGetCallOffers()}
                 onAdd={HasPermission(appPermissions.appelOffre, appOps.create) ? () => {
                     setIsModalOpen("add");
                     setFormData(emptyItem);
@@ -1087,7 +989,7 @@ const AppelsOffresPage: React.FC = () => {
                                     <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-white">Répartition
                                         par statut</h3>
                                     <div className="h-64 text-white">
-                                        {appelsOffres.length > 0 ? (
+                                        {callOffers?.responseData?.data?.items.length ? (
                                             <Doughnut
                                                 ref={chartRef}
                                                 data={getChartData()}
@@ -1116,7 +1018,7 @@ const AppelsOffresPage: React.FC = () => {
                                     <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-white">Évolution
                                         mensuelle</h3>
                                     <div className="h-64">
-                                        {appelsOffres.length > 0 ? (
+                                        {callOffers?.responseData?.data?.items?.length ? (
                                             <Bar
                                                 data={getMonthlyData()}
                                                 options={monthlyOptions}
@@ -1195,26 +1097,26 @@ const AppelsOffresPage: React.FC = () => {
                                 {filteredAppelsOffres.length > 0 ? (
                                     filteredAppelsOffres.map((ao) => (
                                         <tr key={ao.id}
-                                            className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${getDaysRemaining(ao.deadline) <= 5 && getDaysRemaining(ao.deadline) >= 0 ? 'bg-red-50 dark:bg-red-900/20' : ''}`}>
+                                            className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${getDaysRemaining(ao.limit_date) <= 5 && getDaysRemaining(ao.limit_date) >= 0 ? 'bg-red-50 dark:bg-red-900/20' : ''}`}>
                                             <td className="w-1/4 px-4 py-4">
                                                 <div
                                                     className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer font-medium"
                                                     onClick={() => handleReferenceClick(ao)}
                                                 >
-                                                    {ao.client}
+                                                    {ao.partner_title}
                                                 </div>
                                                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                    {ao.reference}
+                                                    {ao.ref}
                                                 </div>
                                             </td>
                                             <td className="w-1/4 px-4 py-4">
                                                 <div className="text-sm">
-                                                    <div>Reçue: {formatDate(ao.dateReception)}</div>
-                                                    <div>Limite: {formatDate(ao.deadline)}</div>
+                                                    <div>Reçue: {formatDate(ao.reception_date)}</div>
+                                                    <div>Limite: {formatDate(ao.limit_date)}</div>
                                                     <div className="mt-1">
                               <span
-                                  className={`px-2 py-1 rounded-full text-xs ${getDaysRemaining(ao.deadline) <= 5 ? 'text-red-800 bg-red-100 dark:text-red-100 dark:bg-red-900/50' : 'text-gray-800 bg-gray-100 dark:text-gray-200 dark:bg-gray-700'}`}>
-                                {getDaysRemaining(ao.deadline)} j restants
+                                  className={`px-2 py-1 rounded-full text-xs ${getDaysRemaining(ao.limit_date) <= 5 ? 'text-red-800 bg-red-100 dark:text-red-100 dark:bg-red-900/50' : 'text-gray-800 bg-gray-100 dark:text-gray-200 dark:bg-gray-700'}`}>
+                                {getDaysRemaining(ao.limit_date)} j restants
                               </span>
                                                     </div>
                                                 </div>
@@ -1241,16 +1143,12 @@ const AppelsOffresPage: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="w-1/6 px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                                {ao.BID_manager}
+                                                {ao.manager_name}
                                             </td>
                                             <td className="w-1/6 px-2 py-4 whitespace-nowrap">
                           <span
-                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(ao.statut)}`}>
-                            {ao.statut === 'en_cours' && 'En cours'}
-                              {ao.statut === 'envoyee' && 'Envoyée'}
-                              {ao.statut === 'gagne' && 'Gagné'}
-                              {ao.statut === 'perdu' && 'Perdu'}
-                              {ao.statut === 'annule' && 'Annulé'}
+                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(ao.status)}`}>
+                            {statusDataKeys[`${ao.status}`]}
                           </span>
                                             </td>
                                             <td className="w-1/6 px-2 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
@@ -1262,20 +1160,20 @@ const AppelsOffresPage: React.FC = () => {
                                                     >
                                                         <Eye className="h-5 w-5 text-gray-700 dark:text-gray-200"/>
                                                     </button>
-                                                    <button
+                                                    {HasPermission(appPermissions.appelOffre, appOps.update) ? <button
                                                         onClick={() => handleEditAppelOffre(ao)}
                                                         className="p-2 rounded-lg bg-blue-50/70 hover:bg-blue-100/70 dark:bg-blue-900/30 dark:hover:bg-blue-800/50 transition-colors"
                                                         title="Modifier"
                                                     >
                                                         <Edit className="h-5 w-5 text-blue-600 dark:text-blue-400"/>
-                                                    </button>
-                                                    <button
+                                                    </button> : null}
+                                                    {HasPermission(appPermissions.appelOffre, appOps.delete) ?  <button
                                                         onClick={() => handleDeleteAppelOffre(ao.id)}
                                                         className="p-2 rounded-lg bg-red-50/70 hover:bg-red-100/70 dark:bg-red-900/30 dark:hover:bg-red-800/50 transition-colors"
                                                         title="Supprimer"
                                                     >
                                                         <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400"/>
-                                                    </button>
+                                                    </button>: null}
                                                 </div>
                                             </td>
                                         </tr>
@@ -1399,61 +1297,61 @@ const AppelsOffresPage: React.FC = () => {
                             {detailsActiveTab === 'details' ? (
                                 <>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <Detail label="Référence" value={selectedAppelOffre.reference}/>
+                                        <Detail label="Référence" value={selectedAppelOffre.ref}/>
                                         <Detail label="Numéro" value={selectedAppelOffre.numero}/>
-                                        <Detail label="Client" value={selectedAppelOffre.client}/>
-                                        <Detail label="BID Manager" value={selectedAppelOffre.BID_manager}/>
+                                        <Detail label="Client" value={selectedAppelOffre.partner_title}/>
+                                        <Detail label="BID Manager" value={selectedAppelOffre.manager_name}/>
 
                                         <Detail label="Type" value={selectedAppelOffre.type}/>
                                         <Detail label="Statut">
                 <span
-                    className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(selectedAppelOffre.statut)}`}>
-                  {selectedAppelOffre.statut}
+                    className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(selectedAppelOffre.status)}`}>
+                  {statusDataKeys[`${selectedAppelOffre.status}`]}
                 </span>
                                         </Detail>
 
                                         <Detail
                                             label="Date de réception"
-                                            value={formatDate(selectedAppelOffre.dateReception)}
+                                            value={formatDate(selectedAppelOffre.reception_date)}
                                         />
                                         <Detail
                                             label="Date limite"
-                                            value={formatDate(selectedAppelOffre.deadline)}
+                                            value={formatDate(selectedAppelOffre.limit_date)}
                                         />
 
                                         <Detail
                                             label="Date d'envoi"
                                             value={
-                                                selectedAppelOffre.dateEnvoi
-                                                    ? formatDate(selectedAppelOffre.dateEnvoi)
+                                                selectedAppelOffre.sending_date
+                                                    ? formatDate(selectedAppelOffre.sending_date)
                                                     : '—'
                                             }
                                         />
 
                                         <Detail
                                             label="Montant"
-                                            value={`${selectedAppelOffre.montant.toLocaleString()} €`}
+                                            value={`${selectedAppelOffre.amount.toLocaleString()} $`}
                                         />
                                     </div>
 
                                     <div>
                                         <p className="font-medium text-gray-500 dark:text-gray-400">Référence</p>
                                         <p className="mt-1 text-gray-900 dark:text-white">
-                                            {selectedAppelOffre.reference || 'Non spécifiée'}
+                                            {selectedAppelOffre.ref || 'Non spécifiée'}
                                         </p>
                                     </div>
 
                                     <div>
                                         <p className="font-medium text-gray-500 dark:text-gray-400">Titre</p>
                                         <p className="mt-1 text-gray-900 dark:text-white">
-                                            {selectedAppelOffre.Titre}
+                                            {selectedAppelOffre.title}
                                         </p>
                                     </div>
 
                                     <div>
                                         <p className="font-medium text-gray-500 dark:text-gray-400">Commentaire</p>
                                         <p className="mt-1 text-gray-900 dark:text-white whitespace-pre-line">
-                                            {selectedAppelOffre.commentaire || 'Aucun commentaire'}
+                                            {selectedAppelOffre.comment || 'Aucun commentaire'}
                                         </p>
                                     </div>
                                 </>
