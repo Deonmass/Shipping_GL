@@ -19,12 +19,12 @@ import {HasPermission} from "../../utils/PermissionChecker.ts";
 import {appPermissions} from "../../constants/appPermissions.ts";
 import {appOps} from "../../constants";
 import {
-    UseAddCallOffer,
+    UseAddCallOffer, UseAddCallOfferTask,
     UseDeleteCallOffer,
-    UseGetCallOffers,
+    UseGetCallOffers, UseGetCallOfferTasks,
     UseGetPartners,
     UseGetUsers,
-    UseUpdateCallOffer
+    UseUpdateCallOffer, UseUpdateCallOfferTask
 } from "../../services";
 import AppToast from "../../utils/AppToast.ts";
 import {format} from "date-fns";
@@ -77,17 +77,15 @@ ChartJS.register(
 );
 
 // Types
-type StatutTache = 'en_cours' | 'termine' | 'en_retard';
 
 interface Tache {
-    id: string;
-    numero: number;
-    description: string;
-    assigneA: string;
-    dateFin: string;
-    dateCompletion?: string;
-    statut: StatutTache;
-    estTerminee: boolean;
+    id?: string;
+    assigned_to: string;
+    title: string;
+    assigned_name?: string;
+    end_date: string;
+    closed_at?: string;
+    status: string;
 }
 
 interface AppelOffre {
@@ -106,6 +104,9 @@ interface AppelOffre {
     partner_id: string;
     partner_title: string;
     numero: string;
+    closed_task_count: string | number;
+    open_task_count: string | number;
+    task_count: string | number;
 }
 
 const emptyItem = {
@@ -121,6 +122,15 @@ const emptyItem = {
     partner_id: '',
 }
 
+const emptyTaskItem = {
+    title: '',
+    assigned_to: '',
+    end_date: new Date().toISOString().split('T')[0],
+    status: ''
+}
+
+const isTaskClosed = (t: any) => t.closed_at !== null;
+
 const AppelsOffresPage: React.FC = () => {
     const chartRef = useRef<any>(null);
     // États
@@ -131,23 +141,11 @@ const AppelsOffresPage: React.FC = () => {
         (_, i) => new Date().getFullYear() - i
     );
     const [searchTerm, setSearchTerm] = useState('');
-    const [showAddForm, setShowAddForm] = useState(false);
-    const [editingAppelOffre, setEditingAppelOffre] = useState<AppelOffre | null>(null);
     const [selectedAppelOffre, setSelectedAppelOffre] = useState<AppelOffre | null>(null);
-    const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [detailsActiveTab, setDetailsActiveTab] = useState<'details' | 'taches'>('details');
     const [taches, setTaches] = useState<Tache[]>([]);
-    const [nouvelleTache, setNouvelleTache] = useState<Omit<Tache, 'id' | 'numero' | 'estTerminee'> & {
-        id?: string,
-        numero?: number,
-        estTerminee?: boolean
-    }>({
-        description: '',
-        assigneA: '',
-        dateFin: new Date().toISOString().split('T')[0],
-        statut: 'en_cours'
-    });
-    const [showTacheForm, setShowTacheForm] = useState(false);
+    const [nouvelleTache, setNouvelleTache] = useState<Tache>(emptyTaskItem);
+    const [showTacheForm, setShowTacheForm] = useState<"add" | "edit" | null>(null);
     const [editingTache, setEditingTache] = useState<Tache | null>(null);
     const [hiddenDatasets, setHiddenDatasets] = useState<Record<number, boolean>>({});
 
@@ -167,29 +165,33 @@ const AppelsOffresPage: React.FC = () => {
     const {isPending: isUpdating, mutate: updateCallOffer, data: updateResult} = UseUpdateCallOffer()
     const {isPending: isDeleting, mutate: deleteCallOffer, data: deleteResult} = UseDeleteCallOffer()
 
+    const {
+        isRefetching: isGettingTasks,
+        data: callOfferTasks,
+        refetch: reGetCallOfferTasks,
+    } = UseGetCallOfferTasks({
+        call_offer_id: selectedAppelOffre?.id,
+        enabled: !!(selectedAppelOffre?.id && (isModalOpen === 'detail'))
+    })
+    const {isPending: isAddingTask, mutate: addCallOfferTask, data: addResultTask} = UseAddCallOfferTask()
+    const {isPending: isUpdatingTask, mutate: updateCallOfferTask, data: updateResultTask} = UseUpdateCallOfferTask()
 
     // Fonction pour afficher les détails d'un appel d'offre
     const handleReferenceClick = (appelOffre: AppelOffre) => {
         setSelectedAppelOffre(appelOffre);
-        setShowDetailsModal(true);
+        setIsModalOpen("detail");
     };
 
     const handleViewDetails = (appelOffre: AppelOffre) => {
         setSelectedAppelOffre(appelOffre);
         setDetailsActiveTab('details');
-        setShowDetailsModal(true);
+        setIsModalOpen("detail");
     };
 
     // Fonction pour gérer l'édition d'une tâche
     const handleEditTache = (tache: Tache) => {
-        setNouvelleTache({
-            description: tache.description,
-            assigneA: tache.assigneA,
-            dateFin: tache.dateFin,
-            statut: tache.statut
-        });
-        setEditingTache(tache);
-        setShowTacheForm(true);
+        setNouvelleTache(tache);
+        setShowTacheForm("edit");
     };
 
     // Fonction pour gérer la suppression d'une tâche
@@ -223,16 +225,6 @@ const AppelsOffresPage: React.FC = () => {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         return diffDays;
-    };
-
-    // Fonction pour formater la date pour les champs input de type date
-    const formatDateForInput = (date: Date | string) => {
-        if (!date) return '';
-        const d = new Date(date);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
     };
 
     // Fonction pour obtenir la couleur en fonction du statut
@@ -275,7 +267,7 @@ const AppelsOffresPage: React.FC = () => {
             cancelButtonColor: '#d33',
             confirmButtonText: 'Oui, supprimer',
             cancelButtonText: 'Annuler',
-            background:  '#1f2937' ,
+            background: '#1f2937',
             color: '#ffffff',
         });
         if (result.isConfirmed) {
@@ -343,6 +335,34 @@ const AppelsOffresPage: React.FC = () => {
         }
     }, [deleteResult]);
 
+    useEffect(() => {
+        if (addResultTask) {
+            if (addResultTask?.responseData?.error) {
+                AppToast.error(true, addResultTask?.responseData?.message || "Erreur lors de l'enregistrement de la tache")
+            } else {
+                reGetCallOffers()
+                reGetCallOfferTasks()
+                AppToast.success(true, "Tache ajoutée avec succès")
+                setShowTacheForm(null);
+                setNouvelleTache(emptyTaskItem);
+            }
+        }
+    }, [addResultTask]);
+
+    useEffect(() => {
+        if (updateResult) {
+            if (updateResult?.responseData?.error) {
+                AppToast.error(true, updateResult?.responseData?.message || "Erreur lors de la modification")
+            } else {
+                reGetCallOffers()
+                AppToast.success(true, "Appel d'offre mis a jour avec avec succès")
+                setIsModalOpen(null);
+                setSelectedAppelOffre(null)
+                setFormData(emptyItem);
+            }
+        }
+    }, [updateResult]);
+
 
     // Fonction pour gérer la soumission du formulaire
     const handleSubmit = (e: React.FormEvent) => {
@@ -375,6 +395,32 @@ const AppelsOffresPage: React.FC = () => {
             })
         }
     };
+
+    const handleSubmitTache = () => {
+        if (!nouvelleTache.assigned_to || !nouvelleTache.title || !nouvelleTache.end_date) {
+            AppToast.error(true, 'Veuillez remplir tous les champs requis');
+            return;
+        }
+        if (showTacheForm === "add") {
+            addCallOfferTask({
+                call_offer_id: selectedAppelOffre?.id,
+                assigned_to: nouvelleTache?.assigned_to,
+                title: nouvelleTache?.assigned_to,
+                end_date: nouvelleTache?.end_date,
+            })
+        }
+        if (showTacheForm === "edit") {
+            if (!nouvelleTache.id) {
+                AppToast.error(true, 'Aucun ID trouvé');
+                return;
+            }
+            updateCallOfferTask({
+                id: nouvelleTache?.id,
+                ...nouvelleTache
+            })
+        }
+
+    }
 
     // Filtrer les appels d'offres par année sélectionnée
     const appelsAnneeEnCours = callOffers?.responseData?.data?.items?.filter(ao => {
@@ -589,16 +635,16 @@ const AppelsOffresPage: React.FC = () => {
             ...prev,
             [legendItem.index]: !prev[legendItem.index]
         }));
-
-        // Mettre à jour le graphique quand l'année change
-        useEffect(() => {
-            // Forcer la mise à jour du graphique
-            const chart = chartRef.current;
-            if (chart) {
-                chart.update();
-            }
-        }, [selectedYear]);
     };
+
+    // Mettre à jour le graphique quand l'année change
+    useEffect(() => {
+        // Forcer la mise à jour du graphique
+        const chart = chartRef.current;
+        if (chart) {
+            chart.update();
+        }
+    }, [selectedYear]);
 
     // Filtrer les appels d'offres par année sélectionnée
     const getFilteredAppelsOffres = () => {
@@ -1152,11 +1198,11 @@ const AppelsOffresPage: React.FC = () => {
                                                         ></div>
                                                     </div>
                                                     <span className="text-xs text-gray-600 dark:text-gray-300">
-                              {taches.length > 0 ? Math.round((taches.filter(t => t.estTerminee).length / taches.length) * 100) : 0}%
+                              {ao.task_count ? Math.round((ao.closed_task_count / ao.task_count) * 100) : 0}%
                             </span>
                                                 </div>
                                                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                    {taches.filter(t => t.estTerminee).length}/{taches.length} tâches
+                                                    {ao.closed_task_count}/{ao.task_count} tâches
                                                 </div>
                                             </td>
                                             <td className="w-1/6 px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
@@ -1184,13 +1230,13 @@ const AppelsOffresPage: React.FC = () => {
                                                     >
                                                         <Edit className="h-5 w-5 text-blue-600 dark:text-blue-400"/>
                                                     </button> : null}
-                                                    {HasPermission(appPermissions.appelOffre, appOps.delete) ?  <button
+                                                    {HasPermission(appPermissions.appelOffre, appOps.delete) ? <button
                                                         onClick={() => handleDeleteAppelOffre(ao.id)}
                                                         className="p-2 rounded-lg bg-red-50/70 hover:bg-red-100/70 dark:bg-red-900/30 dark:hover:bg-red-800/50 transition-colors"
                                                         title="Supprimer"
                                                     >
                                                         <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400"/>
-                                                    </button>: null}
+                                                    </button> : null}
                                                 </div>
                                             </td>
                                         </tr>
@@ -1257,7 +1303,7 @@ const AppelsOffresPage: React.FC = () => {
                 </div>
             )}
 
-            {showDetailsModal && selectedAppelOffre && (
+            {isModalOpen === "detail" && selectedAppelOffre ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
                     <div
                         className="relative w-full max-w-3xl rounded-lg bg-white dark:bg-gray-800 shadow-lg max-h-[90vh] overflow-y-auto">
@@ -1269,14 +1315,14 @@ const AppelsOffresPage: React.FC = () => {
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                                     Détails de l'appel d'offre
                                 </h3>
-                                {selectedAppelOffre.reference && (
+                                {selectedAppelOffre.ref && (
                                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                        Référence : {selectedAppelOffre.reference}
+                                        Référence : {selectedAppelOffre.ref}
                                     </p>
                                 )}
                             </div>
                             <button
-                                onClick={() => setShowDetailsModal(false)}
+                                onClick={() => setIsModalOpen(null)}
                                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                             >
                                 <X className="h-6 w-6"/>
@@ -1380,14 +1426,17 @@ const AppelsOffresPage: React.FC = () => {
                                                 tâches</h3>
                                             <button
                                                 type="button"
-                                                onClick={() => setShowTacheForm(true)}
+                                                onClick={() => {
+                                                    setShowTacheForm("add")
+                                                    setNouvelleTache(emptyTaskItem)
+                                                }}
                                                 className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                             >
                                                 <Plus className="-ml-1 mr-1 h-6 w-6"/>
                                                 Nouvelle tâche
                                             </button>
                                         </div>
-                                        {taches.length > 0 && (
+                                        {callOfferTasks?.responseData?.data?.length ? (
                                             <div className="mt-2">
                                                 <div className="flex items-center">
                                                     <div
@@ -1396,18 +1445,18 @@ const AppelsOffresPage: React.FC = () => {
                                                         <div
                                                             className="bg-green-600 h-2.5 rounded-full"
                                                             style={{
-                                                                width: `${(taches.filter(t => t.estTerminee).length / taches.length) * 100}%`,
+                                                                width: `${(selectedAppelOffre?.closed_task_count / callOfferTasks?.responseData?.data?.length) * 100}%`,
                                                                 transition: 'width 0.3s ease-in-out'
                                                             }}
                                                         ></div>
                                                     </div>
                                                     <span className="text-sm text-gray-600 dark:text-gray-300">
-                      {Math.round((taches.filter(t => t.estTerminee).length / taches.length) * 100)}% terminé
-                      ({taches.filter(t => t.estTerminee).length}/{taches.length} tâches)
+                      {Math.round((selectedAppelOffre?.closed_task_count || 0 / callOfferTasks?.responseData?.data?.length) * 100)}% terminé
+                      ({selectedAppelOffre?.closed_task_count}/{callOfferTasks?.responseData?.data?.length} tâches)
                     </span>
                                                 </div>
                                             </div>
-                                        )}
+                                        ) : null}
                                     </div>
 
                                     <div className="overflow-x-auto">
@@ -1442,40 +1491,40 @@ const AppelsOffresPage: React.FC = () => {
                                             </thead>
                                             <tbody
                                                 className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                            {taches.map((tache) => (
+                                            {callOfferTasks?.responseData?.data?.map((tache: any, index: number) => (
                                                 <tr key={tache.id}>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                                        {tache.numero}
+                                                        {index + 1}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-normal text-sm text-gray-900 dark:text-white">
-                                                        {tache.description}
+                                                        {tache.title}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                                        {tache.assigneA}
+                                                        {tache.assigned_name}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                                        {new Date(tache.dateFin).toLocaleDateString()}
+                                                        {new Date(tache.end_date).toLocaleDateString()}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        {tache.estTerminee && tache.dateCompletion ? (
+                                                        {tache.end_date && tache.closed_at ? (
                                                             <div className="flex flex-col">
                             <span
                                 className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                               Terminé
                             </span>
                                                                 <span className="text-xs text-gray-500 mt-1">
-                              Le {new Date(tache.dateCompletion).toLocaleDateString()}
+                              Le {new Date(tache.closed_at).toLocaleDateString()}
                             </span>
                                                             </div>
                                                         ) : (
                                                             <span
                                                                 className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                                    new Date(tache.dateFin) < new Date()
+                                                                    new Date(tache.end_date) < new Date()
                                                                         ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                                                                         : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
                                                                 }`}>
-                            {new Date(tache.dateFin) < new Date() ? 'En retard' :
-                                `${Math.ceil((new Date(tache.dateFin).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}j`}
+                            {new Date(tache.end_date) < new Date() ? 'En retard' :
+                                `${Math.ceil((new Date(tache.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}j`}
                           </span>
                                                         )}
                                                     </td>
@@ -1499,20 +1548,9 @@ const AppelsOffresPage: React.FC = () => {
                                                             </button>
                                                             <input
                                                                 type="checkbox"
-                                                                checked={tache.estTerminee}
+                                                                checked={isTaskClosed(tache)}
                                                                 onChange={() => {
-                                                                    const now = new Date().toISOString();
-                                                                    const updatedTaches = taches.map(t =>
-                                                                        t.id === tache.id
-                                                                            ? {
-                                                                                ...t,
-                                                                                estTerminee: !t.estTerminee,
-                                                                                statut: !t.estTerminee ? 'termine' : 'en_cours' as StatutTache,
-                                                                                dateCompletion: !t.estTerminee ? now : undefined
-                                                                            }
-                                                                            : t
-                                                                    );
-                                                                    setTaches(updatedTaches);
+
                                                                 }}
                                                                 className="h-6 w-6 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ml-2"
                                                             />
@@ -1522,7 +1560,7 @@ const AppelsOffresPage: React.FC = () => {
                                             ))}
                                             </tbody>
                                         </table>
-                                        {taches.length === 0 && (
+                                        {!callOfferTasks?.responseData?.data?.length && (
                                             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                                                 Aucune tâche n'a été ajoutée pour le moment.
                                             </div>
@@ -1530,18 +1568,21 @@ const AppelsOffresPage: React.FC = () => {
                                     </div>
 
                                     {/* Modal d'ajout de tâche */}
-                                    {showTacheForm && (
+                                    {showTacheForm === "add" || showTacheForm === "edit" ? (
                                         <div
                                             className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
                                             <div
                                                 className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
                                                 <div className="flex justify-between items-center mb-4">
                                                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                                                        {editingTache ? 'Modifier la tâche' : 'Nouvelle tâche'}
+                                                        {showTacheForm === "edit" ? 'Modifier la tâche' : 'Nouvelle tâche'}
                                                     </h3>
                                                     <button
                                                         type="button"
-                                                        onClick={() => setShowTacheForm(false)}
+                                                        onClick={() => {
+                                                            setShowTacheForm(null)
+                                                            setNouvelleTache(emptyTaskItem)
+                                                        }}
                                                         className="text-gray-400 hover:text-gray-500"
                                                     >
                                                         <X className="h-6 w-6"/>
@@ -1556,10 +1597,10 @@ const AppelsOffresPage: React.FC = () => {
                                                         <input
                                                             type="text"
                                                             id="description"
-                                                            value={nouvelleTache.description}
+                                                            value={nouvelleTache.title}
                                                             onChange={(e) => setNouvelleTache({
                                                                 ...nouvelleTache,
-                                                                description: e.target.value
+                                                                title: e.target.value
                                                             })}
                                                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                                             required
@@ -1570,17 +1611,23 @@ const AppelsOffresPage: React.FC = () => {
                                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                                             Assigné à *
                                                         </label>
-                                                        <input
-                                                            type="text"
-                                                            id="assigneA"
-                                                            value={nouvelleTache.assigneA}
+                                                        <select
+                                                            name="assigned_to"
+                                                            value={nouvelleTache.assigned_to}
                                                             onChange={(e) => setNouvelleTache({
                                                                 ...nouvelleTache,
-                                                                assigneA: e.target.value
+                                                                assigned_to: e.target.value
                                                             })}
-                                                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                             required
-                                                        />
+                                                        >
+                                                            <option
+                                                                value="">{isGettingUsers ? "Chargement..." : ""}</option>
+                                                            {users?.responseData?.data?.map((user: any) => <option
+                                                                key={user?.id}
+                                                                value={user?.id}>{user?.name}</option>)}
+                                                        </select>
+
                                                     </div>
                                                     <div>
                                                         <label htmlFor="dateFin"
@@ -1589,11 +1636,11 @@ const AppelsOffresPage: React.FC = () => {
                                                         </label>
                                                         <input
                                                             type="date"
-                                                            id="dateFin"
-                                                            value={nouvelleTache.dateFin}
+                                                            id="end_date"
+                                                            value={nouvelleTache.end_date}
                                                             onChange={(e) => setNouvelleTache({
                                                                 ...nouvelleTache,
-                                                                dateFin: e.target.value
+                                                                end_date: e.target.value
                                                             })}
                                                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                                             required
@@ -1602,66 +1649,26 @@ const AppelsOffresPage: React.FC = () => {
                                                     <div className="flex justify-end space-x-3 pt-4">
                                                         <button
                                                             type="button"
-                                                            onClick={() => setShowTacheForm(false)}
+                                                            onClick={() => {
+                                                                setShowTacheForm(null)
+                                                                setNouvelleTache(emptyTaskItem)
+                                                            }}
                                                             className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-white dark:border-gray-500"
                                                         >
                                                             Annuler
                                                         </button>
                                                         <button
                                                             type="button"
-                                                            onClick={() => {
-                                                                const handleAddTache = () => {
-                                                                    if (nouvelleTache.description && nouvelleTache.assigneA && nouvelleTache.dateFin) {
-                                                                        if (editingTache) {
-                                                                            // Mise à jour de la tâche existante
-                                                                            const updatedTaches = taches.map(t =>
-                                                                                t.id === editingTache.id
-                                                                                    ? {
-                                                                                        ...nouvelleTache,
-                                                                                        id: editingTache.id,
-                                                                                        numero: editingTache.numero,
-                                                                                        estTerminee: editingTache.estTerminee,
-                                                                                        dateCompletion: editingTache.dateCompletion
-                                                                                    }
-                                                                                    : t
-                                                                            );
-                                                                            setTaches(updatedTaches);
-                                                                            setEditingTache(null);
-                                                                        } else {
-                                                                            // Création d'une nouvelle tâche
-                                                                            const nouvelleTacheComplete: Tache = {
-                                                                                ...nouvelleTache,
-                                                                                id: Date.now().toString(),
-                                                                                numero: taches.length + 1,
-                                                                                estTerminee: false,
-                                                                                statut: 'en_cours' as StatutTache
-                                                                            };
-                                                                            setTaches([...taches, nouvelleTacheComplete]);
-                                                                        }
-
-                                                                        // Réinitialiser le formulaire
-                                                                        setNouvelleTache({
-                                                                            description: '',
-                                                                            assigneA: '',
-                                                                            dateFin: new Date().toISOString().split('T')[0],
-                                                                            statut: 'en_cours'
-                                                                        });
-                                                                        setShowTacheForm(false);
-                                                                    }
-                                                                };
-
-                                                                handleAddTache();
-                                                                setEditingTache(null);
-                                                            }}
+                                                            onClick={() => handleSubmitTache()}
                                                             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                                         >
-                                                            {editingTache ? 'Mettre à jour' : 'Enregistrer'}
+                                                            {showTacheForm === "edit" ? 'Mettre à jour' : 'Enregistrer'}
                                                         </button>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    )}
+                                    ) : null}
                                 </div>
                             )}
                         </div>
@@ -1672,7 +1679,6 @@ const AppelsOffresPage: React.FC = () => {
                                 <button
                                     onClick={() => {
                                         handleEditAppelOffre(selectedAppelOffre);
-                                        setShowDetailsModal(false);
                                     }}
                                     className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
                                 >
@@ -1682,7 +1688,7 @@ const AppelsOffresPage: React.FC = () => {
                             )}
 
                             <button
-                                onClick={() => setShowDetailsModal(false)}
+                                onClick={() => setIsModalOpen(null)}
                                 className="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
                                 Fermer
@@ -1690,7 +1696,7 @@ const AppelsOffresPage: React.FC = () => {
                         </div>
                     </div>
                 </div>
-            )}
+            ) : null}
 
         </div>
 
