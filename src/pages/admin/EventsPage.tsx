@@ -63,7 +63,7 @@ const EventsPage: React.FC = () => {
     const [dateTo, setDateTo] = useState<string>('');
     const [groupBy, setGroupBy] = useState<'none' | 'month' | 'visibility'>('none');
 
-    const {data: events, isPending: isGettingEvents, refetch: reGetEvents} = UseGetEvents({format: "stats"})
+    const {data: events, isPending: isGettingEvents, refetch: reGetEvents, isRefetching: isReGettingEvents} = UseGetEvents({format: "stats"})
     const {isPending: isAdding, mutate: addEvent, data: addResult} = UseAddEvent()
     const {isPending: isUpdating, mutate: updateEvent, data: updateResult} = UseUpdateEvent()
     const {isPending: isDeleting, mutate: deleteEvent, data: deleteResult} = UseDeleteEvent()
@@ -238,6 +238,7 @@ const EventsPage: React.FC = () => {
                     className={`w-6 h-6 ${isDark ? 'text-primary-400' : 'text-primary-600'}`}
                 />}
                 title=" Gestion d'Evenement"
+                isRefreshing={isGettingEvents || isReGettingEvents}
                 onRefresh={() => reGetEvents()}
                 onAdd={HasPermission(appPermissions.events, appOps.create) ? () => {
                     setFormData(emptyItem);
