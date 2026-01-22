@@ -24,9 +24,9 @@ export const getQueryKey = (key: string, params?: { [key: string]: any }) => {
 }
 
 export const setAuthUser = (data: AuthDataType) => {
-    AppStorage.setItem(localStorageKeys.token, data.token || '')
-    AppStorage.setItem(localStorageKeys.user, JSON.stringify(data.user))
-    AppStorage.setItem(localStorageKeys.permissions, JSON.stringify(data.permissions))
+    if(data?.token) AppStorage.setItem(localStorageKeys.token, data.token || '')
+    if(data?.user) AppStorage.setItem(localStorageKeys.user, JSON.stringify(data.user))
+    if(data?.permissions) AppStorage.setItem(localStorageKeys.permissions, JSON.stringify(data.permissions))
 }
 
 export const getAuthData = (): AuthDataType => {

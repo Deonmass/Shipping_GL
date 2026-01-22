@@ -13,6 +13,7 @@ export {
     UseGetUsers,
     UseUpdateRole,
     UseUpdateUser,
+    UseUpdateUserPassword,
     UseGetRolesPermissions,
     UseGetAppPermissions,
     UseUpdateRolePermissions,
@@ -76,7 +77,17 @@ export {
     UseDeleteCotation,
     UseDeleteCotationStatus,
     UseUpdateCotation,
-    UseUpdateCotationStatus
+    UseUpdateCotationStatus,
+    UseGetCallOffers,
+    UseGetCallOfferDetail,
+    UseGetCallOfferTaskDetail,
+    UseGetCallOfferTasks,
+    UseAddCallOffer,
+    UseAddCallOfferTask,
+    UseDeleteCallOffer,
+    UseDeleteCallOfferTask,
+    UseUpdateCallOffer,
+    UseUpdateCallOfferTask
 } from "./queries/ServicesQueries.ts"
 
 export {

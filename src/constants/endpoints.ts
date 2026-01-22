@@ -31,6 +31,8 @@ const urls =  {
     quoteRequests: '/api/quote-requests',
     cotations: '/api/cotations',
     cotationStatus: '/api/cotation-status',
+    callOffers: '/api/call-offers',
+    callOfferTasks: '/api/call-offer-tasks',
     posts: '/api/posts',
     postLikes: '/api/post-likes',
     postComments: '/api/post-comments',
