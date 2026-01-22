@@ -81,7 +81,7 @@ const PostsPage: React.FC = () => {
     } | null>(null);
 
     const {data: categories} = UseGetCategories({noPermission: 1, type: "news"})
-    const {data: posts, isPending: isGettingPosts, isRefetching: isReGettingPosts refetch: reGetPosts} = UseGetPosts({format: "stats"})
+    const {data: posts, isPending: isGettingPosts, isRefetching: isReGettingPosts, refetch: reGetPosts} = UseGetPosts({format: "stats"})
     const {data: addResult, isPending: isAdding, mutate: addPost} = UseAddPost()
     const {data: updateResult, isPending: isUpdating, mutate: updatePost} = UseUpdatePost()
     const {data: deleteResult, isPending: isDeleting, mutate: deletePost} = UseDeletePost()
