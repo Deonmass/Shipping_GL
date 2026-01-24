@@ -33,11 +33,11 @@ import AdminPageHeader from "../../components/admin/AdminPageHeader.tsx";
 import {
     UseAddCotation,
     UseGetCotations,
-    UseGetUsers, 
-    UseDeleteCotation, 
-    UseGetCotationStatus, 
+    UseGetUsers,
+    UseDeleteCotation,
+    UseGetCotationStatus,
     UseAddCotationStatus,
-    UseUpdateCotation
+    UseUpdateCotation, UseGetServices, UseGetPartners
 } from "../../services";
 import AppToast from "../../utils/AppToast.ts";
 import {format, parseISO} from 'date-fns';
@@ -289,6 +289,8 @@ const CotationsPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState<"add" | "edit" | "detail" | 'status' | null>(null);
     const [formData, setFormData] = useState<any>(emptyItem);
 
+    const {data: services, isLoading: isGettingServices} = UseGetServices({noPermission: 1})
+    const {data: partners, isLoading: isGettingPartners} = UseGetPartners({noPermission: 1})
     const {data: users, isLoading: isGettingUsers} = UseGetUsers({noPermission: 1})
     const {
         data: cotations,
@@ -298,12 +300,7 @@ const CotationsPage: React.FC = () => {
     } = UseGetCotations({format: "stats"})
 
     const {isPending: isAdding, mutate: addCotation, data: addResult} = UseAddCotation()
-    // Implémentation factice car UseUpdateCotation n'est pas défini
-    const {isPending: isUpdating, mutate: updateCotation, data: updateResult} = {
-        isPending: false,
-        mutate: async () => {},
-        data: null
-    };
+    const {isPending: isUpdating, mutate: updateCotation, data: updateResult} = UseUpdateCotation()
     const {isPending: isDeleting, mutate: deleteCotations, data: deleteResult} = UseDeleteCotation()
 
     const {
@@ -2289,6 +2286,9 @@ const CotationsPage: React.FC = () => {
                                             onChange={(e) => setServiceFilter(e.target.value)}
                                         >
                                             <option value="">Tous les services</option>
+                                            {services?.responseData?.data?.map((service: any) => (
+                                                <option key={service?.id} value={service?.id}>{service?.title}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
@@ -2454,10 +2454,10 @@ const CotationsPage: React.FC = () => {
                                     className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                 >
-                                    <option value="">{isGettingUsers ? "Chargement..." : ""}</option>
-                                    {users?.responseData?.data?.map((user: any) => <option
-                                        key={user?.id}
-                                        value={user?.id}>{user?.name}</option>)}
+                                    <option value="">{isGettingPartners ? "Chargement..." : ""}</option>
+                                    {partners?.responseData?.data?.map((partner: any) => <option
+                                        key={partner?.id}
+                                        value={partner?.id}>{partner?.title}</option>)}
                                 </select>
                             </div>
                             <div>
@@ -2483,7 +2483,10 @@ const CotationsPage: React.FC = () => {
                                     className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                 >
-                                    <option value="">{isGettingUsers ? "Chargement..." : ""}</option>
+                                    <option value="">{isGettingServices ? "Chargement..." : ""}</option>
+                                    {services?.responseData?.data?.map((service: any) => <option
+                                        key={service?.id}
+                                        value={service?.id}>{service?.title}</option>)}
                                 </select>
                             </div>
                             <div>
