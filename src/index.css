@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Style pour le sélecteur d'année */
+.year-selector {
+    min-width: 8rem; /* 128px */
+}
+
+
 /* Styles personnalisés pour l'éditeur en mode sombre */
 .quill-dark .ql-toolbar.ql-snow,
 .quill-dark .ql-container.ql-snow {

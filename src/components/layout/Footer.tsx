@@ -145,7 +145,7 @@ const Footer: React.FC = () => {
               className="text-gray-500 hover:text-accent-400 transition-colors flex items-center gap-2"
             >
               <ShieldCheck className="w-4 h-4" />
-              <span className="text-sm">Administration</span>
+              <span className="text-sm">Espace Membre</span>
             </Link>
           </div>
         </div>
