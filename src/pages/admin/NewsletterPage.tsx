@@ -52,6 +52,7 @@ const NewsletterPage: React.FC = () => {
     const {
         data: newsletters,
         isPending: isGettingNewsletters,
+        isRefetching: isReGettingNewsletters,
         refetch: reGetNewsletters
     } = UseGetNewsletters({format: "stats"})
     const {isPending: isDeleting, mutate: deleteNewsletter, data: deleteResult} = UseDeleteNewsletter()
@@ -167,6 +168,7 @@ const NewsletterPage: React.FC = () => {
                 Icon={<Mail className={`w-7 h-7 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}/>}
                 onExport={handleExportToExcel}
                 onRefresh={reGetNewsletters}
+                isRefreshing={isReGettingNewsletters || isGettingNewsletters}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">

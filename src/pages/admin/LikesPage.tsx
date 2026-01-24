@@ -57,7 +57,7 @@ const LikesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
-  const { isPending: isGettingLikes, data: likes, refetch: reGetLikes} = UseGetPostLikes({format: "stats"})
+  const { isPending: isGettingLikes, data: likes, refetch: reGetLikes, isRefetching: isReGettingLikes} = UseGetPostLikes({format: "stats"})
   const {isPending: isDeleting, mutate: deleteLike, data: deleteResult} = UseDeletePostLike()
   const {isPending: isUpdating, mutate: updateLike, data: updateResult} = UseUpdatePostLike()
 
@@ -151,6 +151,7 @@ const LikesPage: React.FC = () => {
           Icon={<Heart
               className={`w-7 h-7 ${isDark ? 'text-pink-400' : 'text-pink-600'}`}
           />}
+          isRefreshing={isReGettingLikes || isGettingLikes  }
           title=" Gestion des likes"
           onRefresh={() => reGetLikes()}
       />

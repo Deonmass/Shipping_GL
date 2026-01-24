@@ -49,6 +49,7 @@ const AdminQuoteRequestsPage: React.FC = () => {
     const {
         data: requests,
         isLoading: isGettingRequests,
+        isRefetching: isReGettingRequests,
         refetch: reGetRequests
     } = UseGetQuoteRequests({format: "stats"})
     const {data: services,} = UseGetServices({noPermission: 1})
@@ -150,6 +151,7 @@ const AdminQuoteRequestsPage: React.FC = () => {
             <AdminPageHeader
                 Icon={<Mail className={`w-7 h-7 ${isDark ? 'text-red-400' : 'text-red-600'}`}/>}
                 title="Demandes de Devis"
+                isRefreshing={isReGettingRequests || isGettingRequests}
                 onRefresh={() => reGetRequests()}
             />
 

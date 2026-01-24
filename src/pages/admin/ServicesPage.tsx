@@ -512,7 +512,7 @@ const AdminServicesPage: React.FC = () => {
                                 onClick={() => handleChangeStatus(showStatusConfirm)}
                                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
                             >
-                                {isUpdating ? "Chargement ... " : "Valider"}
+                                {isUpdating ? <RefreshCcwIcon className="animate-spin"/> : "Valider"}
                             </button>
                         </div>
                     </motion.div>

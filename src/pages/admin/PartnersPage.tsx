@@ -78,7 +78,7 @@ const PartnersPage: React.FC = () => {
     const [formData, setFormData] = useState<PartnerFormData>(emptyItem);
     const [showStatusConfirm, setShowStatusConfirm] = useState<PartnerFormData | null>(null);
 
-    const {isPending: isGettingPartners, data: partners, refetch: reGetPartners} = UseGetPartners({format: "stats"})
+    const {isPending: isGettingPartners, isRefetching: isReGettingPartners, data: partners, refetch: reGetPartners} = UseGetPartners({format: "stats"})
     const {data: categories} = UseGetCategories({type: "partner", noPermission: 1})
     const {data: addResult, isPending: isAdding, mutate: addPartner} = UseAddPartner()
     const {data: updateResult, isPending: isUpdating, mutate: updatePartner} = UseUpdatePartner()
@@ -276,6 +276,7 @@ const PartnersPage: React.FC = () => {
                     }`}
                 />}
                 title="Gestion des partenaires"
+                isRefreshing={isReGettingPartners || isGettingPartners}
                 onRefresh={() => reGetPartners()}
                 onAdd={HasPermission(appPermissions.partners, appOps.create) ? () => {
                     setFormData(emptyItem);
@@ -996,6 +997,7 @@ const PartnersPage: React.FC = () => {
                                     Annuler
                                 </button>
                                 <button
+                                    disabled={isAdding || isUpdating}
                                     type="submit"
                                     className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
                                 >

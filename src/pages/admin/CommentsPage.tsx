@@ -64,7 +64,7 @@ const CommentsPage: React.FC = () => {
     } | null>(null);
     // -------------------------------------------------------------------------------
 
-    const {isPending: isGettingComments, data: comments, refetch: reGetComments} = UseGetPostComments({format: "stats"})
+    const {isPending: isGettingComments, isRefetching: isReGettingComments, data: comments, refetch: reGetComments} = UseGetPostComments({format: "stats"})
     const {isPending: isDeleting, mutate: deleteComment, data: deleteResult} = UseDeletePostComment()
     const {isPending: isUpdating, mutate: updateComment, data: updateResult} = UseUpdatePostComment()
 
@@ -152,6 +152,7 @@ const CommentsPage: React.FC = () => {
             <AdminPageHeader
                 Icon={<MessageSquare className="w-6 h-6 text-primary-500"/>}
                 title=" Gestion des commentaires"
+                isRefreshing={isGettingComments || isReGettingComments}
                 onRefresh={() => reGetComments()}
             />
 

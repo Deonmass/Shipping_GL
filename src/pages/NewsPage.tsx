@@ -43,7 +43,6 @@ const NewsPage: React.FC = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
-    const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
     const [sortType, setSortType] = useState<'likes' | 'comments' | 'shares' | ''>('');
     const [dateRange, setDateRange] = useState<{ start: Date | null; end: Date | null }>({start: null, end: null});
     const [shares, setShares] = useState<{ [key: string]: number }>({});
