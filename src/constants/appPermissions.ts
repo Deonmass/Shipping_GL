@@ -25,6 +25,7 @@ export const appPermissions = {
     menu_visibility: "21",
     cotation: "22",
     appelOffre: "23",
+    certifications: "24",
 
     users_assign_roles: "00",
     users_permissions: "00",

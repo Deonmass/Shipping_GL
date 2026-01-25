@@ -5,7 +5,7 @@ import {
     Bell, Search, LogOut, Handshake, ClipboardEditIcon,
     MessageSquare, Heart, Calendar, Tags, TrendingUp, ChevronDown, ChevronRight,
     Mail, Menu, CheckCircle2, Sun, Moon, User, Home, X, Wrench, Building2,
-    ClipboardList,
+    ClipboardList, BadgeCheck,
     UserRoundSearch, CircleUserRoundIcon, Table2Icon
 } from 'lucide-react';
 import {supabase} from '../../lib/supabase';
@@ -130,6 +130,13 @@ const AdminLayout: React.FC = () => {
             icon: Handshake,
             label: 'Partenaires',
             keywords: ['partenaire', 'partner']
+        },
+        {
+            key: appPermissions.certifications,
+            path: '/admin/certifications',
+            icon: BadgeCheck,
+            label: 'Certifications',
+            keywords: ['certifications', 'iso']
         },
         {
             key: appPermissions.jobOffers,

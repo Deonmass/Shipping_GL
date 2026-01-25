@@ -53,6 +53,12 @@ export {
     UseAddTeam,
     UseDeleteTeam,
     UseUpdateTeam,
+    UseGetCertificationDetail,
+    UseDeleteCertification,
+    UseGetCertifications,
+    UseGetOpenCertifications,
+    UseUpdateCertification,
+    UseAddCertification
 } from "./queries/PartnersQueries.ts"
 
 export {

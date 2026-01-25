@@ -1,4 +1,5 @@
 import {UseGetCotations} from "../services/queries/ServicesQueries.ts";
+import {UseGetCertifications} from "../services/queries/PartnersQueries.ts";
 
 const urls =  {
     openOffices: '/open/offices',
@@ -9,6 +10,7 @@ const urls =  {
     openNewsletters: '/open/newsletters',
     openJobOffers: '/open/job-offers',
     openTeams: '/open/teams',
+    openCertifications: '/open/certifications',
     openCategories: '/open/categories',
     openQuoteRequests: '/open/quote-requests',
     openVisitors: '/open/visitor-accounts',
@@ -40,6 +42,7 @@ const urls =  {
     newsletters: '/api/newsletters',
     jobOffers: '/api/job-offers',
     teams: '/api/teams',
+    certifications: '/api/certifications',
     visitors: '/api/visitor-accounts',
 }
 

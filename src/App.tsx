@@ -54,6 +54,7 @@ import VisitorsPage from "./pages/admin/VisitorsPage.tsx";
 import NotAllowedPage from "./pages/admin/NotAllowedPage.tsx";
 import {appPermissions} from "./constants/appPermissions.ts";
 import {appOps} from "./constants";
+import CertificationsPage from "./pages/admin/Certifications.tsx";
 
 
 function App() {
@@ -115,6 +116,10 @@ function App() {
                         <Route element={<NotAllowedRoute
                             permissions={[{id: appPermissions.partners, ops: appOps.read}]}/>}>
                             <Route path="partners" element={<AdminPartnersPage/>}/>
+                        </Route>
+                        <Route element={<NotAllowedRoute
+                            permissions={[{id: appPermissions.certifications, ops: appOps.read}]}/>}>
+                            <Route path="certifications" element={<CertificationsPage/>}/>
                         </Route>
                         <Route element={<NotAllowedRoute
                             permissions={[{id: appPermissions.menu_visibility, ops: appOps.read}]}/>}>

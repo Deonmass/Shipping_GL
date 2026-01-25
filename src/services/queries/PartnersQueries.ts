@@ -49,3 +49,26 @@ export const UseGetTeamDetail = (id: string, options?: GetQueryParams) => UseGet
 export const UseAddTeam = () => UsePostFormDataQuery(endpoints.teams, "addTeam")
 export const UseUpdateTeam = () => UseUpdateFormDataQuery(endpoints.teams, "updateTeam")
 export const UseDeleteTeam = () => UseUpdateQuery(`${endpoints.teams}-delete`, "deleteTeam")
+
+
+
+export const UseGetOpenCertifications = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "OpenCertifications",
+    options: options,
+    endpoint: endpoints.openCertifications,
+})
+
+export const UseGetCertifications = (options?: GetQueryParams) => UseGetQuery({
+    identifier: "Certifications",
+    options: options,
+    endpoint: endpoints.certifications,
+})
+export const UseGetCertificationDetail = (id: string, options?: GetQueryParams) => UseGetDetailQuery({
+    id: id,
+    identifier: "Certification",
+    options: options,
+    endpoint: endpoints.certifications,
+})
+export const UseAddCertification = () => UsePostFormDataQuery(endpoints.certifications, "addCertification")
+export const UseUpdateCertification = () => UseUpdateFormDataQuery(endpoints.certifications, "updateCertification")
+export const UseDeleteCertification = () => UseUpdateQuery(`${endpoints.certifications}-delete`, "deleteCertification")
