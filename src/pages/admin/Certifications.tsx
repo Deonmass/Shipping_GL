@@ -416,7 +416,7 @@ const CertificationsPage: React.FC = () => {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        <td className="px-6 py-4">
                                             <div
                                                 className={`text-sm ${
                                                     isDark ? 'text-gray-300' : 'text-gray-600'
