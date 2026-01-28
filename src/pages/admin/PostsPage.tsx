@@ -187,6 +187,11 @@ const PostsPage: React.FC = () => {
             return;
         }
 
+        if (!formData?.category_id) {
+            AppToast.error(isDark, 'Veuillez selectionner une categorie');
+            return;
+        }
+
         const body = {
             title: formData?.title,
             short_description: formData?.short_description,
@@ -785,6 +790,7 @@ const PostsPage: React.FC = () => {
                                             onChange={(e) => handleFormChange('category_id', e.target.value)}
                                             className="w-full bg-gray-700 border-gray-600 text-white rounded-lg px-4 py-2 focus:ring-primary-500 focus:border-primary-500"
                                         >
+                                            <option value=""></option>
                                             {categories?.responseData?.data?.map(cat => (
                                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
                                             ))}
