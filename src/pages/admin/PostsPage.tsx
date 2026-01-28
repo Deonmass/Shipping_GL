@@ -10,7 +10,7 @@ import {
     CheckCircle,
     FileEdit,
     BarChart3,
-    Star, ToggleRight, ToggleLeft, XCircle
+    Star, ToggleRight, ToggleLeft, XCircle, RefreshCcwIcon
 } from 'lucide-react';
 import {format, subMonths} from 'date-fns';
 import {fr} from 'date-fns/locale';
