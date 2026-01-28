@@ -137,7 +137,7 @@ axiosInstance.interceptors.response.use(
         if (error?.response?.status?.toString() === "419" && error.response.data.message && error.response.data.message.includes("connexion a expiré")) {
             console.log("Please, session expired login again.")
             AppStorage.clearAll()
-            window.location.href = error?.response?.data?.data?.request === "visitor" ? "/login" : "/admin-login"
+            window.location.href = error?.response?.data?.data?.request === "visitor" ? "/login" : "/login"
             return false
         }
         return Promise.resolve({
