@@ -28,7 +28,7 @@ interface Post {
     category_id: string;
     author_name: string;
     author_avatar?: string;
-    created_at: string;
+    event_date: string;
     likes_count?: number;
     comments_count?: number;
     is_liked?: boolean;
@@ -116,7 +116,7 @@ const NewsPage: React.FC = () => {
 
             let matchesDate = true;
             if (dateRange.start || dateRange.end) {
-                const postDate = new Date(post.created_at);
+                const postDate = new Date(post.event_Date);
                 if (dateRange.start && postDate < dateRange.start) matchesDate = false;
                 if (dateRange.end && postDate > dateRange.end) matchesDate = false;
             }
@@ -290,7 +290,7 @@ const NewsPage: React.FC = () => {
                             <div className="p-8">
                                 <div className="flex items-center justify-between mb-6">
                   <span className="text-sm text-gray-500">
-                    {new Date(selectedPost.created_at).toLocaleDateString('fr-FR', {
+                    {new Date(selectedPost.event_date).toLocaleDateString('fr-FR', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric'
