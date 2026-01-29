@@ -4,7 +4,6 @@ import {useTranslation} from 'react-i18next';
 import {X, Loader, ChevronLeft, ChevronRight} from 'lucide-react';
 import {useAuth} from '../contexts/AuthContext';
 import {toast} from 'react-hot-toast';
-import {supabase} from '../lib/supabase';
 import LeftSidebar from '../components/news/LeftSidebar';
 import PostCard from '../components/news/PostCard';
 import RightSidebar from '../components/news/RightSidebar';
@@ -13,10 +12,8 @@ import {
     UseGetOpenCategories,
     UseGetOpenEvents, UseGetOpenPostLikes,
     UseGetOpenPosts,
-    UseVisitorCommentPost,
     UseVisitorLikePost
 } from "../services";
-import {removeAuthVisitorData} from "../utils";
 
 interface Post {
     id: string;

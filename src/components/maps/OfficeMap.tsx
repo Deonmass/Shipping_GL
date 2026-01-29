@@ -14,7 +14,7 @@ interface OfficeMapProps {
   showRDC?: boolean;
 }
 
-const OfficeMap: React.FC<OfficeMapProps> = ({ offices = [], className = '', showRDC = true }) => {
+const OfficeMap: React.FC<OfficeMapProps> = ({ offices = [], className = '', showRDC = false }) => {
   // Coordonnées des villes de RDC
   const rdcCities = [
     { name: 'Kinshasa', lat: -4.4419, lng: 15.2663 },
@@ -35,8 +35,8 @@ const OfficeMap: React.FC<OfficeMapProps> = ({ offices = [], className = '', sho
       };
       
       // Créer des marqueurs rouges pour les villes de RDC
-      const markers = rdcCities.map(city => 
-        `markers=${city.lat},${city.lng}`
+      const markers = offices.map(city =>
+        `markers=${city.latitude},${city.longitude}`
       ).join('&');
       
       return `https://www.openstreetmap.org/export/embed.html?bbox=${bounds.minLng},${bounds.minLat},${bounds.maxLng},${bounds.maxLat}&layer=mapnik&${markers}&marker-color=ff0000&marker-size=l`;
@@ -61,9 +61,9 @@ const OfficeMap: React.FC<OfficeMapProps> = ({ offices = [], className = '', sho
       maxLng: Math.max(...lngs) + 1,
     };
     
-    const markers = offices.map(o => `markers=${o.latitude},${o.longitude}`).join('&');
-    
-    return `https://www.openstreetmap.org/export/embed.html?bbox=${bounds.minLng},${bounds.minLat},${bounds.maxLng},${bounds.maxLat}&layer=mapnik&${markers}`;
+    const markers = offices.map(o => `marker=${o.latitude},${o.longitude}`).join('&');
+
+    return  `https://www.openstreetmap.org/export/embed.html?bbox=${bounds.minLng},${bounds.minLat},${bounds.maxLng},${bounds.maxLat}&layer=mapnik&${markers}`;
   };
 
   return (

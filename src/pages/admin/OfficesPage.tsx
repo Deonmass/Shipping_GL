@@ -265,7 +265,7 @@ const OfficesPage = () => {
                                     {item.title}
                                 </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
+                            <td className="px-6 py-4">
                                 <div
                                     className={`text-sm ${
                                         isDark ? 'text-gray-300' : 'text-gray-600'
@@ -277,7 +277,7 @@ const OfficesPage = () => {
                                 </div>
                             </td>
                             <td
-                                className={`px-6 py-4 whitespace-nowrap text-sm ${
+                                className={`px-6 py-4  text-sm ${
                                     isDark ? 'text-gray-300' : 'text-gray-600'
                                 }`}
                             >
