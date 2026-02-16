@@ -41,6 +41,7 @@ export const UseGetRoleDetail = (id: string, options?: GetQueryParams) => UseGet
 export const UseAddRole = () => UsePostQuery(endpoints.roles, "addRole")
 export const UseUpdateRole = () => UseUpdateQuery(endpoints.roles, "updateRole")
 export const UseDeleteRole = () => UseUpdateQuery(`${endpoints.roles}-delete`, "deleteRole")
+export const UseEmailResetPassword = () => UsePostQuery(endpoints.emailResetPassword, "emailResetPassword")
 
 export const UseGetRolesPermissions = (options?: GetQueryParams) => UseGetQuery({
     identifier: "RolesPermissions",

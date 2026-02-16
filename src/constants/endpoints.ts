@@ -1,6 +1,3 @@
-import {UseGetCotations} from "../services/queries/ServicesQueries.ts";
-import {UseGetCertifications} from "../services/queries/PartnersQueries.ts";
-
 const urls =  {
     openOffices: '/open/offices',
     openPartners: '/open/partners',
@@ -44,6 +41,7 @@ const urls =  {
     teams: '/api/teams',
     certifications: '/api/certifications',
     visitors: '/api/visitor-accounts',
+    emailResetPassword: '/api/email-reset-password',
 }
 
 export default urls

@@ -15,7 +15,7 @@ import {FilterBar} from '../../components/admin/FilterBar';
 import {ChartPanel} from '../../components/admin/ChartPanel';
 import {ChartModal} from '../../components/admin/ChartModal';
 import {
-    UseAddUser, UseDeleteUser,
+    UseAddUser, UseDeleteUser, UseEmailResetPassword,
     UseGetRoles,
     UseGetUsersStats,
     UseToggleUserStatus,
@@ -26,6 +26,7 @@ import AppToast from "../../utils/AppToast.ts";
 import {HasPermission} from "../../utils/PermissionChecker.ts";
 import {appPermissions} from "../../constants/appPermissions.ts";
 import {appOps} from "../../constants";
+import {getAuthData} from "../../utils";
 
 interface GroupedUsers {
   [key: string]: User[];
@@ -80,6 +81,7 @@ const UsersPage: React.FC = () => {
         const saved = window.localStorage.getItem('admin_theme');
         return saved === 'light' ? 'light' : 'dark';
     });
+    const {user: connectedUser} = getAuthData()
 
     const currentView = location.pathname.includes('/visitors') ? 'visitors' :
         location.pathname.includes('/admins') ? 'admins' : 'all';
@@ -118,6 +120,7 @@ const UsersPage: React.FC = () => {
     const {isPending: isAddingUser, data: addUserResult, mutate: addUser} = UseAddUser()
     const {isPending: isUpdatingUser, data: updateUserResult, mutate: updateUser} = UseUpdateUser()
     const {isPending: isDeletingUser, data: deleteUserResult, mutate: deleteUser} = UseDeleteUser()
+    const {isPending: isSendingEmail, data: resetPassResult, mutate: sendEmailResetPassword} = UseEmailResetPassword()
     const {
         isPending: isTogglingStatusUser,
         data: toggleStatusUserResult,
@@ -178,37 +181,26 @@ const UsersPage: React.FC = () => {
             AppToast.error(theme === "dark", 'Aucun utilisateur sélectionné pour la réinitialisation.',)
             return;
         }
-
-        try {
-            const total = targets.length;
-            setIsResetRunning(true);
-            setResetProgress(0);
-
-            let completed = 0;
-            for (const u of targets) {
-                const {error} = await supabase.auth.resetPasswordForEmail(u.email, {
-                    redirectTo: `${window.location.origin}/reset-password`,
-                });
-
-                if (error) {
-                    throw new Error(error.message || 'Échec de l\'envoi de l\'email de réinitialisation');
-                }
-
-                completed += 1;
-                const pct = Math.round((completed / total) * 100);
-                console.log('[MatrixReset] Progress', pct + '%');
-                setResetProgress(pct);
-            }
-
-            setIsResetRunning(false);
-            AppToast.success(theme === "dark", `Email de réinitialisation envoyé à ${targets.length} utilisateur${targets.length > 1 ? 's' : ''}`,)
-            setSelectedIds(new Set());
-        } catch (err: any) {
-            console.error('Reset error:', err);
-            setIsResetRunning(false);
-            AppToast.error(theme === "dark", err?.message || 'Erreur lors de la réinitialisation du mot de passe')
+        const targetUser = targets[0]
+        if(targetUser?.id?.toString() === connectedUser?.id?.toString()){
+            AppToast.error(theme === "dark", 'Pour changer votre propre mot de passe, allez dans parametres.',)
+            return;
         }
+        sendEmailResetPassword(targetUser)
     };
+
+    useEffect(() => {
+        if (resetPassResult) {
+            if (resetPassResult?.responseData?.error) {
+                AppToast.error(theme === "dark", resetPassResult?.responseData?.message || "Erreur lors de l'enregistrement")
+                setIsResetRunning(false);
+            } else {
+                setIsResetRunning(false);
+                AppToast.success(theme === "dark", `Email de réinitialisation envoyé à l' utilisateur avec succès`)
+                setSelectedIds(new Set());
+            }
+        }
+    }, [resetPassResult]);
 
     useEffect(() => {
         if (addUserResult) {
@@ -317,7 +309,6 @@ const UsersPage: React.FC = () => {
         toggleStatusUser({id: user.id})
     };
 
-    // handleResetPassword remplacé par la réinitialisation directe via handleConfirmReset et la fonction Edge admin-users.
 
     const getActionItems = (user: any) => [
         {
@@ -920,14 +911,14 @@ const UsersPage: React.FC = () => {
                                                 }
                                             >
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider w-10">
-                                                    <input
-                                                        type="checkbox"
-                                                        className="h-4 w-4 rounded border-gray-400 text-primary-600 focus:ring-primary-500"
-                                                        checked={groupUsers?.length > 0 && groupUsers?.every((u) => selectedIds.has(u.id))}
-                                                        onChange={(e) => toggleSelectAll(e.target.checked, groupUsers)}
-                                                    />
-                                                </th>
+                                                {/*<th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider w-10">*/}
+                                                {/*    <input*/}
+                                                {/*        type="checkbox"*/}
+                                                {/*        className="h-4 w-4 rounded border-gray-400 text-primary-600 focus:ring-primary-500"*/}
+                                                {/*        checked={groupUsers?.length > 0 && groupUsers?.every((u) => selectedIds.has(u.id))}*/}
+                                                {/*        onChange={(e) => toggleSelectAll(e.target.checked, groupUsers)}*/}
+                                                {/*    />*/}
+                                                {/*</th>*/}
                                                 <th
                                                     className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                                                         theme === 'dark' ? 'text-gray-200' : 'text-gray-800'
@@ -976,14 +967,14 @@ const UsersPage: React.FC = () => {
                                                             : 'transition-colors hover:bg-slate-50 hover:shadow-sm'
                                                     }
                                                 >
-                                                    <td className="px-4 py-3 text-sm">
-                                                        <input
-                                                            type="checkbox"
-                                                            className="h-4 w-4 rounded border-gray-400 text-primary-600 focus:ring-primary-500"
-                                                            checked={selectedIds.has(user.id)}
-                                                            onChange={(e) => toggleSelect(user.id, e.target.checked)}
-                                                        />
-                                                    </td>
+                                                    {/*<td className="px-4 py-3 text-sm">*/}
+                                                    {/*    <input*/}
+                                                    {/*        type="checkbox"*/}
+                                                    {/*        className="h-4 w-4 rounded border-gray-400 text-primary-600 focus:ring-primary-500"*/}
+                                                    {/*        checked={selectedIds.has(user.id)}*/}
+                                                    {/*        onChange={(e) => toggleSelect(user.id, e.target.checked)}*/}
+                                                    {/*    />*/}
+                                                    {/*</td>*/}
                                                     <td className="px-4 py-3 text-sm">
                                                         <div className="flex items-center gap-3">
                                                             <div
@@ -1437,7 +1428,7 @@ const UsersPage: React.FC = () => {
                                     }}
                                     className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
                                 >
-                                    Envoyer l'email
+                                    {isSendingEmail ? "Envoie en cours": "Envoyer l'email"}
                                 </button>
                             </div>
                         </motion.div>

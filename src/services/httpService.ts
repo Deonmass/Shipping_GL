@@ -124,14 +124,20 @@ async function response(response: AxiosResponse<ResponseBodyType>): Promise<any>
 axiosInstance.interceptors.response.use(
     response,
     error => {
+        console.log(">>>>", error);
         const message =
             error.toString().replace('Axios', '').replace('Error:', '') || '';
         if (!navigator?.onLine) {
             AppToast.warning(true,'Problème de connexion. Vérifiez SVP');
         }
         if (!error || !error?.response || error == 'AxiosError: Network Error') {
-            //console.log(error);
+            //console.log(">>>>", error);
             ///return;
+        }
+
+        if (error?.response?.status?.toString() === "404") {
+            AppToast.warning(true,"Please, URL not found.")
+            return false
         }
 
         if (error?.response?.status?.toString() === "419" && error.response.data.message && error.response.data.message.includes("connexion a expiré")) {

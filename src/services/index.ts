@@ -19,7 +19,8 @@ export {
     UseUpdateRolePermissions,
     UseGetUsersStats,
     UseToggleUserStatus,
-    UseGetDashboardStats
+    UseGetDashboardStats,
+    UseEmailResetPassword
 } from "./queries/UsersQueries.ts"
 
 export {
