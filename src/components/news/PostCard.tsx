@@ -130,7 +130,7 @@ const PostCard: React.FC<PostCardProps> = ({
               {categoryLabel}
             </span>
                         <span className="text-gray-500">•</span>
-                        <span className="text-gray-500">{formatDate(post.created_at)}</span>
+                        <span className="text-gray-500">{formatDate(post?.event_date)}</span>
                     </div>
                     <button
                         onClick={() => setShowShareMenu(true)}
