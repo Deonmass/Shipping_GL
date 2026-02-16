@@ -124,7 +124,6 @@ async function response(response: AxiosResponse<ResponseBodyType>): Promise<any>
 axiosInstance.interceptors.response.use(
     response,
     error => {
-        console.log(">>>>", error);
         const message =
             error.toString().replace('Axios', '').replace('Error:', '') || '';
         if (!navigator?.onLine) {

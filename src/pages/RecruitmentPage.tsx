@@ -3,6 +3,10 @@ import {useLocation, useNavigate} from 'react-router-dom';
 import {motion} from 'framer-motion';
 import {Briefcase, X, MapPin, Check} from 'lucide-react';
 import {toast} from 'react-hot-toast';
+import {supabase} from '../lib/supabase';
+import {UseGetOpenCategories, UseGetOpenJobOffers} from "../services";
+import {format} from "date-fns";
+import {fr} from "date-fns/locale";
 
 // Fonction pour formater la description en respectant le HTML existant
 const formatDescription = (html: string): string => {
@@ -22,8 +26,7 @@ const formatDescription = (html: string): string => {
 
     return cleanHtml;
 };
-import {supabase} from '../lib/supabase';
-import {UseGetOpenCategories, UseGetOpenJobOffers} from "../services";
+
 
 // Interface pour les offres d'emploi
 interface JobOffer {
@@ -905,7 +908,9 @@ const RecruitmentPage: React.FC = () => {
                                                         )}
                                                     </div>
                                                     <span className="text-xs text-gray-500">
-                            Publié le {offer.publishedDate}
+                            Publié le {offer.published_at
+                                                        ? format(new Date(offer.published_at), 'dd/MM/yyyy', {locale: fr})
+                                                        : 'Non définie'}
                           </span>
                                                 </div>
 
@@ -946,7 +951,9 @@ const RecruitmentPage: React.FC = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
                                       d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                               </svg>
-                              Clôture: {offer.closingDate}
+                              Clôture: {offer?.closing_date
+                                                            ? format(new Date(offer.closing_date), 'dd/MM/yyyy', {locale: fr})
+                                                            : 'Non définie'}
                             </span>
                                                     </div>
                                                 </div>
@@ -1085,7 +1092,7 @@ const RecruitmentPage: React.FC = () => {
                                                             <p className="text-sm font-medium text-gray-500">Salaire</p>
                                                             <p className="text-sm text-gray-900">
                                                                 {selectedOffer.salary_min && selectedOffer.salary_max
-                                                                    ? `${selectedOffer.salary_min}€ - ${selectedOffer.salary_max}€`
+                                                                    ? `${selectedOffer.salary_min} USD - ${selectedOffer.salary_max} USD`
                                                                     : 'Non spécifié'}
                                                             </p>
                                                         </div>
@@ -1102,7 +1109,9 @@ const RecruitmentPage: React.FC = () => {
                                                                       d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                                             </svg>
                                                             <span
-                                                                className="text-sm text-gray-500">Publié le {selectedOffer.publishedDate}</span>
+                                                                className="text-sm text-gray-500">Publié le  {selectedOffer.published_at
+                                                                ? format(new Date(selectedOffer.published_at), 'dd/MM/yyyy', {locale: fr})
+                                                                : 'Non définie'}</span>
                                                         </div>
                                                         <div className="flex items-center">
                                                             <svg className="h-4 w-4 text-red-400 mr-1.5" fill="none"
@@ -1113,7 +1122,9 @@ const RecruitmentPage: React.FC = () => {
                                                                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                                             </svg>
                                                             <span
-                                                                className="text-sm font-medium text-red-600">Clôture: {selectedOffer.closingDate}</span>
+                                                                className="text-sm font-medium text-red-600">Clôture: {selectedOffer.closing_date
+                                                                ? format(new Date(selectedOffer.closing_date), 'dd/MM/yyyy', {locale: fr})
+                                                                : 'Non définie'}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1126,51 +1137,6 @@ const RecruitmentPage: React.FC = () => {
                                                     className="text-gray-700 text-xs leading-relaxed [&_*]:text-xs [&_*]:text-gray-700 [&_*]:font-normal [&_*]:text-inherit [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:space-y-0.5 [&_ul]:mb-3 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-1.5 [&_h3]:text-xs [&_h3]:font-medium [&_h3]:mt-3 [&_h3]:mb-1 [&_strong]:font-medium"
                                                     dangerouslySetInnerHTML={{__html: formatDescription(selectedOffer.description || '')}}
                                                 />
-
-                                                <h4 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Missions
-                                                    principales</h4>
-                                                <ul className="list-disc pl-5 space-y-2 text-gray-700">
-                                                    {selectedOffer.responsibilities?.map((resp, index) => (
-                                                        <li key={`resp-${index}`}>{resp}</li>
-                                                    )) || (
-                                                        <li>Non spécifié</li>
-                                                    )}
-                                                </ul>
-
-                                                {selectedOffer.requirements && selectedOffer.requirements.length > 0 && (
-                                                    <div className="mt-4">
-                                                        <h4 className="text-sm font-medium text-gray-900 mb-2">Profil
-                                                            recherché</h4>
-                                                        <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
-                                                            {selectedOffer.requirements.map((req, i) => (
-                                                                <li key={i}>{req}</li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
-                                                )}
-
-                                                {selectedOffer.benefits && selectedOffer.benefits.length > 0 && (
-                                                    <>
-                                                        <h4 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Avantages</h4>
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                            {selectedOffer.benefits.map((benefit, index) => (
-                                                                <div key={`benefit-${index}`}
-                                                                     className="flex items-start">
-                                                                    <svg
-                                                                        className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0"
-                                                                        fill="none" stroke="currentColor"
-                                                                        viewBox="0 0 24 24"
-                                                                        xmlns="http://www.w3.org/2000/svg">
-                                                                        <path strokeLinecap="round"
-                                                                              strokeLinejoin="round" strokeWidth="2"
-                                                                              d="M5 13l4 4L19 7"></path>
-                                                                    </svg>
-                                                                    <span className="text-gray-700">{benefit}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </>
-                                                )}
                                             </div>
                                         </div>
                                     </div>

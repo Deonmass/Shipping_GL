@@ -39,6 +39,7 @@ interface JobOffer {
     experience_level?: string;
     department?: string;
     closing_date?: string;
+    published_at?: string;
 }
 
 const emptyItem: JobOffer = {
@@ -54,7 +55,8 @@ const emptyItem: JobOffer = {
     salary_max: "",
     experience_level: "",
     department: "",
-    closing_date: ""
+    closing_date: "",
+    published_at: "",
 }
 
 const isActive = (u: any) =>
@@ -118,7 +120,8 @@ const JobOfferPage: React.FC = () => {
     const handleEdit = (offer: JobOffer) => {
         setFormData({
             ...offer,
-            closing_date: offer.closing_date ? offer.closing_date.split('T')[0] : ''
+            closing_date: offer.closing_date ? offer.closing_date.split('T')[0] : '',
+            published_at: offer.published_at ? offer.published_at.split('T')[0] : ''
         });
         setIsModalOpen(null);
     };
@@ -159,6 +162,7 @@ const JobOfferPage: React.FC = () => {
             location: formData.location,
             department: formData.department,
             closing_date: formData.closing_date,
+            published_at: formData.published_at,
             salary_min: formData.salary_min,
             salary_max: formData.salary_max,
             type: formData.type || "CDI",
@@ -259,6 +263,7 @@ const JobOfferPage: React.FC = () => {
           <p><strong>Type:</strong> ${offer.type}</p>
           <p><strong>Localisation:</strong> ${offer.location}</p>
           <p><strong>Département:</strong> ${offer.department || 'Non spécifié'}</p>
+          <p><strong>Date de Publication:</strong> ${offer.published_at ? new Date(offer.published_at).toLocaleDateString('fr-FR') : 'Non définie'}</p>
           <p><strong>Date de clôture:</strong> ${offer.closing_date ? new Date(offer.closing_date).toLocaleDateString('fr-FR') : 'Non définie'}</p>
           <p><strong>Statut:</strong> ${isActive(offer) ? 'Publiée' : 'Brouillon'}</p>
           <div class="mt-4">
@@ -462,6 +467,14 @@ const JobOfferPage: React.FC = () => {
                                                     <div>
                                                         <span
                                                             className="font-medium">Création:</span> {new Date(offer.created_at).toLocaleDateString('fr-FR', {
+                                                        day: '2-digit',
+                                                        month: '2-digit',
+                                                        year: 'numeric'
+                                                    })}
+                                                    </div>
+                                                    <div>
+                                                        <span
+                                                            className="font-medium">Publication:</span> {new Date(offer.published_at).toLocaleDateString('fr-FR', {
                                                         day: '2-digit',
                                                         month: '2-digit',
                                                         year: 'numeric'
@@ -756,6 +769,22 @@ const JobOfferPage: React.FC = () => {
                                                 <option value="0">Brouillon</option>
                                                 <option value="1">Publiée</option>
                                             </select>
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="closing_date" className="block text-sm font-medium mb-1">
+                                                Date de publication *
+                                            </label>
+                                            <input
+                                                type="date"
+                                                id="published_at"
+                                                name="published_at"
+                                                required
+                                                max={new Date().toISOString().split('T')[0]}
+                                                value={formData.published_at ? formData.published_at.split('T')[0] : ''}
+                                                onChange={handleInputChange}
+                                                className={`w-full px-3 py-2 border rounded-md ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
+                                            />
                                         </div>
 
                                         <div>
