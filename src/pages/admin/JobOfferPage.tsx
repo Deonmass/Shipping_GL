@@ -123,7 +123,7 @@ const JobOfferPage: React.FC = () => {
             closing_date: offer.closing_date ? offer.closing_date.split('T')[0] : '',
             published_at: offer.published_at ? offer.published_at.split('T')[0] : ''
         });
-        setIsModalOpen(null);
+        setIsModalOpen("edit");
     };
 
     const handleDelete = async (id: string) => {

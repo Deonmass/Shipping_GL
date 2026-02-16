@@ -1135,7 +1135,7 @@ const RecruitmentPage: React.FC = () => {
                                                     poste</h4>
                                                 <div
                                                     className="text-gray-700 text-xs leading-relaxed [&_*]:text-xs [&_*]:text-gray-700 [&_*]:font-normal [&_*]:text-inherit [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:space-y-0.5 [&_ul]:mb-3 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-1.5 [&_h3]:text-xs [&_h3]:font-medium [&_h3]:mt-3 [&_h3]:mb-1 [&_strong]:font-medium"
-                                                    dangerouslySetInnerHTML={{__html: formatDescription(selectedOffer.description || '')}}
+                                                    dangerouslySetInnerHTML={{__html: selectedOffer.description}}
                                                 />
                                             </div>
                                         </div>
