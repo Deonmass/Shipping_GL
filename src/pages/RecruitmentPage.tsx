@@ -691,12 +691,12 @@ const RecruitmentPage: React.FC = () => {
                             >
                                 Voir nos offres
                             </a>
-                            <button
-                                onClick={() => setIsModalOpen(true)}
-                                className="px-8 py-4 border-2 border-white text-white font-semibold rounded-lg hover:bg-white/10 transition-colors duration-300"
-                            >
-                                Postuler spontanément
-                            </button>
+                            {/*<button*/}
+                            {/*    onClick={() => setIsModalOpen(true)}*/}
+                            {/*    className="px-8 py-4 border-2 border-white text-white font-semibold rounded-lg hover:bg-white/10 transition-colors duration-300"*/}
+                            {/*>*/}
+                            {/*    Postuler spontanément*/}
+                            {/*</button>*/}
                         </div>
                     </motion.div>
                 </div>
@@ -1143,16 +1143,16 @@ const RecruitmentPage: React.FC = () => {
                                 </div>
                             </div>
                             <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                                <button
-                                    type="button"
-                                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
-                                    onClick={() => {
-                                        setSelectedOffer(null);
-                                        setActiveTab('cv');
-                                    }}
-                                >
-                                    Postuler maintenant
-                                </button>
+                                {/*<button*/}
+                                {/*    type="button"*/}
+                                {/*    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"*/}
+                                {/*    onClick={() => {*/}
+                                {/*        setSelectedOffer(null);*/}
+                                {/*        setActiveTab('cv');*/}
+                                {/*    }}*/}
+                                {/*>*/}
+                                {/*    Postuler maintenant*/}
+                                {/*</button>*/}
                                 <button
                                     type="button"
                                     className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
