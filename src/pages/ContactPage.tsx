@@ -187,14 +187,14 @@ const ContactPage: React.FC = () => {
         <div className="container-custom px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center mb-12">
             <motion.h1 
-              className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight"
+              className="text-3xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
             >
               Contactez-nous
             </motion.h1>
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+            <p className="text-lg text-gray-600 mb-8 leading-relaxed">
               Notre équipe dédiée est là pour répondre à toutes vos questions et vous accompagner dans vos projets de transport et logistique.
             </p>
           </div>
@@ -212,7 +212,7 @@ const ContactPage: React.FC = () => {
                 <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <service.icon className="w-8 h-8 text-red-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">{service.title}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">{service.title}</h3>
                 <p className="text-gray-600 mb-4">{service.description}</p>
                 <p className="text-sm text-gray-500 mb-4">{service.email}</p>
                 <div className="space-y-2">
@@ -252,14 +252,14 @@ const ContactPage: React.FC = () => {
               className="text-center mb-12"
             >
               <motion.h1 
-                className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight"
+                className="text-3xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.1 }}
               >
                 Nos Bureaux
             </motion.h1>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-lg text-gray-600 max-w-3xl mx-auto">
                 Retrouvez-nous dans nos différents bureaux à travers le monde pour un service personnalisé et de qualité.
               </p>
             </motion.div>
@@ -284,7 +284,7 @@ const ContactPage: React.FC = () => {
                       Siège Social
                     </div>
                   )}
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4 mt-8">{office.title}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 mt-8">{office.title}</h3>
                   <div className="space-y-2">
                     <p className="text-gray-600 text-sm">{office?.address_line_1}</p>
                     <p className="text-gray-600 text-sm">{office?.address_line_2}</p>

@@ -239,6 +239,16 @@ const AppelsOffresPage: React.FC = () => {
         }
     };
 
+    // Fonction pour déterminer le statut selon la logique demandée
+    const getStatutSelonDateEnvoi = (ao: AppelOffre) => {
+        // Si la date d'envoi est vide, statut = "En cours"
+        if (!ao.sending_date) {
+            return '1'; // "En cours"
+        }
+        // Si la date d'envoi existe, statut = "Soumis/envoyé"
+        return '2'; // "Envoyé"
+    };
+
     // Fonction pour filtrer les appels d'offres
     const filteredAppelsOffres = callOffers?.responseData?.data?.items?.filter(ao =>
         ao.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -991,36 +1001,33 @@ const AppelsOffresPage: React.FC = () => {
 
             {/* Onglets */}
             <div
-                className="sticky top-10 z-10 bg-white dark:bg-gray-900 pt-4 pb-2 -mx-4 px-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="max-w-7xl mx-auto">
-                    <ul className="flex flex-wrap -mb-px">
-                        <li className="mr-2">
-                            <button
-                                onClick={() => setMainActiveTab('statistiques')}
-                                className={`inline-block p-4 border-b-2 rounded-t-lg ${
-                                    mainActiveTab === 'statistiques'
-                                        ? 'text-red-600 border-red-600 dark:text-red-400 dark:border-red-400'
-                                        : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white border-transparent hover:border-gray-300 dark:hover:border-gray-200'
-                                }`}
-                            >
-                                Statistiques
-                            </button>
-                        </li>
-                        <li className="mr-2">
-                            <button
-                                onClick={() => setMainActiveTab('base')}
-                                className={`inline-block p-4 border-b-2 rounded-t-lg ${
-                                    mainActiveTab === 'base'
-                                        ? 'text-red-600 border-red-600 dark:text-red-400 dark:border-red-400'
-                                        : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white border-transparent hover:border-gray-300 dark:hover:border-gray-200'
-                                }`}
-                                aria-current="page"
-                            >
-                                Base de données
-                            </button>
-                        </li>
-                    </ul>
-                </div>
+                className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 -mt-6 pt-2 mb-6 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+                <ul className="flex flex-wrap -mb-px">
+                    <li className="mr-2">
+                        <button
+                            onClick={() => setMainActiveTab('statistiques')}
+                            className={`inline-flex items-center px-4 py-2 border-b-2 text-sm font-medium transition-colors duration-200 ${
+                                mainActiveTab === 'statistiques'
+                                    ? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
+                            }`}
+                        >
+                            📊 Statistiques
+                        </button>
+                    </li>
+                    <li className="mr-2">
+                        <button
+                            onClick={() => setMainActiveTab('base')}
+                            className={`inline-flex items-center px-4 py-2 border-b-2 text-sm font-medium transition-colors duration-200 ${
+                                mainActiveTab === 'base'
+                                    ? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
+                            }`}
+                        >
+                            📋 Liste
+                        </button>
+                    </li>
+                </ul>
             </div>
 
             {/* Contenu des onglets */}
@@ -1166,57 +1173,60 @@ const AppelsOffresPage: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <thead className="bg-gray-50 dark:bg-gray-700">
                                 <tr>
                                     <th scope="col"
-                                        className="w-1/4 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         Client & Référence
                                     </th>
                                     <th scope="col"
-                                        className="w-1/4 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         Dates (Réception / Limite)
                                     </th>
                                     <th scope="col"
-                                        className="w-1/6 px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         % Tâches
                                     </th>
                                     <th scope="col"
-                                        className="w-1/6 px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        BID
+                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        BID Manager
                                     </th>
                                     <th scope="col"
-                                        className="w-1/6 px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         Statut
                                     </th>
                                     <th scope="col"
-                                        className="w-1/6 px-2 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         Actions
                                     </th>
                                 </tr>
                                 </thead>
-                                <tbody
-                                    className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 {filteredAppelsOffres.length > 0 ? (
                                     filteredAppelsOffres.map((ao) => (
                                         <tr key={ao.id}
                                             className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${getDaysRemaining(ao.limit_date) <= 5 && getDaysRemaining(ao.limit_date) >= 0 ? 'bg-red-50 dark:bg-red-900/20' : ''}`}>
-                                            <td className="w-1/4 px-4 py-4">
+                                            <td className="px-6 py-4 whitespace-nowrap">
                                                 <div
-                                                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer font-medium"
+                                                    className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer"
                                                     onClick={() => handleReferenceClick(ao)}
                                                 >
                                                     {ao.partner_title}
                                                 </div>
                                                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                    {ao.ref}
+                                                    {ao.numero}
                                                 </div>
                                             </td>
-                                            <td className="w-1/4 px-4 py-4">
-                                                <div className="text-sm">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-900 dark:text-white">
                                                     <div>Reçue: {formatDate(ao.reception_date)}</div>
                                                     <div>Limite: {formatDate(ao.limit_date)}</div>
+                                                    {ao.sending_date && (
+                                                        <div>Envoyée: {formatDate(ao.sending_date)}</div>
+                                                    )}
                                                     <div className="mt-1">
                               <span
                                   className={`px-2 py-1 rounded-full text-xs ${getDaysRemaining(ao.limit_date) <= 5 ? 'text-red-800 bg-red-100 dark:text-red-100 dark:bg-red-900/50' : 'text-gray-800 bg-gray-100 dark:text-gray-200 dark:bg-gray-700'}`}>
@@ -1225,7 +1235,7 @@ const AppelsOffresPage: React.FC = () => {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="w-1/6 px-2 py-4">
+                                            <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center">
                                                     <div
                                                         className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mr-2"
@@ -1246,16 +1256,16 @@ const AppelsOffresPage: React.FC = () => {
                                                     {ao.closed_task_count}/{ao.task_count} tâches
                                                 </div>
                                             </td>
-                                            <td className="w-1/6 px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                                 {ao.manager_name}
                                             </td>
-                                            <td className="w-1/6 px-2 py-4 whitespace-nowrap">
+                                            <td className="px-6 py-4 whitespace-nowrap">
                           <span
-                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(ao.status)}`}>
-                            {statusDataKeys[`${ao.status}`]}
+                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(getStatutSelonDateEnvoi(ao))}`}>
+                            {statusDataKeys[getStatutSelonDateEnvoi(ao)]}
                           </span>
                                             </td>
-                                            <td className="w-1/6 px-2 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                                                 <div className="inline-flex space-x-2">
                                                     <button
                                                         onClick={() => handleViewDetails(ao)}
@@ -1292,6 +1302,7 @@ const AppelsOffresPage: React.FC = () => {
                                 )}
                                 </tbody>
                             </table>
+                            </div>
                         </div>
                         <div
                             className="bg-white dark:bg-gray-800 px-6 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">

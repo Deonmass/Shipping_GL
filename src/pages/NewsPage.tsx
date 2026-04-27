@@ -299,13 +299,13 @@ const NewsPage: React.FC = () => {
                   </span>
                                 </div>
 
-                                <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                                <h2 className="text-2xl font-bold text-gray-900 mb-6">
                                     {selectedPost.title}
                                 </h2>
 
                                 <div className="prose max-w-none mb-8">
                                     <div
-                                        className="text-gray-700 leading-relaxed text-lg ql-editor"
+                                        className="text-gray-700 leading-relaxed ql-editor"
                                         dangerouslySetInnerHTML={{__html: selectedPost.content}}
                                     />
                                 </div>

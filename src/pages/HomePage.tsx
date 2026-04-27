@@ -152,14 +152,14 @@ const AnniversaryModal = ({ onClose }: { onClose: () => void }) => {
           transition={{ delay: 0.4 }}
           className="text-center"
         >
-          <h2 className="text-4xl font-bold text-primary-600 mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-primary-600 mb-4">
             10 Ans d'Excellence !
           </h2>
-          <p className="text-xl text-gray-700 mb-6">
+          <p className="text-lg text-gray-700 mb-6">
             Depuis une décennie, SHIPPING GL s'engage à fournir des solutions logistiques
             innovantes et fiables à travers l'Afrique et le monde.
           </p>
-          <p className="text-lg text-gray-600 mb-8">
+          <p className="text-base text-gray-600 mb-8">
             Merci à nos clients, partenaires et employés pour leur confiance et leur
             soutien continu dans cette aventure extraordinaire.
           </p>

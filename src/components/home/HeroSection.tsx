@@ -24,7 +24,7 @@ const HeroSection: React.FC = () => {
         >
           
           
-          <source src="https://res.cloudinary.com/dsiuvwqah/video/upload/matadidare_ulfcgj.mp4" type="video/mp4" />
+          <source src="/matadidare.mp4" type="video/mp4" />
           {/*<source src="https://res.cloudinary.com/dbjl923hl/video/upload/v1756728993/matadidare_bjhd0f.mp4" type="video/mp4" />*/}
           
           {/* Fallback image if video doesn't load */}
