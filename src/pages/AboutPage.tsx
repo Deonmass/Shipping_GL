@@ -94,8 +94,8 @@ const AboutPage: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="max-w-3xl mx-auto text-center"
           >
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 text-white">{t('about.title')}</h1>
-            <p className="text-xl text-gray-200">
+            <h1 className="text-3xl font-bold mb-6 text-white">{t('about.title')}</h1>
+            <p className="text-lg text-gray-200">
               {t('about.subtitle')}
             </p>
           </motion.div>
@@ -122,8 +122,8 @@ const AboutPage: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">{t('about.team.title')}</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('about.team.title')}</h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
               {t('about.team.description')}
             </p>
           </motion.div>
@@ -149,7 +149,7 @@ const AboutPage: React.FC = () => {
                     />
                   </div>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors">{member.name}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors">{member.name}</h3>
                 <p className="text-gray-600 group-hover:text-gray-700 transition-colors">{member.title}</p>
               </motion.div>
             ))}
@@ -167,15 +167,15 @@ const AboutPage: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="max-w-4xl mx-auto text-center"
           >
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">{t('about.vision.title')}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('about.vision.title')}</h2>
             <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12">
-              <p className="text-gray-700 leading-relaxed text-lg mb-6">
+              <p className="text-gray-700 leading-relaxed mb-6">
                 {t('about.vision.paragraph1')}
               </p>
-              <p className="text-gray-700 leading-relaxed text-lg mb-6">
+              <p className="text-gray-700 leading-relaxed mb-6">
                 {t('about.vision.paragraph2')}
               </p>
-              <p className="text-gray-700 leading-relaxed text-lg">
+              <p className="text-gray-700 leading-relaxed">
                 {t('about.vision.paragraph3')}
               </p>
             </div>
@@ -193,15 +193,15 @@ const AboutPage: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="max-w-4xl mx-auto text-center"
           >
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">{t('about.mission.title')}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('about.mission.title')}</h2>
             <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-lg p-8 md:p-12">
-              <p className="text-gray-700 leading-relaxed text-lg mb-6">
+              <p className="text-gray-700 leading-relaxed mb-6">
                 {t('about.mission.paragraph1')}
               </p>
-              <p className="text-gray-700 leading-relaxed text-lg">
+              <p className="text-gray-700 leading-relaxed mb-6">
                 {t('about.mission.paragraph2')}
               </p>
-              <p className="text-gray-700 leading-relaxed text-lg">
+              <p className="text-gray-700 leading-relaxed mb-6">
                 {t('about.mission.paragraph3')}
               </p>
             </div>
@@ -219,9 +219,9 @@ const AboutPage: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="max-w-4xl mx-auto text-center"
           >
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">{t('about.statement.title')}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('about.statement.title')}</h2>
             <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12">
-              <p className="text-gray-700 leading-relaxed text-lg">
+              <p className="text-gray-700 leading-relaxed">
                 {t('about.statement.paragraph1')}
               </p>
             </div>
@@ -239,8 +239,8 @@ const AboutPage: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">{t('about.values.title')}</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('about.values.title')}</h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
               {t('about.values.subtitle')}
             </p>
           </motion.div>
@@ -257,7 +257,7 @@ const AboutPage: React.FC = () => {
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-primary-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">{t('about.values.integrity.title')}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('about.values.integrity.title')}</h3>
               <p className="text-gray-600">{t('about.values.integrity.description')}</p>
             </motion.div>
 
@@ -272,7 +272,7 @@ const AboutPage: React.FC = () => {
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-primary-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">{t('about.values.excellence.title')}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('about.values.excellence.title')}</h3>
               <p className="text-gray-600">{t('about.values.excellence.description')}</p>
             </motion.div>
 
@@ -287,7 +287,7 @@ const AboutPage: React.FC = () => {
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-primary-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">{t('about.values.reliability.title')}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('about.values.reliability.title')}</h3>
               <p className="text-gray-600">{t('about.values.reliability.description')}</p>
             </motion.div>
 
@@ -302,7 +302,7 @@ const AboutPage: React.FC = () => {
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-primary-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">{t('about.values.innovation.title')}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('about.values.innovation.title')}</h3>
               <p className="text-gray-600">{t('about.values.innovation.description')}</p>
             </motion.div>
 
@@ -317,7 +317,7 @@ const AboutPage: React.FC = () => {
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-primary-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">{t('about.values.customerFocus.title')}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('about.values.customerFocus.title')}</h3>
               <p className="text-gray-600">{t('about.values.customerFocus.description')}</p>
             </motion.div>
           </div>
@@ -334,8 +334,8 @@ const AboutPage: React.FC = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">{t('about.history.title')}</h2>
-              <p className="text-gray-700 leading-relaxed text-lg text-justify">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('about.history.title')}</h2>
+              <p className="text-gray-700 leading-relaxed text-justify">
                 {t('about.history.description')}
               </p>
               <div className="mt-8 grid grid-cols-2 gap-6">
@@ -393,8 +393,8 @@ const AboutPage: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">{t('about.contact.title')}</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('about.contact.title')}</h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
               {t('about.contact.subtitle')}
             </p>
           </motion.div>
@@ -412,7 +412,7 @@ const AboutPage: React.FC = () => {
                 <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <service.icon className="w-8 h-8 text-primary-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">{service.title}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">{service.title}</h3>
                 <p className="text-gray-600 mb-4">{service.description}</p>
                 <p className="text-sm text-gray-500 mb-4">{service.email}</p>
                 <div className="space-y-2">
@@ -449,8 +449,8 @@ const AboutPage: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">{t('about.offices.title')}</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('about.offices.title')}</h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
               {t('about.offices.subtitle')}
             </p>
           </motion.div>
@@ -478,7 +478,7 @@ const AboutPage: React.FC = () => {
                     <CheckCircle className="w-6 h-6 text-primary-600" />
                   </div>
                 )}
-                <h3 className="text-xl font-semibold text-gray-900 mb-4 mt-8">{office.title}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 mt-8">{office.title}</h3>
                 <div className="space-y-1">
                   <p className="text-gray-600">{office.address_line_1}</p>
                   <p className="text-gray-600">{office.address_line_2}</p>
@@ -505,7 +505,7 @@ const AboutPage: React.FC = () => {
             className="bg-white rounded-xl p-6 max-w-md w-full"
           >
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">{t('about.team.memberDetails')}</h3>
+              <h3 className="text-lg font-bold text-gray-900">{t('about.team.memberDetails')}</h3>
               <button
                 onClick={() => setSelectedMember(null)}
                 className="text-gray-400 hover:text-gray-600"
@@ -521,7 +521,7 @@ const AboutPage: React.FC = () => {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h4 className="text-xl font-semibold text-gray-900 mb-2">{selectedMember.name}</h4>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">{selectedMember.name}</h4>
               <p className="text-primary-600 font-medium mb-4">{selectedMember.title}</p>
               <p className="text-gray-600 leading-relaxed">{selectedMember.description}</p>
             </div>
@@ -539,7 +539,7 @@ const AboutPage: React.FC = () => {
             className="bg-white rounded-xl p-6 max-w-lg w-full"
           >
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">{t(`about.values.${selectedValue}.title`)}</h3>
+              <h3 className="text-lg font-bold text-gray-900">{t(`about.values.${selectedValue}.title`)}</h3>
               <button
                 onClick={() => setSelectedValue(null)}
                 className="text-gray-400 hover:text-gray-600"
@@ -568,7 +568,7 @@ const AboutPage: React.FC = () => {
             className="bg-white rounded-xl p-6 max-w-md w-full"
           >
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">{t('about.contact.emailForm.title')}</h3>
+              <h3 className="text-lg font-bold text-gray-900">{t('about.contact.emailForm.title')}</h3>
               <button
                 onClick={() => setShowContactModal(null)}
                 className="text-gray-400 hover:text-gray-600"

@@ -1606,7 +1606,7 @@ const CotationsPage: React.FC = () => {
                     <AdminPageHeader
                         Icon={<ClipboardEditIcon
                             className={`w-7 h-7 ${
-                                theme === 'dark' ? 'text-sky-400' : 'text-sky-600'
+                                theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
                             }`}
                         />}
                         title="Gestion des Cotations"
@@ -1621,43 +1621,42 @@ const CotationsPage: React.FC = () => {
 
                 {/* Onglets */}
                 <div
-                    className="bg-white -mt-6 dark:bg-gray-900 pt-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+                    className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 -mt-6 pt-2 mb-6 border-b border-gray-200 dark:border-gray-700 shadow-sm">
                     <ul className="flex flex-wrap -mb-px">
                         <li className="mr-2">
                             <button
                                 onClick={() => setActiveTab('statistiques')}
-                                className={`inline-block p-4 border-b-2 rounded-t-lg ${
+                                className={`inline-flex items-center px-4 py-2 border-b-2 text-sm font-medium transition-colors duration-200 ${
                                     activeTab === 'statistiques'
-                                        ? 'text-red-600 border-red-600 dark:text-red-400 dark:border-red-400'
-                                        : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white border-transparent hover:border-gray-300 dark:hover:border-gray-200'
+                                        ? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
                                 }`}
                             >
-                                Statistiques
+                                📊 Statistiques
                             </button>
                         </li>
                         <li className="mr-2">
                             <button
                                 onClick={() => setActiveTab('analyse')}
-                                className={`inline-block p-4 border-b-2 rounded-t-lg ${
+                                className={`inline-flex items-center px-4 py-2 border-b-2 text-sm font-medium transition-colors duration-200 ${
                                     activeTab === 'analyse'
-                                        ? 'text-red-600 border-red-600 dark:text-red-400 dark:border-red-400'
-                                        : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white border-transparent hover:border-gray-300 dark:hover:border-gray-200'
+                                        ? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
                                 }`}
-                                aria-current="page"
                             >
-                                Analyse
+                                📈 Analyse
                             </button>
                         </li>
                         <li className="mr-2">
                             <button
                                 onClick={() => setActiveTab('base')}
-                                className={`inline-block p-4 border-b-2 rounded-t-lg ${
+                                className={`inline-flex items-center px-4 py-2 border-b-2 text-sm font-medium transition-colors duration-200 ${
                                     activeTab === 'base'
-                                        ? 'text-red-600 border-red-600 dark:text-red-400 dark:border-red-400'
-                                        : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white border-transparent hover:border-gray-300 dark:hover:border-gray-200'
+                                        ? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
                                 }`}
                             >
-                                Base de données
+                                📋 Liste
                             </button>
                         </li>
                     </ul>
@@ -1666,7 +1665,7 @@ const CotationsPage: React.FC = () => {
             </div>
 
             {/* Contenu des onglets */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
                 {activeTab === 'statistiques' && (
                     <div className="p-6">
                         {/* Graphique des cotations par mois */}
@@ -1747,12 +1746,13 @@ const CotationsPage: React.FC = () => {
                         <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Statistiques des
                             cotations</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg h-64">
-                                <div className="flex justify-between items-center mb-0">
-                                    <h3 className="text-sm font-medium text-gray-900 dark:text-white">Répartition par
-                                        statut</h3>
+                            <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-4 rounded-lg h-64 shadow-inner border border-gray-200 dark:border-gray-600">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                        🥧 Répartition par statut
+                                    </h3>
                                     <span
-                                        className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-2 py-1 rounded">
+                                        className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full font-medium shadow-sm">
                     {selectedYear}
                   </span>
                                 </div>
@@ -1760,11 +1760,13 @@ const CotationsPage: React.FC = () => {
                                     <Pie data={statusData} options={statusOptions}/>
                                 </div>
                             </div>
-                            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg h-64">
-                                <div className="flex justify-between items-center mb-0">
-                                    <h3 className="text-sm font-medium text-gray-900 dark:text-white">Top clients</h3>
+                            <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-4 rounded-lg h-64 shadow-inner border border-gray-200 dark:border-gray-600">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                        🏆 Top clients
+                                    </h3>
                                     <span
-                                        className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-2 py-1 rounded">
+                                        className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full font-medium shadow-sm">
                     {selectedYear}
                   </span>
                                 </div>
@@ -1772,12 +1774,13 @@ const CotationsPage: React.FC = () => {
                                     <Bar data={clientsData} options={clientsOptions}/>
                                 </div>
                             </div>
-                            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg h-64">
-                                <div className="flex justify-between items-center mb-0">
-                                    <h3 className="text-sm font-medium text-gray-900 dark:text-white">Répartition par
-                                        type</h3>
+                            <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-4 rounded-lg h-64 shadow-inner border border-gray-200 dark:border-gray-600">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                        📦 Répartition par type
+                                    </h3>
                                     <span
-                                        className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-2 py-1 rounded">
+                                        className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full font-medium shadow-sm">
                     {selectedYear}
                   </span>
                                 </div>
@@ -2128,11 +2131,15 @@ const CotationsPage: React.FC = () => {
                 {activeTab === 'base' && (
                     <div>
                         <div
-                            className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Liste des cotations
-                                ({filteredCotations.length})</h2>
+                            className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shadow-sm">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                Liste des cotations
+                                <span className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full text-sm font-medium">
+                                    ({filteredCotations.length})
+                                </span>
+                            </h2>
                             <button
-                                className="px-4 py-2 bg-green-500/10 text-green-700 dark:text-green-400 rounded-md hover:bg-green-500/20 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center gap-2 border border-green-500/30"
+                                className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-md hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105"
                                 onClick={exportToExcel}
                             >
                                 <FileSpreadsheet className="w-4 h-4" />
@@ -2298,84 +2305,94 @@ const CotationsPage: React.FC = () => {
                         {/* Tableau des cotations */}
                         <div className="w-full">
                             <table className="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead className="bg-gray-50 dark:bg-gray-700">
+                                <thead className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600">
                                 <tr>
-                                    <th className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    <th className="w-32 px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                         N° Cotation
                                     </th>
-                                    <th className="w-1/6 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    <th className="w-1/6 px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                         Client
                                     </th>
-                                    <th className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    <th className="w-48 px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                         Service
                                     </th>
-                                    <th className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    <th className="w-28 px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                         Dates
                                     </th>
-                                    <th className="w-20 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    <th className="w-20 px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                         TT (j)
                                     </th>
-                                    <th className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    <th className="w-28 px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                         Utilisateur
                                     </th>
-                                    <th className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    <th className="w-28 px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                         Statut
                                     </th>
-                                    <th className="w-40 px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    <th className="w-40 px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                         Actions
                                     </th>
                                 </tr>
                                 </thead>
                                 <tbody
-                                    className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
                                 {filteredCotations.length === 0 ? (
                                     <tr>
                                         <td colSpan={9}
-                                            className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                                            Aucune cotation pour le moment
+                                            className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                                            <div className="flex flex-col items-center">
+                                                <div className="text-4xl mb-2">📭</div>
+                                                <div className="text-lg font-medium">Aucune cotation pour le moment</div>
+                                                <div className="text-sm mt-1">Commencez par ajouter une nouvelle cotation</div>
+                                            </div>
                                         </td>
                                     </tr>
                                 ) : (
                                     filteredCotations?.map((cotation) => (
-                                        <tr key={cotation.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <tr key={cotation.id} className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent dark:hover:from-blue-900/20 dark:hover:to-transparent transition-all duration-200">
                                             <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white truncate">
-                                                <div className="truncate" title={cotation.numero}>
+                                                <div className="truncate font-mono text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded" title={cotation.numero}>
                                                     {cotation.numero}
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-300">
+                                            <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
                                                 <div className="truncate" title={cotation?.partner_title}>
                                                     {cotation?.partner_title}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="flex flex-col">
-                                                    <div className="truncate text-sm text-gray-500 dark:text-gray-300" title={cotation?.service_title}>
+                                                    <div className="truncate text-sm text-gray-700 dark:text-gray-300" title={cotation?.service_title}>
                                                         {cotation?.service_title}
                                                     </div>
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1 w-fit ${
-                                                        cotation.type === 'Import' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                                                        cotation.type === 'Export' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                                                        'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1 w-fit shadow-sm ${
+                                                        cotation.type === 'Import' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-700' :
+                                                        cotation.type === 'Export' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-200 dark:border-green-700' :
+                                                        'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-700'
                                                     }`}>
                                                         {cotation.type}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-[12px] text-gray-500 dark:text-gray-300">
-                                                <div>R : {new Date(cotation.reception_date).toLocaleDateString('fr-FR')}</div>
-                                                <div className="mt-2"
+                                            <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">
+                                                <div className="font-medium">R : {new Date(cotation.reception_date).toLocaleDateString('fr-FR')}</div>
+                                                <div className="mt-1 text-gray-500 dark:text-gray-500"
                                                      title={new Date(cotation.updated_at).toLocaleDateString('fr-FR')}>
                                                     S: {new Date(cotation.updated_at).toLocaleDateString('fr-FR')}
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-center text-gray-500 dark:text-gray-300">
-                                                {calculateProcessingTime(cotation)}
+                                            <td className="px-4 py-3 text-sm text-center">
+                                                <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium ${
+                                                    calculateProcessingTime(cotation) <= 3 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                                    calculateProcessingTime(cotation) <= 7 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                                    'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                                }`}>
+                                                    {calculateProcessingTime(cotation)}
+                                                </span>
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-300">
+                                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                                                 {cotation.manager_name || '-'}
                                             </td>
-                                            <td className="px-0 py-0 ">
+                                            <td className="px-0 py-0">
                                                 <div
                                                     className="w-full cursor-pointer hover:opacity-80 transition-opacity flex justify-left"
                                                     onClick={() => openStatusModal(cotation)}
@@ -2393,9 +2410,9 @@ const CotationsPage: React.FC = () => {
                                                                 key={action.label}
                                                                 type="button"
                                                                 onClick={action.onClick}
-                                                                className={`inline-flex h-9 w-9 items-center justify-center rounded-md border text-xs font-medium ${
+                                                                className={`inline-flex h-9 w-9 items-center justify-center rounded-md border text-xs font-medium transition-all duration-200 transform hover:scale-110 hover:shadow-md ${
                                                                     action.bgColor
-                                                                } ${action.borderColor} ${action.color} hover:shadow-md hover:-translate-y-0.5 transition transform duration-150`}
+                                                                } ${action.borderColor} ${action.color} hover:shadow-lg hover:-translate-y-0.5`}
                                                                 title={action.label}
                                                             >
                                                                 <action.icon className="h-4 w-4"/>

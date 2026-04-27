@@ -27,6 +27,19 @@ const formatDescription = (html: string): string => {
     return cleanHtml;
 };
 
+// Fonction pour vérifier si une offre est clôturée
+const isOfferClosed = (closingDate?: string): boolean => {
+    if (!closingDate) return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Début de la journée
+    
+    const closing = new Date(closingDate);
+    closing.setHours(0, 0, 0, 0); // Début de la journée
+    
+    return closing < today;
+};
+
 
 // Interface pour les offres d'emploi
 interface JobOffer {
@@ -906,6 +919,12 @@ const RecruitmentPage: React.FC = () => {
                                 Urgent
                               </span>
                                                         )}
+                                                        {isOfferClosed(offer.closing_date) && (
+                                                            <span
+                                                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                Clôturé
+                              </span>
+                                                        )}
                                                     </div>
                                                     <span className="text-xs text-gray-500">
                             Publié le {offer.published_at
@@ -945,15 +964,22 @@ const RecruitmentPage: React.FC = () => {
                                 </span>
                                                             )}
                                                         </div>
-                                                        <span className="text-xs text-gray-500 flex items-center">
-                              <svg className="h-3.5 w-3.5 mr-1 text-gray-400" fill="none" stroke="currentColor"
+                                                        <span className={`text-xs flex items-center ${
+                                isOfferClosed(offer.closing_date) ? 'text-red-600 font-medium' : 'text-gray-500'
+                            }`}>
+                              <svg className={`h-3.5 w-3.5 mr-1 ${
+                                  isOfferClosed(offer.closing_date) ? 'text-red-400' : 'text-gray-400'
+                              }`} fill="none" stroke="currentColor"
                                    viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
                                       d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                               </svg>
-                              Clôture: {offer?.closing_date
-                                                            ? format(new Date(offer.closing_date), 'dd/MM/yyyy', {locale: fr})
-                                                            : 'Non définie'}
+                              {isOfferClosed(offer.closing_date) 
+                                ? 'Clôturé' 
+                                : `Clôture: ${offer?.closing_date
+                                    ? format(new Date(offer.closing_date), 'dd/MM/yyyy', {locale: fr})
+                                    : 'Non définie'}`
+                              }
                             </span>
                                                     </div>
                                                 </div>
@@ -1036,6 +1062,12 @@ const RecruitmentPage: React.FC = () => {
                               Urgent
                             </span>
                                                     )}
+                                                    {isOfferClosed(selectedOffer.closing_date) && (
+                                                        <span
+                                                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              Clôturé
+                            </span>
+                                                    )}
                                                 </div>
                                             </div>
                                             <button
@@ -1114,7 +1146,9 @@ const RecruitmentPage: React.FC = () => {
                                                                 : 'Non définie'}</span>
                                                         </div>
                                                         <div className="flex items-center">
-                                                            <svg className="h-4 w-4 text-red-400 mr-1.5" fill="none"
+                                                            <svg className={`h-4 w-4 mr-1.5 ${
+                                                                isOfferClosed(selectedOffer.closing_date) ? 'text-red-500' : 'text-red-400'
+                                                            }`} fill="none"
                                                                  stroke="currentColor" viewBox="0 0 24 24"
                                                                  xmlns="http://www.w3.org/2000/svg">
                                                                 <path strokeLinecap="round" strokeLinejoin="round"
@@ -1122,9 +1156,18 @@ const RecruitmentPage: React.FC = () => {
                                                                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                                             </svg>
                                                             <span
-                                                                className="text-sm font-medium text-red-600">Clôture: {selectedOffer.closing_date
-                                                                ? format(new Date(selectedOffer.closing_date), 'dd/MM/yyyy', {locale: fr})
-                                                                : 'Non définie'}</span>
+                                                                className={`text-sm font-medium ${
+                                                                    isOfferClosed(selectedOffer.closing_date) 
+                                                                        ? 'text-red-700' 
+                                                                        : 'text-red-600'
+                                                                }`}>
+                                                                {isOfferClosed(selectedOffer.closing_date) 
+                                                                    ? 'Clôturé' 
+                                                                    : `Clôture: ${selectedOffer.closing_date
+                                                                        ? format(new Date(selectedOffer.closing_date), 'dd/MM/yyyy', {locale: fr})
+                                                                        : 'Non définie'}`
+                                                                }
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </div>

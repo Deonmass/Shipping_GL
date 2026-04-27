@@ -274,10 +274,10 @@ const ServicesPage: React.FC = () => {
                         animate={{opacity: 1, y: 0}}
                         transition={{duration: 0.5}}
                     >
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white drop-shadow-lg">
+                        <h1 className="text-3xl md:text-4xl font-bold mb-4 text-white drop-shadow-lg">
                             {t('services.title')}
                         </h1>
-                        <p className="text-xl text-white/90 max-w-3xl mx-auto drop-shadow-md">
+                        <p className="text-lg text-white/90 max-w-3xl mx-auto drop-shadow-md">
                             {t('services.subtitle')}
                         </p>
                     </motion.div>
@@ -400,7 +400,7 @@ const ServicesPage: React.FC = () => {
                             <div className="flex flex-col p-6 md:p-8">
                                 <div className="flex items-start justify-between mb-4">
                                     <div>
-                                        <h2 className="text-2xl font-bold text-gray-900 mb-2">{detailModalService.title}</h2>
+                                        <h2 className="text-xl font-bold text-gray-900 mb-2">{detailModalService.title}</h2>
 
                                     </div>
                                     <button
@@ -447,7 +447,7 @@ const ServicesPage: React.FC = () => {
                     >
                         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                             <div>
-                                <h2 className="text-xl font-bold text-gray-900">Demande de devis</h2>
+                                <h2 className="text-lg font-bold text-gray-900">Demande de devis</h2>
                                 <p className="text-sm text-gray-600 mt-1">
                                     Service concerné : <span className="font-semibold">{quoteService?.title}</span>
                                 </p>

@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {motion} from 'framer-motion';
-import {Globe, Users, Clock, Heart, Loader, BadgeCheck} from 'lucide-react';
+import {Globe, Users, Clock, Heart, Loader, BadgeCheck, X} from 'lucide-react';
 import {UseGetOpenCertifications} from "../services";
 
 const heroBg = 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1471&q=80';
@@ -45,6 +45,7 @@ const stats = [
 const EngagementPage: React.FC = () => {
     const {t} = useTranslation();
     const {isLoading: isGettingCertifications, data: certifications} = UseGetOpenCertifications()
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     if (isGettingCertifications) {
         return (
@@ -67,12 +68,12 @@ const EngagementPage: React.FC = () => {
             className="bg-gray-50"
         >
             {/* Hero Section */}
-            <section className="relative py-32 overflow-hidden">
+            <section className="relative py-48 overflow-hidden">
                 <div className="absolute inset-0">
                     <img
                         src={heroBg}
                         alt="Engagement"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover scale-110"
                     />
                     <div className="absolute inset-0 bg-red-900/70 mix-blend-multiply"/>
                 </div>
@@ -85,7 +86,7 @@ const EngagementPage: React.FC = () => {
                         className="max-w-4xl mx-auto"
                     >
                         <motion.h1
-                            className="text-4xl md:text-6xl font-bold mb-6 text-white drop-shadow-lg"
+                            className="text-3xl md:text-5xl font-bold mb-6 text-white drop-shadow-lg"
                             initial={{opacity: 0, y: 20}}
                             animate={{opacity: 1, y: 0}}
                             transition={{duration: 0.5, delay: 0.3}}
@@ -93,7 +94,7 @@ const EngagementPage: React.FC = () => {
                             Notre Engagement envers l'Excellence
                         </motion.h1>
                         <motion.p
-                            className="text-xl md:text-2xl text-gray-100 max-w-3xl mx-auto mb-8"
+                            className="text-lg md:text-xl text-gray-100 max-w-3xl mx-auto mb-8"
                             initial={{opacity: 0, y: 20}}
                             animate={{opacity: 1, y: 0}}
                             transition={{duration: 0.5, delay: 0.4}}
@@ -146,7 +147,7 @@ const EngagementPage: React.FC = () => {
                 <div className="container-custom px-4">
                     <div className="text-center mb-16">
                         <motion.h2
-                            className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
+                            className="text-2xl md:text-3xl font-bold text-gray-900 mb-4"
                             initial={{opacity: 0, y: 20}}
                             whileInView={{opacity: 1, y: 0}}
                             viewport={{once: true}}
@@ -156,7 +157,7 @@ const EngagementPage: React.FC = () => {
                         </motion.h2>
                         <div className="w-20 h-1 bg-red-600 mx-auto mb-6"></div>
                         <motion.p
-                            className="text-gray-600 max-w-3xl mx-auto text-lg"
+                            className="text-gray-600 max-w-3xl mx-auto"
                             initial={{opacity: 0, y: 20}}
                             whileInView={{opacity: 1, y: 0}}
                             viewport={{once: true}}
@@ -182,20 +183,21 @@ const EngagementPage: React.FC = () => {
                                     transition={{duration: 0.5, delay: index * 0.1}}
                                 >
                                     <div
-                                        className={`w-16 h-16 bg-red-50 text-red-600  rounded-full flex items-center justify-center mb-6 mx-auto`}>
+                                        className={`w-32 h-32 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-6 mx-auto cursor-pointer transition-transform duration-300 hover:scale-110`}
+                                        onClick={() => cert.image_url && setSelectedImage(cert.image_url)}
+                                    >
                                         {cert.image_url ? (
                                             <img
                                                 src={cert.image_url}
                                                 alt={cert?.image_url}
-                                                className="max-h-full max-w-full object-contain"
+                                                className="w-24 h-24 object-contain rounded-full"
                                             />
                                         ) : (
-                                            <BadgeCheck className="w-10 h-10"/>
+                                            <BadgeCheck className="w-16 h-16"/>
                                         )}
-
                                     </div>
-                                    <h3 className="text-xl font-semibold mb-3 text-center text-gray-900">{cert.title}</h3>
-                                    <p className="text-gray-600 text-center">{cert.description}</p>
+                                    <h3 className="text-lg font-semibold mb-3 text-center text-gray-900">{cert.title}</h3>
+                                    <p className="text-gray-600 text-center text-justify">{cert.description}</p>
                                 </motion.div>
                             ))}
                         </div>
@@ -203,46 +205,34 @@ const EngagementPage: React.FC = () => {
                 </div>
             </section>
 
-            {/* Gallery Section
-      <section className="py-16 bg-gray-50">
-        <div className="container-custom px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Notre Engagement en Images</h2>
-            <div className="w-20 h-1 bg-red-600 mx-auto mb-6"></div>
-            <p className="text-gray-600 max-w-3xl mx-auto">
-              Découvrez comment nous mettons en œuvre nos engagements au quotidien
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {galleryImages.map((img, index) => (
-              <motion.div 
-                key={index}
-                className="relative overflow-hidden rounded-xl aspect-square"
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <img 
-                  src={img} 
-                  alt={`Galerie ${index + 1}`} 
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-black/30 hover:bg-black/10 transition-colors duration-300 flex items-center justify-center">
-                  <div className="text-white text-center p-4">
-                    <span className="text-sm font-medium bg-red-600 px-3 py-1 rounded-full">
-                      Engagement {index + 1}
-                    </span>
-                  </div>
+            {/* Image Modal */}
+            {selectedImage && (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+                    onClick={() => setSelectedImage(null)}
+                >
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.3 }}
+                        className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={() => setSelectedImage(null)}
+                            className="absolute top-4 right-4 z-10 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors duration-200"
+                        >
+                            <X className="w-6 h-6 text-gray-800" />
+                        </button>
+                        <img
+                            src={selectedImage}
+                            alt="Certification agrandie"
+                            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                        />
+                    </motion.div>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
+            )}
 
         </motion.div>
     );
